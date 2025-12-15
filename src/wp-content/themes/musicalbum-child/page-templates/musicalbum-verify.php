@@ -3,6 +3,11 @@
 Template Name: Musicalbum Verify
 Description: 用于验证子主题与集成插件是否正常生效。
 */
+/**
+ * 通过短码输出检验插件：
+ * - [musicalbum_hello] 应输出欢迎文本
+ * 若短码未注册，使用守卫提示插件未启用或短码未注册。
+ */
 
 defined('ABSPATH') || exit;
 

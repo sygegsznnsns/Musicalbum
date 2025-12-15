@@ -1,4 +1,17 @@
 <?php
+/**
+ * 单条观演记录模板：single-musicalbum_viewing
+ *
+ * 显示通过 ACF 录入的字段：
+ * - 观演日期 view_date
+ * - 剧院 theater
+ * - 卡司 cast
+ * - 票价 price
+ * - 票面图片 ticket_image
+ * - 备注 notes
+ *
+ * 为避免未启用 ACF 时致命错误，已使用 function_exists('get_field') 守卫。
+ */
 defined('ABSPATH') || exit;
 get_header();
 ?>

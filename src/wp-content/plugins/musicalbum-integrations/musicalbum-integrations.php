@@ -8,7 +8,19 @@ Author: chen pan
 
 defined('ABSPATH') || exit;
 
+/**
+ * 集成插件主类
+ *
+ * - 注册短码供页面/模板插入功能模块
+ * - 注册自定义文章类型存储观演记录
+ * - 注册 REST 路由（OCR 与 iCalendar 导出）
+ * - 代码化声明 ACF 字段结构（非内容值）
+ * - 入队前端资源并注入 REST 端点与安全 nonce
+ */
 final class Musicalbum_Integrations {
+    /**
+     * 插件初始化：挂载所有必要钩子
+     */
     public static function init() {
         add_action('init', array(__CLASS__, 'register_shortcodes'));
         add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_assets'));
@@ -19,16 +31,29 @@ final class Musicalbum_Integrations {
         // add_filter('some_plugin_output', [__CLASS__, 'filter_some_plugin_output'], 10, 1);
     }
 
+    /**
+     * 注册短码：
+     * - [musicalbum_hello]
+     * - [musicalbum_viewing_form]
+     * - [musicalbum_profile_viewings]
+     */
     public static function register_shortcodes() {
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_musicalbum_hello'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
     }
 
+    /**
+     * 示例短码：输出简单的欢迎块
+     */
     public static function shortcode_musicalbum_hello($atts = array(), $content = '') {
         return '<div class="musicalbum-hello">Hello Musicalbum</div>';
     }
 
+    /**
+     * 前端资源入队：样式与脚本
+     * 脚本通过 wp_localize_script 注入 REST 端点与 nonce
+     */
     public static function enqueue_assets() {
         wp_register_style('musicalbum-integrations', plugins_url('assets/integrations.css', __FILE__), array(), '0.1.0');
         wp_enqueue_style('musicalbum-integrations');
@@ -42,11 +67,16 @@ final class Musicalbum_Integrations {
         wp_enqueue_script('musicalbum-integrations');
     }
 
+    /**
+     * 示例过滤器：用于演示与第三方插件输出交互
+     */
     public static function filter_some_plugin_output($output) {
-        // 在此处理第三方插件输出
         return $output;
     }
 
+    /**
+     * 注册自定义文章类型：musicalbum_viewing（观演记录）
+     */
     public static function register_viewing_post_type() {
         register_post_type('musicalbum_viewing', array(
             'labels' => array(
@@ -61,6 +91,10 @@ final class Musicalbum_Integrations {
         ));
     }
 
+    /**
+     * 声明 ACF 本地字段组：仅结构，非数据
+     * 在 ACF 激活时注册，便于字段随代码版本化
+     */
     public static function register_acf_fields() {
         if (!function_exists('acf_add_local_field_group')) { return; }
         acf_add_local_field_group(array(
@@ -119,6 +153,10 @@ final class Musicalbum_Integrations {
         ));
     }
 
+    /**
+     * 观演录入表单短码：基于 ACF 前端表单创建新记录
+     * 返回 HTML 字符串用于页面渲染
+     */
     public static function shortcode_viewing_form($atts = array(), $content = '') {
         if (!function_exists('acf_form')) { return ''; }
         ob_start();
@@ -137,6 +175,9 @@ final class Musicalbum_Integrations {
         return ob_get_clean();
     }
 
+    /**
+     * 我的观演列表短码：查询当前用户的观演记录并输出列表
+     */
     public static function shortcode_profile_viewings($atts = array(), $content = '') {
         if (!is_user_logged_in()) { return ''; }
         $q = new WP_Query(array(
@@ -157,6 +198,9 @@ final class Musicalbum_Integrations {
         return ob_get_clean();
     }
 
+    /**
+     * 注册 REST 路由：OCR 与 iCalendar 导出
+     */
     public static function register_rest_routes() {
         register_rest_route('musicalbum/v1', '/ocr', array(
             'methods' => 'POST',
@@ -170,6 +214,10 @@ final class Musicalbum_Integrations {
         ));
     }
 
+    /**
+     * OCR 接口：接收图片文件并返回识别结果
+     * 优先使用外部过滤器；否则根据设置走默认提供商
+     */
     public static function rest_ocr($request) {
         $files = $request->get_file_params();
         if (empty($files['image'])) { return new WP_Error('no_image', '缺少图片', array('status' => 400)); }
@@ -177,10 +225,21 @@ final class Musicalbum_Integrations {
         $data = file_get_contents($path);
         if (!$data) { return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); }
         $result = apply_filters('musicalbum_ocr_process', null, $data);
-        if (!is_array($result)) { $result = self::default_baidu_ocr($data); }
+        if (!is_array($result)) {
+            $provider = get_option('musicalbum_ocr_provider');
+            if ($provider === 'aliyun' || get_option('musicalbum_aliyun_api_key')) {
+                $result = self::default_aliyun_ocr($data);
+            } else {
+                $result = self::default_baidu_ocr($data);
+            }
+        }
         return rest_ensure_response($result);
     }
 
+    /**
+     * 默认百度 OCR：使用通用文字识别接口
+     * 返回结构化字段（标题、剧院、卡司、票价、日期）
+     */
     private static function default_baidu_ocr($bytes) {
         $api_key = get_option('musicalbum_baidu_api_key');
         $secret_key = get_option('musicalbum_baidu_secret_key');
@@ -205,6 +264,53 @@ final class Musicalbum_Integrations {
         return array('title' => $title, 'theater' => $theater, 'cast' => $cast, 'price' => $price, 'view_date' => $date);
     }
 
+    /**
+     * 默认阿里云 OCR：根据模式发送二进制或 JSON
+     */
+    private static function default_aliyun_ocr($bytes) {
+        $api_key = get_option('musicalbum_aliyun_api_key');
+        $endpoint = get_option('musicalbum_aliyun_endpoint');
+        $mode = get_option('musicalbum_aliyun_mode');
+        if (!$api_key || !$endpoint) { return array(); }
+        $headers = array('Authorization' => 'Bearer ' . $api_key);
+        $resp = null;
+        if ($mode === 'octet') {
+            $headers['Content-Type'] = 'application/octet-stream';
+            $resp = wp_remote_post($endpoint, array('headers' => $headers, 'body' => $bytes, 'timeout' => 30));
+        } else {
+            $headers['Content-Type'] = 'application/json';
+            $payload = json_encode(array('image' => base64_encode($bytes)));
+            $resp = wp_remote_post($endpoint, array('headers' => $headers, 'body' => $payload, 'timeout' => 30));
+        }
+        if (is_wp_error($resp)) { return array(); }
+        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        $text = '';
+        if (is_string($json)) { $text = $json; }
+        if (!$text && isset($json['content']) && is_string($json['content'])) { $text = $json['content']; }
+        if (!$text && isset($json['result']) && is_string($json['result'])) { $text = $json['result']; }
+        if (!$text && isset($json['data']['content']) && is_string($json['data']['content'])) { $text = $json['data']['content']; }
+        if (!$text && isset($json['data']['text']) && is_string($json['data']['text'])) { $text = $json['data']['text']; }
+        if (!$text && isset($json['data']['lines']) && is_array($json['data']['lines'])) {
+            $lines = array();
+            foreach($json['data']['lines'] as $ln){ if (isset($ln['text'])) { $lines[] = $ln['text']; } }
+            $text = implode("\n", $lines);
+        }
+        if (!$text && isset($json['prism_wordsInfo']) && is_array($json['prism_wordsInfo'])) {
+            $lines = array();
+            foreach($json['prism_wordsInfo'] as $w){ if (isset($w['word'])) { $lines[] = $w['word']; } }
+            $text = implode("\n", $lines);
+        }
+        $title = self::extract_title($text);
+        $theater = self::extract_theater($text);
+        $cast = self::extract_cast($text);
+        $price = self::extract_price($text);
+        $date = self::extract_date($text);
+        return array('title' => $title, 'theater' => $theater, 'cast' => $cast, 'price' => $price, 'view_date' => $date);
+    }
+
+    /**
+     * 获取百度 OCR 访问令牌
+     */
     private static function baidu_token($api_key, $secret_key) {
         $resp = wp_remote_get('https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id='.urlencode($api_key).'&client_secret='.urlencode($secret_key));
         if (is_wp_error($resp)) { return null; }
@@ -212,23 +318,30 @@ final class Musicalbum_Integrations {
         return isset($json['access_token']) ? $json['access_token'] : null;
     }
 
+    /**
+     * 从 OCR 文本中提取标题（首行）
+     */
     private static function extract_title($text) {
         $lines = preg_split('/\r?\n/', $text);
         return isset($lines[0]) ? $lines[0] : '';
     }
+    /** 提取剧院行 */
     private static function extract_theater($text) {
         if (preg_match('/(剧院|剧场|大剧院)[^\n]*/u', $text, $m)) return $m[0];
         return '';
     }
+    /** 提取卡司行 */
     private static function extract_cast($text) {
         if (preg_match('/(主演|卡司|演出人员)[^\n]*/u', $text, $m)) return $m[0];
         return '';
     }
+    /** 提取票价数值 */
     private static function extract_price($text) {
         if (preg_match('/(票价|Price)[:：]?\s*([0-9]+(\.[0-9]+)?)/u', $text, $m)) return $m[2];
         if (preg_match('/([0-9]+)[元¥]/u', $text, $m)) return $m[1];
         return '';
     }
+    /** 提取日期并格式化为 YYYY-MM-DD */
     private static function extract_date($text) {
         if (preg_match('/(20[0-9]{2})[-年\.\/](0?[1-9]|1[0-2])[-月\.\/](0?[1-9]|[12][0-9]|3[01])/u', $text, $m)) {
             $y = $m[1]; $mth = str_pad($m[2], 2, '0', STR_PAD_LEFT); $d = str_pad($m[3], 2, '0', STR_PAD_LEFT);
@@ -237,6 +350,9 @@ final class Musicalbum_Integrations {
         return '';
     }
 
+    /**
+     * iCalendar 导出接口：返回所有观演记录的日历条目
+     */
     public static function rest_ics($request) {
         $args = array('post_type' => 'musicalbum_viewing', 'posts_per_page' => -1, 'post_status' => 'publish');
         $q = new WP_Query($args);
@@ -264,6 +380,9 @@ final class Musicalbum_Integrations {
         return new WP_REST_Response($out, 200, array('Content-Type' => 'text/calendar; charset=utf-8'));
     }
 
+    /**
+     * iCalendar 内容转义：逗号/分号与换行
+     */
     private static function escape_ics($s){
         $s = preg_replace('/([,;])/', '\\$1', $s);
         $s = preg_replace('/\r?\n/', '\\n', $s);
@@ -271,4 +390,5 @@ final class Musicalbum_Integrations {
     }
 }
 
+// 启动插件
 Musicalbum_Integrations::init();
