@@ -446,10 +446,10 @@ final class Musicalbum_Integrations {
                 <h2 class="musicalbum-statistics-title">观演数据统计</h2>
                 <div class="musicalbum-statistics-actions">
                     <button type="button" class="musicalbum-btn musicalbum-btn-refresh" id="musicalbum-refresh-btn" title="刷新数据">
-                        <span class="dashicons dashicons-update"></span> 刷新
+                        <span class="musicalbum-icon-refresh">↻</span> 刷新
                     </button>
                     <button type="button" class="musicalbum-btn musicalbum-btn-export" id="musicalbum-export-btn" title="导出数据">
-                        <span class="dashicons dashicons-download"></span> 导出
+                        <span class="musicalbum-icon-export">↓</span> 导出
                     </button>
                 </div>
             </div>

@@ -29,22 +29,44 @@
     });
 
     // 统计数据图表渲染
-    if ($('.musicalbum-statistics-container').length > 0 && typeof Chart !== 'undefined') {
-      loadStatistics();
-      
-      // 使用事件委托，确保按钮存在后再绑定
-      $(document).on('click', '#musicalbum-refresh-btn', function() {
-        var btn = $(this);
-        btn.prop('disabled', true).find('.dashicons').addClass('spin');
-        loadStatistics(function() {
-          btn.prop('disabled', false).find('.dashicons').removeClass('spin');
-        });
-      });
-      
-      $(document).on('click', '#musicalbum-export-btn', function() {
-        exportStatistics();
-      });
+    if ($('.musicalbum-statistics-container').length > 0) {
+      // 等待Chart.js加载完成
+      if (typeof Chart !== 'undefined') {
+        loadStatistics();
+      } else {
+        // 如果Chart.js还没加载，等待一下
+        setTimeout(function() {
+          if (typeof Chart !== 'undefined') {
+            loadStatistics();
+          }
+        }, 500);
+      }
     }
+    
+    // 按钮事件绑定（使用事件委托，不依赖Chart.js）
+    $(document).on('click', '#musicalbum-refresh-btn', function(e) {
+      e.preventDefault();
+      var btn = $(this);
+      if (btn.prop('disabled')) return;
+      
+      btn.prop('disabled', true);
+      var icon = btn.find('.musicalbum-icon-refresh');
+      if (icon.length) {
+        icon.addClass('spin');
+      }
+      
+      loadStatistics(function() {
+        btn.prop('disabled', false);
+        if (icon.length) {
+          icon.removeClass('spin');
+        }
+      });
+    });
+    
+    $(document).on('click', '#musicalbum-export-btn', function(e) {
+      e.preventDefault();
+      exportStatistics();
+    });
   });
 
   // 存储图表实例，用于刷新和导出
@@ -388,35 +410,52 @@
    * 导出统计数据
    */
   function exportStatistics() {
+    // 移除已存在的菜单
+    $('.musicalbum-export-menu').remove();
+    
     // 创建导出选项菜单
+    var btn = $('#musicalbum-export-btn');
+    if (btn.length === 0) return;
+    
     var menu = $('<div class="musicalbum-export-menu"><a href="#" data-format="csv">导出为 CSV</a><a href="#" data-format="json">导出为 JSON</a></div>');
-    menu.css({
-      position: 'absolute',
-      top: $('#musicalbum-export-btn').offset().top + $('#musicalbum-export-btn').outerHeight() + 5,
-      left: $('#musicalbum-export-btn').offset().left,
-      background: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      padding: '8px 0',
-      zIndex: 1000,
-      minWidth: '150px'
-    });
+    
+    var btnOffset = btn.offset();
+    if (btnOffset) {
+      menu.css({
+        position: 'absolute',
+        top: btnOffset.top + btn.outerHeight() + 5,
+        left: btnOffset.left,
+        background: '#fff',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        padding: '8px 0',
+        zIndex: 10000,
+        minWidth: '150px'
+      });
+    }
     
     menu.find('a').on('click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       var format = $(this).data('format');
-      var url = MusicalbumIntegrations.rest.statisticsExport + '?format=' + format + '&_wpnonce=' + MusicalbumIntegrations.rest.nonce;
-      window.open(url, '_blank');
+      if (MusicalbumIntegrations && MusicalbumIntegrations.rest && MusicalbumIntegrations.rest.statisticsExport) {
+        var url = MusicalbumIntegrations.rest.statisticsExport + '?format=' + format + '&_wpnonce=' + MusicalbumIntegrations.rest.nonce;
+        window.location.href = url;
+      } else {
+        alert('导出功能暂时不可用，请刷新页面后重试');
+      }
       menu.remove();
     });
     
     // 点击外部关闭
-    $(document).one('click', function(e) {
-      if (!$(e.target).closest('.musicalbum-export-menu, #musicalbum-export-btn').length) {
-        menu.remove();
-      }
-    });
+    setTimeout(function() {
+      $(document).one('click', function(e) {
+        if (!$(e.target).closest('.musicalbum-export-menu, #musicalbum-export-btn').length) {
+          menu.remove();
+        }
+      });
+    }, 100);
     
     $('body').append(menu);
   }

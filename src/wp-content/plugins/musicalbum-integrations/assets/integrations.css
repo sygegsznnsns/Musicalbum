@@ -82,14 +82,21 @@
   background: #7c3aed;
 }
 
-.musicalbum-btn .dashicons {
-  width: 16px;
-  height: 16px;
+.musicalbum-btn span {
+  display: inline-block;
   font-size: 16px;
+  line-height: 1;
 }
 
-.musicalbum-btn .dashicons.spin {
+.musicalbum-icon-refresh,
+.musicalbum-icon-export {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.musicalbum-icon-refresh.spin {
   animation: spin 1s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
