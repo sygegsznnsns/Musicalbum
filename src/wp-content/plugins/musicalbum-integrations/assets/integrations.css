@@ -848,6 +848,14 @@
   display: none !important;
 }
 
+/* 确保周列表视图中的事件标题横向显示，防止竖着排 */
+#musicalbum-calendar-container .fc-list-event-title {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .musicalbum-calendar-actions {
   display: flex;
   gap: 0.75rem;

@@ -1111,15 +1111,29 @@
         showCalendarEventDetail(info.event.id, info.event.title, item);
       },
       eventDidMount: function(arg) {
-        // 在listWeek视图中，如果是全天事件，隐藏时间元素中的"all-day"文本
-        if (arg.view.type === 'listWeek' && arg.event.allDay) {
-          // 查找时间元素
-          var timeEl = arg.el.querySelector('.fc-list-event-time');
-          if (timeEl) {
-            // 检查文本内容，如果包含"all-day"或"全天"，则隐藏
-            var timeText = timeEl.textContent || '';
-            if (timeText.trim() === 'all-day' || timeText.trim() === '全天' || timeText.indexOf('all-day') !== -1 || timeText.indexOf('全天') !== -1) {
-              timeEl.style.display = 'none';
+        // 在listWeek视图中处理事件显示
+        if (arg.view.type === 'listWeek') {
+          // 如果是全天事件，隐藏时间元素中的"all-day"文本
+          if (arg.event.allDay) {
+            var timeEl = arg.el.querySelector('.fc-list-event-time');
+            if (timeEl) {
+              var timeText = timeEl.textContent || '';
+              if (timeText.trim() === 'all-day' || timeText.trim() === '全天' || timeText.indexOf('all-day') !== -1 || timeText.indexOf('全天') !== -1) {
+                timeEl.style.display = 'none';
+              }
+            }
+          }
+          
+          // 确保事件标题正常显示（防止竖着排）
+          var titleEl = arg.el.querySelector('.fc-list-event-title');
+          if (titleEl) {
+            // 确保标题是横向显示
+            titleEl.style.whiteSpace = 'nowrap';
+            titleEl.style.wordBreak = 'keep-all';
+            // 移除可能的换行符
+            var titleText = titleEl.textContent || '';
+            if (titleText) {
+              titleEl.textContent = titleText.replace(/\s+/g, ' ').trim();
             }
           }
         }
