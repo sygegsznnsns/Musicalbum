@@ -1323,6 +1323,10 @@ final class Viewing_Records {
                                     </div>
                                     <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>
                                 </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-notes">备注</label>
+                                    <textarea id="musicalbum-ocr-notes" name="notes" rows="4"></textarea>
+                                </div>
                                 <div class="musicalbum-form-actions">
                                     <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-ocr-cancel">取消</button>
                                     <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
