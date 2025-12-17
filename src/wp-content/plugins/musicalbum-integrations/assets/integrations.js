@@ -768,6 +768,54 @@
     
     // OCR识别表单的日期输入框
     initDateInput('#musicalbum-ocr-date', '#musicalbum-ocr-date-picker');
+    
+    // 添加时间输入框的实时验证
+    initTimeValidation('#musicalbum-form-time-start', '#musicalbum-form-time-end');
+    initTimeValidation('#musicalbum-ocr-time-start', '#musicalbum-ocr-time-end');
+  }
+
+  // 初始化时间输入框的实时验证
+  function initTimeValidation(startSelector, endSelector) {
+    var $start = $(startSelector);
+    var $end = $(endSelector);
+    
+    function validateTime() {
+      var startVal = $start.val();
+      var endVal = $end.val();
+      
+      // 清除之前的错误样式
+      $start.css('border-color', '');
+      $end.css('border-color', '');
+      
+      // 如果两个时间都填写了，进行验证
+      if (startVal && endVal) {
+        var startMinutes = timeToMinutes(startVal);
+        var endMinutes = timeToMinutes(endVal);
+        
+        if (startMinutes >= endMinutes) {
+          // 显示错误样式
+          $start.css('border-color', '#ef4444');
+          $end.css('border-color', '#ef4444');
+          return false;
+        }
+      }
+      return true;
+    }
+    
+    // 当任一时间输入框改变时，进行验证
+    $start.on('change blur', validateTime);
+    $end.on('change blur', validateTime);
+  }
+
+  // 将时间字符串（HH:MM格式）转换为分钟数，便于比较
+  function timeToMinutes(timeStr) {
+    if (!timeStr || !timeStr.match(/^\d{2}:\d{2}$/)) {
+      return 0;
+    }
+    var parts = timeStr.split(':');
+    var hours = parseInt(parts[0], 10);
+    var minutes = parseInt(parts[1], 10);
+    return hours * 60 + minutes;
   }
   
   // 初始化单个日期输入框
@@ -1255,6 +1303,27 @@
       }
     });
 
+    // 验证开始时间和结束时间
+    var timeStart = formData.view_time_start;
+    var timeEnd = formData.view_time_end;
+    if (timeStart && timeEnd) {
+      // 将时间字符串转换为可比较的格式（HH:MM -> 分钟数）
+      var startMinutes = timeToMinutes(timeStart);
+      var endMinutes = timeToMinutes(timeEnd);
+      
+      if (startMinutes >= endMinutes) {
+        alert('开始时间不能晚于或等于结束时间，请检查后重试');
+        // 高亮显示错误的时间输入框
+        $('#musicalbum-form-time-start, #musicalbum-ocr-time-start').css('border-color', '#ef4444');
+        $('#musicalbum-form-time-end, #musicalbum-ocr-time-end').css('border-color', '#ef4444');
+        setTimeout(function() {
+          $('#musicalbum-form-time-start, #musicalbum-ocr-time-start').css('border-color', '');
+          $('#musicalbum-form-time-end, #musicalbum-ocr-time-end').css('border-color', '');
+        }, 3000);
+        return;
+      }
+    }
+
     var id = $('#musicalbum-edit-id').val();
     var url = MusicalbumIntegrations.rest.viewings;
     var method = 'POST';
@@ -1287,6 +1356,17 @@
       }
       alert(msg);
     });
+  }
+
+  // 将时间字符串（HH:MM格式）转换为分钟数，便于比较
+  function timeToMinutes(timeStr) {
+    if (!timeStr || !timeStr.match(/^\d{2}:\d{2}$/)) {
+      return 0;
+    }
+    var parts = timeStr.split(':');
+    var hours = parseInt(parts[0], 10);
+    var minutes = parseInt(parts[1], 10);
+    return hours * 60 + minutes;
   }
 
   // 编辑观演记录

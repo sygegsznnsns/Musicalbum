@@ -490,6 +490,13 @@
   box-sizing: border-box;
 }
 
+/* 时间输入框错误状态 */
+.musicalbum-form-group input[type="time"].error,
+.musicalbum-form-group input[type="time"][style*="border-color: #ef4444"] {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
 /* 确保日期输入框容器宽度与其他输入框一致 */
 .musicalbum-form-group .musicalbum-calendar-input-wrapper {
   width: 100%;
