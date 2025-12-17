@@ -487,6 +487,12 @@
   border-radius: 6px;
   font-size: 0.875rem;
   transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+/* 确保日期输入框容器宽度与其他输入框一致 */
+.musicalbum-form-group .musicalbum-calendar-input-wrapper {
+  width: 100%;
 }
 
 /* 表单中的日期输入框使用相同的样式 */
@@ -705,14 +711,13 @@
 
 .musicalbum-calendar-input-wrapper {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-width: 200px;
   width: 100%;
 }
 
 .musicalbum-calendar-date-input {
-  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  padding: 0.625rem 2.5rem 0.625rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -720,6 +725,7 @@
   transition: border-color 0.2s;
   background: #fff;
   font-family: monospace;
+  box-sizing: border-box;
 }
 
 .musicalbum-calendar-date-input:hover {
@@ -743,6 +749,9 @@
   opacity: 0.6;
   transition: opacity 0.2s;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .musicalbum-calendar-icon-btn:hover {
