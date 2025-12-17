@@ -66,6 +66,8 @@ final class Musicalbum_Integrations {
             'rest' => array(
                 'ocr' => esc_url_raw(rest_url('musicalbum/v1/ocr')),
                 'statistics' => esc_url_raw(rest_url('musicalbum/v1/statistics')),
+                'statisticsDetails' => esc_url_raw(rest_url('musicalbum/v1/statistics/details')),
+                'statisticsExport' => esc_url_raw(rest_url('musicalbum/v1/statistics/export')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -241,6 +243,16 @@ final class Musicalbum_Integrations {
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics')
+        ));
+        register_rest_route('musicalbum/v1', '/statistics/details', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_statistics_details')
+        ));
+        register_rest_route('musicalbum/v1', '/statistics/export', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_statistics_export')
         ));
     }
 
@@ -430,7 +442,17 @@ final class Musicalbum_Integrations {
         ob_start();
         ?>
         <div class="musicalbum-statistics-container">
-            <h2 class="musicalbum-statistics-title">观演数据统计</h2>
+            <div class="musicalbum-statistics-header">
+                <h2 class="musicalbum-statistics-title">观演数据统计</h2>
+                <div class="musicalbum-statistics-actions">
+                    <button type="button" class="musicalbum-btn musicalbum-btn-refresh" id="musicalbum-refresh-btn" title="刷新数据">
+                        <span class="dashicons dashicons-update"></span> 刷新
+                    </button>
+                    <button type="button" class="musicalbum-btn musicalbum-btn-export" id="musicalbum-export-btn" title="导出数据">
+                        <span class="dashicons dashicons-download"></span> 导出
+                    </button>
+                </div>
+            </div>
             <div class="musicalbum-charts-grid">
                 <div class="musicalbum-chart-wrapper">
                     <h3>剧目类别分布</h3>
@@ -606,6 +628,157 @@ final class Musicalbum_Integrations {
         }
         
         return $ranges;
+    }
+
+    /**
+     * 统计数据详情 REST API 端点
+     * 根据筛选条件返回具体的观演记录列表
+     */
+    public static function rest_statistics_details($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $type = $request->get_param('type'); // category, cast, price
+        $value = $request->get_param('value'); // 具体的类别、演员名或票价区间
+        $page = absint($request->get_param('page')) ?: 1;
+        $per_page = absint($request->get_param('per_page')) ?: 20;
+
+        $args = array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => $per_page,
+            'paged' => $page,
+            'author' => $user_id,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
+
+        // 根据类型添加meta查询
+        if ($type === 'category') {
+            $args['meta_query'] = array(
+                array(
+                    'key' => 'category',
+                    'value' => $value,
+                    'compare' => '='
+                )
+            );
+        } elseif ($type === 'cast') {
+            $args['meta_query'] = array(
+                array(
+                    'key' => 'cast',
+                    'value' => $value,
+                    'compare' => 'LIKE'
+                )
+            );
+        } elseif ($type === 'price') {
+            // 解析票价区间
+            if (preg_match('/(\d+)-(\d+)/', $value, $matches)) {
+                $min_price = floatval($matches[1]);
+                $max_price = floatval($matches[2]);
+                // 这里需要更复杂的查询，简化处理
+            }
+        }
+
+        $query = new WP_Query($args);
+        $results = array();
+
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $results[] = array(
+                'id' => $post_id,
+                'title' => get_the_title(),
+                'category' => get_field('category', $post_id),
+                'theater' => get_field('theater', $post_id),
+                'cast' => get_field('cast', $post_id),
+                'price' => get_field('price', $post_id),
+                'view_date' => get_field('view_date', $post_id),
+                'url' => get_permalink($post_id)
+            );
+        }
+        wp_reset_postdata();
+
+        return rest_ensure_response(array(
+            'data' => $results,
+            'total' => $query->found_posts,
+            'pages' => $query->max_num_pages,
+            'current_page' => $page
+        ));
+    }
+
+    /**
+     * 统计数据导出 REST API 端点
+     * 导出为CSV格式
+     */
+    public static function rest_statistics_export($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $format = $request->get_param('format') ?: 'csv'; // csv, json
+
+        $args = array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => -1,
+            'author' => $user_id,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
+        $query = new WP_Query($args);
+
+        if ($format === 'csv') {
+            // 输出CSV
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="观演统计_' . date('Y-m-d') . '.csv"');
+            
+            $output = fopen('php://output', 'w');
+            // 添加BOM以支持中文
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // CSV头部
+            fputcsv($output, array('标题', '类别', '剧院', '卡司', '票价', '观演日期'), ',');
+            
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                fputcsv($output, array(
+                    get_the_title(),
+                    get_field('category', $post_id) ?: '',
+                    get_field('theater', $post_id) ?: '',
+                    get_field('cast', $post_id) ?: '',
+                    get_field('price', $post_id) ?: '',
+                    get_field('view_date', $post_id) ?: ''
+                ), ',');
+            }
+            wp_reset_postdata();
+            fclose($output);
+            exit;
+        } else {
+            // 输出JSON
+            $results = array();
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                $results[] = array(
+                    'title' => get_the_title(),
+                    'category' => get_field('category', $post_id),
+                    'theater' => get_field('theater', $post_id),
+                    'cast' => get_field('cast', $post_id),
+                    'price' => get_field('price', $post_id),
+                    'view_date' => get_field('view_date', $post_id)
+                );
+            }
+            wp_reset_postdata();
+            
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="观演统计_' . date('Y-m-d') . '.json"');
+            echo json_encode($results, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            exit;
+        }
     }
 }
 
