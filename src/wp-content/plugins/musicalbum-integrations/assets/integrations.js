@@ -599,11 +599,15 @@
 
     // OCR识别
     $('#musicalbum-ocr-manager-button').on('click', function() {
+      console.log('=== OCR识别开始 ===');
       var file = $('#musicalbum-ocr-manager-file')[0].files[0];
       if (!file) {
+        console.warn('OCR: 未选择文件');
         alert('请先选择图片文件');
         return;
       }
+      
+      console.log('OCR: 文件已选择', file.name, file.size + ' bytes');
       
       var $btn = $(this);
       var originalText = $btn.text();
@@ -618,6 +622,9 @@
       
       var fd = new FormData();
       fd.append('image', file);
+      
+      console.log('OCR: 发送请求到', MusicalbumIntegrations.rest.ocr);
+      
       $.ajax({
         url: MusicalbumIntegrations.rest.ocr,
         method: 'POST',
@@ -626,25 +633,61 @@
         processData: false,
         contentType: false
       }).done(function(res) {
+        console.log('=== OCR API响应 ===');
+        console.log('完整响应对象:', res);
+        console.log('响应类型:', typeof res);
+        console.log('响应是否为数组:', Array.isArray(res));
+        
         $btn.prop('disabled', false).text(originalText);
+        
         if (res) {
+          console.log('OCR: 提取的字段值:');
+          console.log('  - title:', res.title);
+          console.log('  - theater:', res.theater);
+          console.log('  - cast:', res.cast);
+          console.log('  - price:', res.price);
+          console.log('  - view_date:', res.view_date);
+          
+          if (res._debug_text) {
+            console.log('OCR: 原始识别文本:');
+            console.log(res._debug_text);
+          }
+          
+          if (res._debug_message) {
+            console.warn('OCR: 调试消息:', res._debug_message);
+          }
+          
           // 填充表单字段
-          if (res.title) $('#musicalbum-ocr-title').val(res.title);
-          if (res.theater) $('#musicalbum-ocr-theater').val(res.theater);
-          if (res.cast) $('#musicalbum-ocr-cast').val(res.cast);
-          if (res.price) $('#musicalbum-ocr-price').val(res.price);
-          if (res.view_date) $('#musicalbum-ocr-date').val(res.view_date);
+          if (res.title) {
+            $('#musicalbum-ocr-title').val(res.title);
+            console.log('✓ 已填充标题:', res.title);
+          }
+          if (res.theater) {
+            $('#musicalbum-ocr-theater').val(res.theater);
+            console.log('✓ 已填充剧院:', res.theater);
+          }
+          if (res.cast) {
+            $('#musicalbum-ocr-cast').val(res.cast);
+            console.log('✓ 已填充卡司:', res.cast);
+          }
+          if (res.price) {
+            $('#musicalbum-ocr-price').val(res.price);
+            console.log('✓ 已填充票价:', res.price);
+          }
+          if (res.view_date) {
+            $('#musicalbum-ocr-date').val(res.view_date);
+            console.log('✓ 已填充日期:', res.view_date);
+          }
           $('#musicalbum-ocr-form').show();
           
-          // 如果识别到数据，显示提示
-          if (res.title || res.theater || res.cast || res.price || res.view_date) {
-            // 识别成功，不显示提示
-            console.log('OCR识别成功:', res);
-            // 如果有调试信息，也显示
-            if (res._debug_text) {
-              console.log('OCR原始文本:', res._debug_text);
-            }
+          // 检查是否识别到任何有效数据
+          var hasData = !!(res.title || res.theater || res.cast || res.price || res.view_date);
+          console.log('OCR: 是否识别到有效数据:', hasData);
+          
+          if (hasData) {
+            console.log('✓ OCR识别成功！已填充表单字段');
           } else {
+            console.warn('⚠ OCR识别完成，但未提取到有效字段');
             // 显示更详细的错误信息
             var errorMsg = '未能识别到有效信息，请检查图片或手动填写';
             if (res._debug_text) {
@@ -654,18 +697,29 @@
             alert(errorMsg);
           }
         } else {
+          console.error('OCR: 响应为空或无效');
           alert('识别失败，请检查图片或稍后重试');
         }
-      }).fail(function(xhr) {
+        console.log('=== OCR识别结束 ===');
+      }).fail(function(xhr, status, error) {
+        console.error('=== OCR API请求失败 ===');
+        console.error('状态:', status);
+        console.error('错误:', error);
+        console.error('XHR对象:', xhr);
+        console.error('响应状态码:', xhr.status);
+        console.error('响应文本:', xhr.responseText);
+        
         $btn.prop('disabled', false).text(originalText);
         var errorMsg = '识别失败';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
+          console.error('错误消息:', xhr.responseJSON.message);
         } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.status) {
           errorMsg = '识别失败 (状态码: ' + xhr.responseJSON.data.status + ')';
         }
         console.error('OCR识别错误:', xhr);
         alert(errorMsg);
+        console.log('=== OCR识别结束（失败）===');
       });
     });
 
