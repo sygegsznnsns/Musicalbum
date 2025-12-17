@@ -537,4 +537,389 @@
       alert('导出图表失败，请稍后重试');
     }
   }
+
+  // ==================== 观演记录管理模块 ====================
+  
+  // 初始化管理界面
+  if ($('.musicalbum-manager-container').length > 0) {
+    initViewingManager();
+  }
+
+  function initViewingManager() {
+    // 视图切换
+    $('.musicalbum-view-btn').on('click', function() {
+      var view = $(this).data('view');
+      $('.musicalbum-view-btn').removeClass('active');
+      $(this).addClass('active');
+      $('.musicalbum-view-content').removeClass('active');
+      if (view === 'list') {
+        $('#musicalbum-list-view').addClass('active');
+        loadListView();
+      } else {
+        $('#musicalbum-calendar-view').addClass('active');
+        initCalendarView();
+      }
+    });
+
+    // 表单标签切换
+    $('.musicalbum-tab-btn').on('click', function() {
+      var tab = $(this).data('tab');
+      $('.musicalbum-tab-btn').removeClass('active');
+      $(this).addClass('active');
+      $('.musicalbum-tab-content').removeClass('active');
+      $('#musicalbum-tab-' + tab).addClass('active');
+    });
+
+    // 新增按钮
+    $('#musicalbum-add-btn').on('click', function() {
+      resetForm();
+      $('#musicalbum-form-title').text('新增观演记录');
+      $('#musicalbum-form-modal').show();
+    });
+
+    // 关闭模态框
+    $('.musicalbum-modal-close, #musicalbum-form-cancel, #musicalbum-ocr-cancel').on('click', function() {
+      $('#musicalbum-form-modal').hide();
+      resetForm();
+    });
+
+    // 点击外部关闭
+    $(document).on('click', '#musicalbum-form-modal', function(e) {
+      if ($(e.target).is('#musicalbum-form-modal')) {
+        $(this).hide();
+        resetForm();
+      }
+    });
+
+    // 手动录入表单提交
+    $('#musicalbum-manual-form').on('submit', function(e) {
+      e.preventDefault();
+      saveViewing($(this));
+    });
+
+    // OCR识别
+    $('#musicalbum-ocr-manager-button').on('click', function() {
+      var file = $('#musicalbum-ocr-manager-file')[0].files[0];
+      if (!file) {
+        alert('请先选择图片文件');
+        return;
+      }
+      var fd = new FormData();
+      fd.append('image', file);
+      $.ajax({
+        url: MusicalbumIntegrations.rest.ocr,
+        method: 'POST',
+        headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce },
+        data: fd,
+        processData: false,
+        contentType: false
+      }).done(function(res) {
+        if (res) {
+          if (res.title) $('#musicalbum-ocr-title').val(res.title);
+          if (res.theater) $('#musicalbum-ocr-theater').val(res.theater);
+          if (res.cast) $('#musicalbum-ocr-cast').val(res.cast);
+          if (res.price) $('#musicalbum-ocr-price').val(res.price);
+          if (res.view_date) $('#musicalbum-ocr-date').val(res.view_date);
+          $('#musicalbum-ocr-form').show();
+        }
+      });
+    });
+
+    // OCR表单提交
+    $('#musicalbum-ocr-form').on('submit', function(e) {
+      e.preventDefault();
+      saveViewing($(this));
+    });
+
+    // 搜索和过滤
+    $('#musicalbum-search-input, #musicalbum-filter-category, #musicalbum-sort-by').on('change input', function() {
+      loadListView();
+    });
+
+    // 初始加载列表视图
+    loadListView();
+  }
+
+  // 加载列表视图
+  function loadListView() {
+    var container = $('#musicalbum-list-container');
+    container.html('<div class="musicalbum-loading">加载中...</div>');
+
+    var params = {
+      search: $('#musicalbum-search-input').val(),
+      category: $('#musicalbum-filter-category').val(),
+      sort: $('#musicalbum-sort-by').val()
+    };
+
+    $.ajax({
+      url: MusicalbumIntegrations.rest.viewings,
+      method: 'GET',
+      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce },
+      data: params
+    }).done(function(data) {
+      if (data && data.length > 0) {
+        var html = '<div class="musicalbum-list-items">';
+        data.forEach(function(item) {
+          html += '<div class="musicalbum-list-item" data-id="' + item.id + '">';
+          html += '<div class="musicalbum-item-header">';
+          html += '<h4><a href="' + item.url + '" target="_blank">' + escapeHtml(item.title) + '</a></h4>';
+          html += '<div class="musicalbum-item-actions">';
+          html += '<button type="button" class="musicalbum-btn-icon musicalbum-btn-edit" data-id="' + item.id + '" title="编辑">✏️</button>';
+          html += '<button type="button" class="musicalbum-btn-icon musicalbum-btn-delete" data-id="' + item.id + '" title="删除">🗑️</button>';
+          html += '</div></div>';
+          html += '<div class="musicalbum-item-meta">';
+          if (item.category) html += '<span class="musicalbum-meta-tag">' + escapeHtml(item.category) + '</span>';
+          if (item.theater) html += '<span>剧院：' + escapeHtml(item.theater) + '</span>';
+          if (item.cast) html += '<span>卡司：' + escapeHtml(item.cast) + '</span>';
+          if (item.price) html += '<span>票价：' + escapeHtml(item.price) + '</span>';
+          if (item.view_date) html += '<span>日期：' + escapeHtml(item.view_date) + '</span>';
+          html += '</div>';
+          if (item.notes) {
+            html += '<div class="musicalbum-item-notes">' + escapeHtml(item.notes) + '</div>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+        container.html(html);
+
+        // 绑定编辑和删除按钮
+        $('.musicalbum-btn-edit').on('click', function() {
+          var id = $(this).data('id');
+          editViewing(id);
+        });
+        $('.musicalbum-btn-delete').on('click', function() {
+          var id = $(this).data('id');
+          if (confirm('确定要删除这条记录吗？')) {
+            deleteViewing(id);
+          }
+        });
+      } else {
+        container.html('<div class="musicalbum-empty">暂无记录</div>');
+      }
+    }).fail(function() {
+      container.html('<div class="musicalbum-error">加载失败，请稍后重试</div>');
+    });
+  }
+
+  // 初始化日历视图
+  function initCalendarView() {
+    var calendarEl = document.getElementById('musicalbum-calendar-container');
+    if (!calendarEl || typeof FullCalendar === 'undefined') {
+      $('#musicalbum-calendar-container').html('<div class="musicalbum-error">日历组件加载失败</div>');
+      return;
+    }
+
+    // 如果已经初始化，先销毁
+    if (window.musicalbumCalendar) {
+      window.musicalbumCalendar.destroy();
+    }
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      locale: 'zh-cn',
+      firstDay: 1, // 周一作为第一天
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,listWeek'
+      },
+      buttonText: {
+        today: '今天',
+        month: '月',
+        week: '周',
+        day: '日'
+      },
+      events: function(fetchInfo, successCallback, failureCallback) {
+        $.ajax({
+          url: MusicalbumIntegrations.rest.viewings,
+          method: 'GET',
+          headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+        }).done(function(data) {
+          var events = [];
+          if (data && data.length > 0) {
+            data.forEach(function(item) {
+              if (item.view_date) {
+                events.push({
+                  id: item.id,
+                  title: item.title,
+                  start: item.view_date,
+                  extendedProps: {
+                    category: item.category,
+                    theater: item.theater,
+                    cast: item.cast,
+                    price: item.price,
+                    url: item.url
+                  }
+                });
+              }
+            });
+          }
+          successCallback(events);
+        }).fail(function() {
+          failureCallback();
+        });
+      },
+      eventClick: function(info) {
+        var item = info.event.extendedProps;
+        showCalendarEventDetail(info.event.id, info.event.title, item);
+      }
+    });
+    calendar.render();
+    
+    // 保存日历实例以便刷新
+    window.musicalbumCalendar = calendar;
+  }
+
+  // 显示日历事件详情
+  function showCalendarEventDetail(id, title, props) {
+    var modal = $('#musicalbum-calendar-detail-modal');
+    if (modal.length === 0) {
+      modal = $('<div id="musicalbum-calendar-detail-modal" class="musicalbum-modal"><div class="musicalbum-modal-content"><span class="musicalbum-modal-close">&times;</span><div class="musicalbum-modal-body"></div></div></div>');
+      $('body').append(modal);
+      modal.find('.musicalbum-modal-close').on('click', function() {
+        modal.hide();
+      });
+      modal.on('click', function(e) {
+        if ($(e.target).is('#musicalbum-calendar-detail-modal')) {
+          modal.hide();
+        }
+      });
+    }
+    
+    var html = '<h3><a href="' + props.url + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
+    if (props.category) html += '<p><strong>类别：</strong>' + escapeHtml(props.category) + '</p>';
+    if (props.theater) html += '<p><strong>剧院：</strong>' + escapeHtml(props.theater) + '</p>';
+    if (props.cast) html += '<p><strong>卡司：</strong>' + escapeHtml(props.cast) + '</p>';
+    if (props.price) html += '<p><strong>票价：</strong>' + escapeHtml(props.price) + '</p>';
+    html += '<div class="musicalbum-calendar-actions" style="margin-top:1rem;">';
+    html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">编辑</button>';
+    html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">删除</button>';
+    html += '</div>';
+    
+    modal.find('.musicalbum-modal-body').html(html);
+    modal.show();
+    
+    // 绑定事件
+    modal.find('.musicalbum-btn-edit').on('click', function() {
+      modal.hide();
+      editViewing(id);
+    });
+    modal.find('.musicalbum-btn-delete').on('click', function() {
+      if (confirm('确定要删除这条记录吗？')) {
+        deleteViewing(id);
+        modal.hide();
+      }
+    });
+  }
+
+  // 保存观演记录
+  function saveViewing($form) {
+    var formData = {};
+    $form.find('input, select, textarea').each(function() {
+      var $el = $(this);
+      if ($el.attr('name') && $el.attr('name') !== 'id') {
+        formData[$el.attr('name')] = $el.val();
+      }
+    });
+
+    var id = $('#musicalbum-edit-id').val();
+    var url = MusicalbumIntegrations.rest.viewings;
+    var method = 'POST';
+
+    if (id) {
+      url += '/' + id;
+      method = 'PUT';
+    }
+
+    $.ajax({
+      url: url,
+      method: method,
+      headers: {
+        'X-WP-Nonce': MusicalbumIntegrations.rest.nonce,
+        'Content-Type': 'application/json'
+      },
+      data: JSON.stringify(formData)
+    }).done(function(res) {
+      alert(id ? '记录更新成功' : '记录创建成功');
+      $('#musicalbum-form-modal').hide();
+      resetForm();
+      loadListView();
+      if (window.musicalbumCalendar) {
+        window.musicalbumCalendar.refetchEvents();
+      }
+    }).fail(function(xhr) {
+      var msg = '保存失败';
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        msg = xhr.responseJSON.message;
+      }
+      alert(msg);
+    });
+  }
+
+  // 编辑观演记录
+  function editViewing(id) {
+    $.ajax({
+      url: MusicalbumIntegrations.rest.viewings,
+      method: 'GET',
+      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+    }).done(function(data) {
+      var item = data.find(function(i) { return i.id == id; });
+      if (item) {
+        $('#musicalbum-edit-id').val(item.id);
+        $('#musicalbum-form-title-input').val(item.title);
+        $('#musicalbum-form-category').val(item.category || '');
+        $('#musicalbum-form-theater').val(item.theater || '');
+        $('#musicalbum-form-cast').val(item.cast || '');
+        $('#musicalbum-form-price').val(item.price || '');
+        $('#musicalbum-form-date').val(item.view_date || '');
+        $('#musicalbum-form-notes').val(item.notes || '');
+        
+        $('#musicalbum-form-title').text('编辑观演记录');
+        $('.musicalbum-tab-btn[data-tab="manual"]').click();
+        $('#musicalbum-form-modal').show();
+      }
+    }).fail(function() {
+      alert('加载记录失败，请稍后重试');
+    });
+  }
+
+  // 删除观演记录
+  function deleteViewing(id) {
+    $.ajax({
+      url: MusicalbumIntegrations.rest.viewings + '/' + id,
+      method: 'DELETE',
+      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+    }).done(function() {
+      alert('记录删除成功');
+      loadListView();
+      if (window.musicalbumCalendar) {
+        window.musicalbumCalendar.refetchEvents();
+      }
+    }).fail(function() {
+      alert('删除失败，请稍后重试');
+    });
+  }
+
+  // 重置表单
+  function resetForm() {
+    $('#musicalbum-edit-id').val('');
+    $('#musicalbum-manual-form')[0].reset();
+    $('#musicalbum-ocr-form')[0].reset();
+    $('#musicalbum-ocr-form').hide();
+    $('#musicalbum-ocr-preview').empty();
+    $('.musicalbum-tab-btn[data-tab="manual"]').click();
+  }
+
+  // HTML转义
+  function escapeHtml(text) {
+    if (!text) return '';
+    var map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+  }
 })(jQuery);

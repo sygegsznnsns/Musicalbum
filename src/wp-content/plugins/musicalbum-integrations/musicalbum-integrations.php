@@ -37,12 +37,14 @@ final class Musicalbum_Integrations {
      * - [musicalbum_viewing_form]
      * - [musicalbum_profile_viewings]
      * - [musicalbum_statistics]
+     * - [musicalbum_viewing_manager]
      */
     public static function register_shortcodes() {
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_musicalbum_hello'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
+        add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
     }
 
     /**
@@ -57,17 +59,23 @@ final class Musicalbum_Integrations {
      * 脚本通过 wp_localize_script 注入 REST 端点与 nonce
      */
     public static function enqueue_assets() {
-        wp_register_style('musicalbum-integrations', plugins_url('assets/integrations.css', __FILE__), array(), '0.2.0');
+        wp_register_style('musicalbum-integrations', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
         wp_enqueue_style('musicalbum-integrations');
         // 引入 Chart.js 库
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
-        wp_register_script('musicalbum-integrations', plugins_url('assets/integrations.js', __FILE__), array('jquery', 'chart-js'), '0.2.0', true);
+        // 引入 FullCalendar 库（用于日历视图）
+        wp_enqueue_style('fullcalendar', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css', array(), '6.1.10');
+        wp_enqueue_script('fullcalendar', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js', array(), '6.1.10', true);
+        // 引入 FullCalendar 中文语言包
+        wp_enqueue_script('fullcalendar-locale', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/zh-cn.global.min.js', array('fullcalendar'), '6.1.10', true);
+        wp_register_script('musicalbum-integrations', plugins_url('assets/integrations.js', __FILE__), array('jquery', 'chart-js', 'fullcalendar'), '0.3.0', true);
         wp_localize_script('musicalbum-integrations', 'MusicalbumIntegrations', array(
             'rest' => array(
                 'ocr' => esc_url_raw(rest_url('musicalbum/v1/ocr')),
                 'statistics' => esc_url_raw(rest_url('musicalbum/v1/statistics')),
                 'statisticsDetails' => esc_url_raw(rest_url('musicalbum/v1/statistics/details')),
                 'statisticsExport' => esc_url_raw(rest_url('musicalbum/v1/statistics/export')),
+                'viewings' => esc_url_raw(rest_url('musicalbum/v1/viewings')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -257,6 +265,29 @@ final class Musicalbum_Integrations {
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics_export')
+        ));
+        // 观演记录管理 API
+        register_rest_route('musicalbum/v1', '/viewings', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_list')
+        ));
+        register_rest_route('musicalbum/v1', '/viewings', array(
+            'methods' => 'POST',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_create')
+        ));
+        register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
+            'methods' => 'PUT',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_update'),
+            'args' => array('id' => array('type' => 'integer'))
+        ));
+        register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
+            'methods' => 'DELETE',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_delete'),
+            'args' => array('id' => array('type' => 'integer'))
         ));
     }
 
@@ -839,6 +870,394 @@ final class Musicalbum_Integrations {
             echo json_encode($results, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             exit;
         }
+    }
+
+    /**
+     * 观演记录管理短码：提供完整的记录管理界面
+     * 使用 [musicalbum_viewing_manager] 在页面中插入
+     */
+    public static function shortcode_viewing_manager($atts = array(), $content = '') {
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-statistics-error">请先登录以管理观演记录</div>';
+        }
+        ob_start();
+        ?>
+        <div class="musicalbum-manager-container">
+            <div class="musicalbum-manager-header">
+                <h2 class="musicalbum-manager-title">观演记录管理</h2>
+                <div class="musicalbum-manager-actions">
+                    <button type="button" class="musicalbum-btn musicalbum-btn-primary" id="musicalbum-add-btn">
+                        <span>+</span> 新增记录
+                    </button>
+                    <div class="musicalbum-view-toggle">
+                        <button type="button" class="musicalbum-view-btn active" data-view="list">列表</button>
+                        <button type="button" class="musicalbum-view-btn" data-view="calendar">日历</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 录入表单模态框 -->
+            <div id="musicalbum-form-modal" class="musicalbum-modal">
+                <div class="musicalbum-modal-content musicalbum-form-modal-content">
+                    <span class="musicalbum-modal-close">&times;</span>
+                    <h3 class="musicalbum-modal-title" id="musicalbum-form-title">新增观演记录</h3>
+                    <div class="musicalbum-modal-body">
+                        <div class="musicalbum-form-tabs">
+                            <button type="button" class="musicalbum-tab-btn active" data-tab="manual">手动录入</button>
+                            <button type="button" class="musicalbum-tab-btn" data-tab="ocr">OCR识别</button>
+                        </div>
+                        
+                        <!-- 手动录入表单 -->
+                        <div id="musicalbum-tab-manual" class="musicalbum-tab-content active">
+                            <form id="musicalbum-manual-form" class="musicalbum-viewing-form">
+                                <input type="hidden" id="musicalbum-edit-id" name="id" value="">
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-title-input">标题 <span class="required">*</span></label>
+                                    <input type="text" id="musicalbum-form-title-input" name="title" required>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-category">剧目类别</label>
+                                    <select id="musicalbum-form-category" name="category">
+                                        <option value="">请选择</option>
+                                        <option value="音乐剧">音乐剧</option>
+                                        <option value="话剧">话剧</option>
+                                        <option value="歌剧">歌剧</option>
+                                        <option value="舞剧">舞剧</option>
+                                        <option value="音乐会">音乐会</option>
+                                        <option value="戏曲">戏曲</option>
+                                        <option value="其他">其他</option>
+                                    </select>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-theater">剧院</label>
+                                    <input type="text" id="musicalbum-form-theater" name="theater">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-cast">卡司</label>
+                                    <input type="text" id="musicalbum-form-cast" name="cast" placeholder="多个演员用逗号分隔">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-price">票价</label>
+                                    <input type="text" id="musicalbum-form-price" name="price" placeholder="例如：280 或 280元">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-date">观演日期</label>
+                                    <input type="date" id="musicalbum-form-date" name="view_date">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-notes">备注</label>
+                                    <textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>
+                                </div>
+                                <div class="musicalbum-form-actions">
+                                    <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-form-cancel">取消</button>
+                                    <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- OCR识别表单 -->
+                        <div id="musicalbum-tab-ocr" class="musicalbum-tab-content">
+                            <div class="musicalbum-ocr-upload">
+                                <input type="file" id="musicalbum-ocr-manager-file" accept="image/*">
+                                <button type="button" class="musicalbum-btn musicalbum-btn-primary" id="musicalbum-ocr-manager-button">识别票面</button>
+                                <div id="musicalbum-ocr-preview" class="musicalbum-ocr-preview"></div>
+                            </div>
+                            <form id="musicalbum-ocr-form" class="musicalbum-viewing-form" style="display:none;">
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-title">标题 <span class="required">*</span></label>
+                                    <input type="text" id="musicalbum-ocr-title" name="title" required>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-category">剧目类别</label>
+                                    <select id="musicalbum-ocr-category" name="category">
+                                        <option value="">请选择</option>
+                                        <option value="音乐剧">音乐剧</option>
+                                        <option value="话剧">话剧</option>
+                                        <option value="歌剧">歌剧</option>
+                                        <option value="舞剧">舞剧</option>
+                                        <option value="音乐会">音乐会</option>
+                                        <option value="戏曲">戏曲</option>
+                                        <option value="其他">其他</option>
+                                    </select>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-theater">剧院</label>
+                                    <input type="text" id="musicalbum-ocr-theater" name="theater">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-cast">卡司</label>
+                                    <input type="text" id="musicalbum-ocr-cast" name="cast">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-price">票价</label>
+                                    <input type="text" id="musicalbum-ocr-price" name="price">
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-date">观演日期</label>
+                                    <input type="date" id="musicalbum-ocr-date" name="view_date">
+                                </div>
+                                <div class="musicalbum-form-actions">
+                                    <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-ocr-cancel">取消</button>
+                                    <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 列表视图 -->
+            <div id="musicalbum-list-view" class="musicalbum-view-content active">
+                <div class="musicalbum-list-filters">
+                    <input type="text" id="musicalbum-search-input" placeholder="搜索标题、剧院、卡司...">
+                    <select id="musicalbum-filter-category">
+                        <option value="">所有类别</option>
+                        <option value="音乐剧">音乐剧</option>
+                        <option value="话剧">话剧</option>
+                        <option value="歌剧">歌剧</option>
+                        <option value="舞剧">舞剧</option>
+                        <option value="音乐会">音乐会</option>
+                        <option value="戏曲">戏曲</option>
+                        <option value="其他">其他</option>
+                    </select>
+                    <select id="musicalbum-sort-by">
+                        <option value="date_desc">日期（最新）</option>
+                        <option value="date_asc">日期（最早）</option>
+                        <option value="title_asc">标题（A-Z）</option>
+                        <option value="title_desc">标题（Z-A）</option>
+                    </select>
+                </div>
+                <div id="musicalbum-list-container" class="musicalbum-list-container">
+                    <div class="musicalbum-loading">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 日历视图 -->
+            <div id="musicalbum-calendar-view" class="musicalbum-view-content">
+                <div id="musicalbum-calendar-container"></div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * 获取观演记录列表 REST API
+     */
+    public static function rest_viewings_list($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $args = array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
+
+        // 如果不是管理员，只查询当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
+
+        // 搜索过滤
+        $search = $request->get_param('search');
+        if ($search) {
+            $args['s'] = $search;
+        }
+
+        // 类别过滤
+        $category = $request->get_param('category');
+        if ($category) {
+            $args['meta_query'] = array(
+                array(
+                    'key' => 'category',
+                    'value' => $category,
+                    'compare' => '='
+                )
+            );
+        }
+
+        // 排序
+        $sort = $request->get_param('sort');
+        if ($sort === 'date_asc') {
+            $args['order'] = 'ASC';
+        } elseif ($sort === 'title_asc') {
+            $args['orderby'] = 'title';
+            $args['order'] = 'ASC';
+        } elseif ($sort === 'title_desc') {
+            $args['orderby'] = 'title';
+            $args['order'] = 'DESC';
+        }
+
+        $query = new WP_Query($args);
+        $results = array();
+
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $results[] = array(
+                'id' => $post_id,
+                'title' => get_the_title(),
+                'category' => get_field('category', $post_id),
+                'theater' => get_field('theater', $post_id),
+                'cast' => get_field('cast', $post_id),
+                'price' => get_field('price', $post_id),
+                'view_date' => get_field('view_date', $post_id),
+                'notes' => get_field('notes', $post_id),
+                'ticket_image' => get_field('ticket_image', $post_id),
+                'url' => get_permalink($post_id),
+                'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
+            );
+        }
+        wp_reset_postdata();
+
+        return rest_ensure_response($results);
+    }
+
+    /**
+     * 创建观演记录 REST API
+     */
+    public static function rest_viewings_create($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $params = $request->get_json_params();
+        $title = isset($params['title']) ? sanitize_text_field($params['title']) : '';
+        
+        if (empty($title)) {
+            return new WP_Error('missing_title', '标题不能为空', array('status' => 400));
+        }
+
+        $post_id = wp_insert_post(array(
+            'post_type' => 'musicalbum_viewing',
+            'post_title' => $title,
+            'post_status' => 'publish',
+            'post_author' => $user_id
+        ));
+
+        if (is_wp_error($post_id)) {
+            return $post_id;
+        }
+
+        // 保存ACF字段
+        if (isset($params['category'])) {
+            update_field('category', sanitize_text_field($params['category']), $post_id);
+        }
+        if (isset($params['theater'])) {
+            update_field('theater', sanitize_text_field($params['theater']), $post_id);
+        }
+        if (isset($params['cast'])) {
+            update_field('cast', sanitize_text_field($params['cast']), $post_id);
+        }
+        if (isset($params['price'])) {
+            update_field('price', sanitize_text_field($params['price']), $post_id);
+        }
+        if (isset($params['view_date'])) {
+            update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
+        }
+        if (isset($params['notes'])) {
+            update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
+        }
+
+        return rest_ensure_response(array(
+            'id' => $post_id,
+            'message' => '记录创建成功'
+        ));
+    }
+
+    /**
+     * 更新观演记录 REST API
+     */
+    public static function rest_viewings_update($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $post_id = intval($request->get_param('id'));
+        $post = get_post($post_id);
+
+        if (!$post || $post->post_type !== 'musicalbum_viewing') {
+            return new WP_Error('not_found', '记录不存在', array('status' => 404));
+        }
+
+        // 检查权限：只能编辑自己的记录，除非是管理员
+        if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+            return new WP_Error('forbidden', '无权编辑此记录', array('status' => 403));
+        }
+
+        $params = $request->get_json_params();
+
+        // 更新标题
+        if (isset($params['title'])) {
+            wp_update_post(array(
+                'ID' => $post_id,
+                'post_title' => sanitize_text_field($params['title'])
+            ));
+        }
+
+        // 更新ACF字段
+        if (isset($params['category'])) {
+            update_field('category', sanitize_text_field($params['category']), $post_id);
+        }
+        if (isset($params['theater'])) {
+            update_field('theater', sanitize_text_field($params['theater']), $post_id);
+        }
+        if (isset($params['cast'])) {
+            update_field('cast', sanitize_text_field($params['cast']), $post_id);
+        }
+        if (isset($params['price'])) {
+            update_field('price', sanitize_text_field($params['price']), $post_id);
+        }
+        if (isset($params['view_date'])) {
+            update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
+        }
+        if (isset($params['notes'])) {
+            update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
+        }
+
+        return rest_ensure_response(array(
+            'id' => $post_id,
+            'message' => '记录更新成功'
+        ));
+    }
+
+    /**
+     * 删除观演记录 REST API
+     */
+    public static function rest_viewings_delete($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $post_id = intval($request->get_param('id'));
+        $post = get_post($post_id);
+
+        if (!$post || $post->post_type !== 'musicalbum_viewing') {
+            return new WP_Error('not_found', '记录不存在', array('status' => 404));
+        }
+
+        // 检查权限：只能删除自己的记录，除非是管理员
+        if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+            return new WP_Error('forbidden', '无权删除此记录', array('status' => 403));
+        }
+
+        $result = wp_delete_post($post_id, true);
+
+        if (!$result) {
+            return new WP_Error('delete_failed', '删除失败', array('status' => 500));
+        }
+
+        return rest_ensure_response(array(
+            'message' => '记录删除成功'
+        ));
     }
 }
 

@@ -356,3 +356,369 @@
     gap: 0.5rem;
   }
 }
+
+/* ==================== 观演记录管理模块样式 ==================== */
+
+.musicalbum-manager-container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+}
+
+.musicalbum-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.musicalbum-manager-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+}
+
+.musicalbum-manager-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.musicalbum-view-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.musicalbum-view-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.musicalbum-view-btn.active {
+  background: #fff;
+  color: #3b82f6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.musicalbum-view-content {
+  display: none;
+}
+
+.musicalbum-view-content.active {
+  display: block;
+}
+
+/* 表单样式 */
+.musicalbum-form-modal-content {
+  max-width: 600px;
+}
+
+.musicalbum-form-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.musicalbum-tab-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.musicalbum-tab-btn.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 600;
+}
+
+.musicalbum-tab-content {
+  display: none;
+}
+
+.musicalbum-tab-content.active {
+  display: block;
+}
+
+.musicalbum-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.musicalbum-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.musicalbum-form-group .required {
+  color: #dc2626;
+}
+
+.musicalbum-form-group input,
+.musicalbum-form-group select,
+.musicalbum-form-group textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+.musicalbum-form-group input:focus,
+.musicalbum-form-group select:focus,
+.musicalbum-form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.musicalbum-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.musicalbum-btn-cancel {
+  background: #6b7280;
+}
+
+.musicalbum-btn-cancel:hover {
+  background: #4b5563;
+}
+
+.musicalbum-btn-primary {
+  background: #3b82f6;
+}
+
+.musicalbum-btn-primary:hover {
+  background: #2563eb;
+}
+
+.musicalbum-btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* OCR上传区域 */
+.musicalbum-ocr-upload {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+  text-align: center;
+}
+
+.musicalbum-ocr-upload input[type="file"] {
+  margin-bottom: 1rem;
+}
+
+.musicalbum-ocr-preview {
+  margin-top: 1rem;
+}
+
+.musicalbum-ocr-preview img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+/* 列表视图 */
+.musicalbum-list-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.musicalbum-list-filters input,
+.musicalbum-list-filters select {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.musicalbum-list-filters input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.musicalbum-list-filters select {
+  min-width: 150px;
+}
+
+.musicalbum-list-container {
+  min-height: 400px;
+}
+
+.musicalbum-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.musicalbum-list-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.2s;
+}
+
+.musicalbum-list-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.musicalbum-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.musicalbum-item-header h4 {
+  margin: 0;
+  flex: 1;
+}
+
+.musicalbum-item-header h4 a {
+  color: #1f2937;
+  text-decoration: none;
+  font-size: 1.125rem;
+}
+
+.musicalbum-item-header h4 a:hover {
+  color: #3b82f6;
+}
+
+.musicalbum-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.musicalbum-btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.musicalbum-btn-icon:hover {
+  background: #f3f4f6;
+}
+
+.musicalbum-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.musicalbum-meta-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.musicalbum-item-notes {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.musicalbum-empty,
+.musicalbum-error {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.musicalbum-error {
+  color: #dc2626;
+}
+
+/* 日历视图 */
+#musicalbum-calendar-container {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.musicalbum-calendar-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .musicalbum-manager-container {
+    padding: 1rem;
+  }
+  
+  .musicalbum-manager-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .musicalbum-manager-actions {
+    flex-direction: column;
+  }
+  
+  .musicalbum-list-filters {
+    flex-direction: column;
+  }
+  
+  .musicalbum-list-filters input,
+  .musicalbum-list-filters select {
+    width: 100%;
+  }
+  
+  .musicalbum-item-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .musicalbum-item-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
