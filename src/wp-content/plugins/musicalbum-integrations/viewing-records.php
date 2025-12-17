@@ -3,7 +3,7 @@
 Plugin Name: Viewing Records
 Description: 观演记录管理插件，支持记录管理、数据统计和OCR识别功能。
 Version: 0.1.0
-Author: chen pan
+Author: chen ziang
 */
 
 defined('ABSPATH') || exit;
@@ -100,8 +100,10 @@ final class Viewing_Records {
 
     /**
      * 注册自定义文章类型：viewing_record（观演记录）
+     * 同时注册旧的 musicalbum_viewing 以保持向后兼容
      */
     public static function register_viewing_post_type() {
+        // 注册新的文章类型
         register_post_type('viewing_record', array(
             'labels' => array(
                 'name' => '观演记录',
@@ -112,6 +114,19 @@ final class Viewing_Records {
             'show_in_rest' => true,
             'supports' => array('title'),
             'menu_position' => 20
+        ));
+        
+        // 注册旧的文章类型以保持向后兼容（隐藏，不显示在菜单中）
+        register_post_type('musicalbum_viewing', array(
+            'labels' => array(
+                'name' => '观演记录（旧）',
+                'singular_name' => '观演记录（旧）'
+            ),
+            'public' => false,
+            'show_ui' => false,
+            'show_in_menu' => false,
+            'show_in_rest' => true,
+            'supports' => array('title')
         ));
     }
 
@@ -180,7 +195,7 @@ final class Viewing_Records {
                     'return_format' => 'H:i'
                 ),
                 array(
-                    'key' => 'field_malbum_time_end',
+                    'key' => 'field_viewing_time_end',
                     'label' => '观演结束时间',
                     'name' => 'view_time_end',
                     'type' => 'time_picker',
@@ -207,6 +222,13 @@ final class Viewing_Records {
                         'param' => 'post_type',
                         'operator' => '==',
                         'value' => 'viewing_record'
+                    )
+                ),
+                array(
+                    array(
+                        'param' => 'post_type',
+                        'operator' => '==',
+                        'value' => 'musicalbum_viewing'
                     )
                 )
             ),
@@ -241,7 +263,7 @@ final class Viewing_Records {
     public static function shortcode_profile_viewings($atts = array(), $content = '') {
         if (!is_user_logged_in()) { return ''; }
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => 20,
             'orderby' => 'date',
             'order' => 'DESC'
@@ -658,7 +680,7 @@ final class Viewing_Records {
      * iCalendar 导出接口：返回所有观演记录的日历条目
      */
     public static function rest_ics($request) {
-        $args = array('post_type' => 'viewing_record', 'posts_per_page' => -1, 'post_status' => 'publish');
+        $args = array('post_type' => array('viewing_record', 'musicalbum_viewing'), 'posts_per_page' => -1, 'post_status' => 'publish');
         $q = new WP_Query($args);
         $lines = array(
             'BEGIN:VCALENDAR',
@@ -747,7 +769,7 @@ final class Viewing_Records {
 
         // 查询观演记录：管理员查看所有，普通用户只看自己的
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => -1,
             'post_status' => 'publish'
         );
@@ -912,7 +934,7 @@ final class Viewing_Records {
         $per_page = absint($request->get_param('per_page')) ?: 20;
 
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => $per_page,
             'paged' => $page,
             'post_status' => 'publish',
@@ -1035,7 +1057,7 @@ final class Viewing_Records {
         $format = $request->get_param('format') ?: 'csv'; // csv, json
 
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => -1,
             'post_status' => 'publish',
             'orderby' => 'date',
@@ -1314,7 +1336,7 @@ final class Viewing_Records {
         }
 
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => -1,
             'post_status' => 'publish'
             // 不在这里使用orderby，因为要按view_date（观演日期）排序，而不是post_date（记录创建日期）
@@ -1459,7 +1481,7 @@ final class Viewing_Records {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'viewing_record') {
+        if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1558,7 +1580,7 @@ final class Viewing_Records {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'viewing_record') {
+        if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1621,7 +1643,7 @@ final class Viewing_Records {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'viewing_record') {
+        if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 

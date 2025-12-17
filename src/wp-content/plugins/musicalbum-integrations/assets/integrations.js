@@ -19,10 +19,15 @@
         try {
           if (window.acf && res) {
             if (res.title) $('input[name="post_title"]').val(res.title);
-            if (res.theater && acf.getField('field_malbum_theater')) acf.getField('field_malbum_theater').val(res.theater);
-            if (res.cast && acf.getField('field_malbum_cast')) acf.getField('field_malbum_cast').val(res.cast);
-            if (res.price && acf.getField('field_malbum_price')) acf.getField('field_malbum_price').val(res.price);
-            if (res.view_date && acf.getField('field_malbum_date')) acf.getField('field_malbum_date').val(res.view_date);
+            // 尝试新的字段key，如果不存在则尝试旧的（向后兼容）
+            var theaterField = acf.getField('field_viewing_theater') || acf.getField('field_malbum_theater');
+            if (res.theater && theaterField) theaterField.val(res.theater);
+            var castField = acf.getField('field_viewing_cast') || acf.getField('field_malbum_cast');
+            if (res.cast && castField) castField.val(res.cast);
+            var priceField = acf.getField('field_viewing_price') || acf.getField('field_malbum_price');
+            if (res.price && priceField) priceField.val(res.price);
+            var dateField = acf.getField('field_viewing_date') || acf.getField('field_malbum_date');
+            if (res.view_date && dateField) dateField.val(res.view_date);
           }
         } catch(e) {}
       });
