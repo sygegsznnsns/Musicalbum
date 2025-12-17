@@ -7,3 +7,84 @@
 .musicalbum-viewing-form { max-width: 720px; margin: 0 auto; }
 .musicalbum-ocr { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
 .musicalbum-viewings-list .item { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eee; }
+
+/* 统计数据图表样式 */
+.musicalbum-statistics-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+}
+
+.musicalbum-statistics-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: #1f2937;
+}
+
+.musicalbum-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.musicalbum-chart-wrapper {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s;
+}
+
+.musicalbum-chart-wrapper:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.musicalbum-chart-wrapper h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #374151;
+  text-align: center;
+}
+
+.musicalbum-chart-wrapper canvas {
+  max-height: 400px;
+}
+
+.musicalbum-statistics-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.musicalbum-statistics-error {
+  padding: 1.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .musicalbum-charts-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .musicalbum-statistics-container {
+    padding: 1rem;
+  }
+  
+  .musicalbum-chart-wrapper {
+    padding: 1rem;
+  }
+}

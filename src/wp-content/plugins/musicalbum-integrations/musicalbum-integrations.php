@@ -36,11 +36,13 @@ final class Musicalbum_Integrations {
      * - [musicalbum_hello]
      * - [musicalbum_viewing_form]
      * - [musicalbum_profile_viewings]
+     * - [musicalbum_statistics]
      */
     public static function register_shortcodes() {
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_musicalbum_hello'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
+        add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
     }
 
     /**
@@ -55,12 +57,15 @@ final class Musicalbum_Integrations {
      * 脚本通过 wp_localize_script 注入 REST 端点与 nonce
      */
     public static function enqueue_assets() {
-        wp_register_style('musicalbum-integrations', plugins_url('assets/integrations.css', __FILE__), array(), '0.1.0');
+        wp_register_style('musicalbum-integrations', plugins_url('assets/integrations.css', __FILE__), array(), '0.2.0');
         wp_enqueue_style('musicalbum-integrations');
-        wp_register_script('musicalbum-integrations', plugins_url('assets/integrations.js', __FILE__), array('jquery'), '0.1.1', true);
+        // 引入 Chart.js 库
+        wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
+        wp_register_script('musicalbum-integrations', plugins_url('assets/integrations.js', __FILE__), array('jquery', 'chart-js'), '0.2.0', true);
         wp_localize_script('musicalbum-integrations', 'MusicalbumIntegrations', array(
             'rest' => array(
                 'ocr' => esc_url_raw(rest_url('musicalbum/v1/ocr')),
+                'statistics' => esc_url_raw(rest_url('musicalbum/v1/statistics')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -199,7 +204,7 @@ final class Musicalbum_Integrations {
     }
 
     /**
-     * 注册 REST 路由：OCR 与 iCalendar 导出
+     * 注册 REST 路由：OCR、iCalendar 导出与统计数据
      */
     public static function register_rest_routes() {
         register_rest_route('musicalbum/v1', '/ocr', array(
@@ -211,6 +216,11 @@ final class Musicalbum_Integrations {
             'methods' => 'GET',
             'permission_callback' => '__return_true',
             'callback' => array(__CLASS__, 'rest_ics')
+        ));
+        register_rest_route('musicalbum/v1', '/statistics', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_statistics')
         ));
     }
 
@@ -387,6 +397,192 @@ final class Musicalbum_Integrations {
         $s = preg_replace('/([,;])/', '\\$1', $s);
         $s = preg_replace('/\r?\n/', '\\n', $s);
         return $s;
+    }
+
+    /**
+     * 统计数据短码：显示数据可视化图表
+     * 使用 [musicalbum_statistics] 在页面中插入
+     */
+    public static function shortcode_statistics($atts = array(), $content = '') {
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-statistics-error">请先登录以查看统计数据</div>';
+        }
+        ob_start();
+        ?>
+        <div class="musicalbum-statistics-container">
+            <h2 class="musicalbum-statistics-title">观演数据统计</h2>
+            <div class="musicalbum-charts-grid">
+                <div class="musicalbum-chart-wrapper">
+                    <h3>剧目类别分布</h3>
+                    <canvas id="musicalbum-chart-category"></canvas>
+                </div>
+                <div class="musicalbum-chart-wrapper">
+                    <h3>演员出场频率</h3>
+                    <canvas id="musicalbum-chart-cast"></canvas>
+                </div>
+                <div class="musicalbum-chart-wrapper">
+                    <h3>票价区间分布</h3>
+                    <canvas id="musicalbum-chart-price"></canvas>
+                </div>
+            </div>
+            <div class="musicalbum-statistics-loading" id="musicalbum-statistics-loading">正在加载数据...</div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * 统计数据 REST API 端点
+     * 返回当前用户的观演数据统计
+     */
+    public static function rest_statistics($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        // 查询当前用户的所有观演记录
+        $args = array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => -1,
+            'author' => $user_id,
+            'post_status' => 'publish'
+        );
+        $query = new WP_Query($args);
+
+        $category_data = array(); // 剧目类别分布
+        $cast_data = array(); // 演员出场频率
+        $price_data = array(); // 票价数据
+
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $title = get_the_title();
+            $cast = get_field('cast', $post_id);
+            $price = get_field('price', $post_id);
+
+            // 统计剧目类别（从标题中提取关键词）
+            $category = self::extract_category_from_title($title);
+            if ($category) {
+                $category_data[$category] = isset($category_data[$category]) ? $category_data[$category] + 1 : 1;
+            }
+
+            // 统计演员出场频率（从卡司字段中提取演员姓名）
+            if ($cast) {
+                $actors = self::extract_actors_from_cast($cast);
+                foreach ($actors as $actor) {
+                    $cast_data[$actor] = isset($cast_data[$actor]) ? $cast_data[$actor] + 1 : 1;
+                }
+            }
+
+            // 收集票价数据
+            if ($price) {
+                $price_num = floatval(preg_replace('/[^0-9.]/', '', $price));
+                if ($price_num > 0) {
+                    $price_data[] = $price_num;
+                }
+            }
+        }
+        wp_reset_postdata();
+
+        // 处理票价区间分布
+        $price_ranges = self::calculate_price_ranges($price_data);
+
+        // 对演员出场频率排序，取前10名
+        arsort($cast_data);
+        $cast_data = array_slice($cast_data, 0, 10, true);
+
+        return rest_ensure_response(array(
+            'category' => $category_data,
+            'cast' => $cast_data,
+            'price' => $price_ranges
+        ));
+    }
+
+    /**
+     * 从标题中提取剧目类别
+     * 根据常见剧目类型关键词进行分类
+     */
+    private static function extract_category_from_title($title) {
+        $categories = array(
+            '音乐剧' => array('音乐剧', 'Musical'),
+            '话剧' => array('话剧', '戏剧', 'Drama'),
+            '歌剧' => array('歌剧', 'Opera'),
+            '舞剧' => array('舞剧', '芭蕾', 'Ballet'),
+            '音乐会' => array('音乐会', 'Concert', '交响'),
+            '戏曲' => array('京剧', '昆曲', '越剧', '黄梅戏', '豫剧'),
+            '其他' => array()
+        );
+
+        foreach ($categories as $category => $keywords) {
+            if ($category === '其他') continue;
+            foreach ($keywords as $keyword) {
+                if (stripos($title, $keyword) !== false) {
+                    return $category;
+                }
+            }
+        }
+        return '其他';
+    }
+
+    /**
+     * 从卡司字段中提取演员姓名
+     * 支持多种分隔符：逗号、顿号、分号、换行等
+     */
+    private static function extract_actors_from_cast($cast) {
+        // 清理文本，移除常见前缀
+        $cast = preg_replace('/^(主演|卡司|演出人员|演员)[:：\s]*/u', '', $cast);
+        // 按多种分隔符分割
+        $actors = preg_split('/[,，;；、\n\r]+/u', $cast);
+        $result = array();
+        foreach ($actors as $actor) {
+            $actor = trim($actor);
+            // 过滤掉空值和过长的文本（可能是误识别）
+            if ($actor && mb_strlen($actor) <= 20) {
+                $result[] = $actor;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 计算票价区间分布
+     * 将票价分为多个区间并统计每个区间的数量
+     */
+    private static function calculate_price_ranges($prices) {
+        if (empty($prices)) {
+            return array();
+        }
+
+        sort($prices);
+        $min = floor(min($prices));
+        $max = ceil(max($prices));
+        
+        // 动态确定区间大小
+        $range_size = max(50, ceil(($max - $min) / 10));
+        
+        $ranges = array();
+        $current = $min;
+        
+        while ($current < $max) {
+            $next = $current + $range_size;
+            $label = $current . '-' . $next . '元';
+            $count = 0;
+            
+            foreach ($prices as $price) {
+                if ($price >= $current && $price < $next) {
+                    $count++;
+                }
+            }
+            
+            if ($count > 0) {
+                $ranges[$label] = $count;
+            }
+            
+            $current = $next;
+        }
+        
+        return $ranges;
     }
 }
 
