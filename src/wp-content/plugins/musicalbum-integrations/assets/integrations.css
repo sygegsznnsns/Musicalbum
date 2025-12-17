@@ -835,6 +835,29 @@
   min-height: 80px;
 }
 
+/* 月视图中事件样式优化 - 统一显示为彩色全天事件 */
+#musicalbum-calendar-container .fc-daygrid-event {
+  margin: 2px 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+#musicalbum-calendar-container .fc-daygrid-event:hover {
+  opacity: 0.8;
+}
+
+/* 确保事件文字清晰可见 */
+#musicalbum-calendar-container .fc-daygrid-event .fc-event-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 确保日历视图容器不溢出 */
 .musicalbum-view-content {
   width: 100%;

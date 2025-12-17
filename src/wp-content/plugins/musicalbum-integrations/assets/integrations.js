@@ -1056,11 +1056,51 @@
         }).done(function(data) {
           var events = [];
           if (data && data.length > 0) {
+            // 定义一组美观的彩色（基于类别或ID分配颜色，确保同一记录颜色一致）
+            var colors = [
+              '#3b82f6', // 蓝色
+              '#10b981', // 绿色
+              '#f59e0b', // 橙色
+              '#ef4444', // 红色
+              '#8b5cf6', // 紫色
+              '#ec4899', // 粉色
+              '#06b6d4', // 青色
+              '#84cc16', // 黄绿色
+              '#f97316', // 深橙色
+              '#6366f1', // 靛蓝色
+              '#14b8a6', // 青绿色
+              '#a855f7'  // 深紫色
+            ];
+            
+            // 根据类别映射颜色的函数（如果类别相同，颜色也相同）
+            var categoryColorMap = {};
+            var colorIndex = 0;
+            
+            function getColorForCategory(category) {
+              if (!category) {
+                return colors[0]; // 默认蓝色
+              }
+              if (!categoryColorMap[category]) {
+                categoryColorMap[category] = colors[colorIndex % colors.length];
+                colorIndex++;
+              }
+              return categoryColorMap[category];
+            }
+            
             data.forEach(function(item) {
               if (item.view_date) {
+                // 优先使用类别颜色，如果没有类别则使用ID分配颜色
+                var eventColor = item.category ? getColorForCategory(item.category) : colors[item.id % colors.length];
+                
+                // 统一设置为全天事件，不显示时段
                 var eventData = {
                   id: item.id,
-                  title: item.title,
+                  title: item.title, // 只显示标题，不包含时间信息
+                  start: item.view_date,
+                  allDay: true, // 统一设置为全天事件
+                  backgroundColor: eventColor,
+                  borderColor: eventColor,
+                  textColor: '#ffffff', // 白色文字
                   extendedProps: {
                     category: item.category,
                     theater: item.theater,
@@ -1071,31 +1111,6 @@
                     url: item.url
                   }
                 };
-                
-                // 如果有开始时间或结束时间，创建带时间的事件
-                if (item.view_time_start || item.view_time_end) {
-                  // 构建完整的日期时间字符串
-                  var startDateTime = item.view_date;
-                  if (item.view_time_start) {
-                    startDateTime += 'T' + item.view_time_start + ':00';
-                  } else {
-                    // 如果只有结束时间，使用00:00作为开始时间
-                    startDateTime += 'T00:00:00';
-                  }
-                  
-                  eventData.start = startDateTime;
-                  eventData.allDay = false; // 明确设置为非全天事件
-                  
-                  // 如果有结束时间，设置结束时间
-                  if (item.view_time_end) {
-                    var endDateTime = item.view_date + 'T' + item.view_time_end + ':00';
-                    eventData.end = endDateTime;
-                  }
-                } else {
-                  // 没有时间信息，创建全天事件
-                  eventData.start = item.view_date;
-                  eventData.allDay = true;
-                }
                 
                 events.push(eventData);
               }
