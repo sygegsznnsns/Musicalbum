@@ -843,18 +843,6 @@
   box-sizing: border-box;
 }
 
-/* 在周列表视图中，隐藏全天事件的"all-day"文本，保留有具体时间的事件的时间显示 */
-#musicalbum-calendar-container .fc-list-event.fc-event-all-day .fc-list-event-time {
-  display: none !important;
-}
-
-/* 确保周列表视图中的事件标题横向显示，防止竖着排 */
-#musicalbum-calendar-container .fc-list-event-title {
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 .musicalbum-calendar-actions {
   display: flex;
