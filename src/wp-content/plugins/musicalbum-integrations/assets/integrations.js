@@ -833,7 +833,11 @@
 
     // 创建快速导航容器（合并选择和输入功能）
     var navContainer = $('<div class="musicalbum-calendar-nav"></div>');
-    var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="选择或输入日期（YYYY-MM-DD）">');
+    // 设置合理的年份范围（1900-2100），避免默认限制
+    var currentYear = new Date().getFullYear();
+    var minDate = '1900-01-01';
+    var maxDate = '2100-12-31';
+    var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="选择或输入日期（YYYY-MM-DD）" min="' + minDate + '" max="' + maxDate + '">');
     
     navContainer.append($('<label class="musicalbum-calendar-nav-label">快速跳转：</label>'));
     navContainer.append(dateInput);
@@ -921,21 +925,6 @@
       }
     });
     
-    // 支持输入时实时验证和跳转（当输入完整日期时）
-    dateInput.on('input', function() {
-      var dateStr = $(this).val();
-      // 如果输入的是完整日期格式（YYYY-MM-DD），自动跳转
-      if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        // 延迟一下，确保值已更新
-        setTimeout(function() {
-          var val = dateInput.val();
-          if (val) {
-            calendar.gotoDate(val);
-          }
-        }, 100);
-      }
-    });
-    
     // 支持回车键跳转
     dateInput.on('keypress', function(e) {
       if (e.which === 13) { // Enter键
@@ -944,6 +933,39 @@
         if (dateStr) {
           calendar.gotoDate(dateStr);
         }
+      }
+    });
+    
+    // 处理输入过程中的年份输入问题
+    // 当用户正在输入时，暂时移除min/max限制，输入完成后再恢复
+    var originalMin = dateInput.attr('min');
+    var originalMax = dateInput.attr('max');
+    
+    dateInput.on('focus', function() {
+      // 聚焦时暂时移除限制，方便输入
+      $(this).removeAttr('min').removeAttr('max');
+    });
+    
+    dateInput.on('blur', function() {
+      // 失去焦点时恢复限制并验证
+      var dateStr = $(this).val();
+      if (dateStr) {
+        // 验证日期是否在合理范围内
+        var date = new Date(dateStr);
+        var year = date.getFullYear();
+        if (year >= 1900 && year <= 2100) {
+          // 日期有效，恢复限制
+          $(this).attr('min', originalMin).attr('max', originalMax);
+          calendar.gotoDate(dateStr);
+        } else {
+          // 日期超出范围，清空并提示
+          $(this).val('');
+          alert('请输入1900-2100年之间的日期');
+          $(this).attr('min', originalMin).attr('max', originalMax);
+        }
+      } else {
+        // 没有输入，恢复限制
+        $(this).attr('min', originalMin).attr('max', originalMax);
       }
     });
   }
