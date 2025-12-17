@@ -831,15 +831,12 @@
       window.musicalbumCalendar.destroy();
     }
 
-    // 创建快速导航容器（支持选择和输入）
+    // 创建快速导航容器（合并选择和输入功能）
     var navContainer = $('<div class="musicalbum-calendar-nav"></div>');
     var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="选择或输入日期（YYYY-MM-DD）">');
-    var dateInputText = $('<input type="text" class="musicalbum-calendar-date-text-input" placeholder="或直接输入日期（如：2025-12-17）">');
     
     navContainer.append($('<label class="musicalbum-calendar-nav-label">快速跳转：</label>'));
     navContainer.append(dateInput);
-    navContainer.append($('<span class="musicalbum-calendar-nav-divider">或</span>'));
-    navContainer.append(dateInputText);
     
     // 插入到日历容器前
     $(calendarEl).before(navContainer);
@@ -867,7 +864,6 @@
         var day = String(currentDate.getDate()).padStart(2, '0');
         var dateStr = year + '-' + month + '-' + day;
         dateInput.val(dateStr);
-        dateInputText.val(dateStr);
       },
       events: function(fetchInfo, successCallback, failureCallback) {
         $.ajax({
@@ -916,59 +912,38 @@
     var day = String(today.getDate()).padStart(2, '0');
     var todayStr = year + '-' + month + '-' + day;
     dateInput.val(todayStr);
-    dateInputText.val(todayStr);
     
-    // 日期选择器快速跳转（选择后自动跳转）
+    // 日期输入框快速跳转（支持选择和直接输入）
     dateInput.on('change', function() {
       var dateStr = $(this).val();
       if (dateStr) {
         calendar.gotoDate(dateStr);
-        // 同步到文本输入框
-        dateInputText.val(dateStr);
       }
     });
     
-    // 文本输入框快速跳转（支持直接输入）
-    dateInputText.on('change blur', function() {
-      var dateStr = $(this).val().trim();
-      if (dateStr) {
-        // 验证日期格式
-        var datePattern = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/;
-        var match = dateStr.match(datePattern);
-        if (match) {
-          var year = parseInt(match[1]);
-          var month = parseInt(match[2]);
-          var day = parseInt(match[3]);
-          
-          // 验证日期有效性
-          var date = new Date(year, month - 1, day);
-          if (date.getFullYear() === year && 
-              date.getMonth() === month - 1 && 
-              date.getDate() === day) {
-            // 格式化为标准格式
-            var formattedDate = year + '-' + 
-                               String(month).padStart(2, '0') + '-' + 
-                               String(day).padStart(2, '0');
-            calendar.gotoDate(formattedDate);
-            // 同步到日期选择器
-            dateInput.val(formattedDate);
-            dateInputText.val(formattedDate);
-          } else {
-            alert('无效的日期，请检查日期是否正确');
-            dateInputText.focus();
+    // 支持输入时实时验证和跳转（当输入完整日期时）
+    dateInput.on('input', function() {
+      var dateStr = $(this).val();
+      // 如果输入的是完整日期格式（YYYY-MM-DD），自动跳转
+      if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // 延迟一下，确保值已更新
+        setTimeout(function() {
+          var val = dateInput.val();
+          if (val) {
+            calendar.gotoDate(val);
           }
-        } else {
-          alert('日期格式不正确，请使用 YYYY-MM-DD 或 YYYY/MM/DD 格式（如：2025-12-17）');
-          dateInputText.focus();
-        }
+        }, 100);
       }
     });
     
     // 支持回车键跳转
-    dateInputText.on('keypress', function(e) {
+    dateInput.on('keypress', function(e) {
       if (e.which === 13) { // Enter键
         e.preventDefault();
-        $(this).trigger('change');
+        var dateStr = $(this).val();
+        if (dateStr) {
+          calendar.gotoDate(dateStr);
+        }
       }
     });
   }

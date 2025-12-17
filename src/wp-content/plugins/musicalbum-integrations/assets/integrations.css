@@ -699,7 +699,7 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
-  min-width: 180px;
+  min-width: 200px;
   transition: border-color 0.2s;
   background: #fff;
 }
@@ -714,36 +714,14 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.musicalbum-calendar-nav-divider {
-  font-size: 0.875rem;
-  color: #6b7280;
-  padding: 0 0.5rem;
+.musicalbum-calendar-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
 }
 
-.musicalbum-calendar-date-text-input {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  min-width: 200px;
-  transition: border-color 0.2s;
-  background: #fff;
-  font-family: monospace;
-}
-
-.musicalbum-calendar-date-text-input:hover {
-  border-color: #9ca3af;
-}
-
-.musicalbum-calendar-date-text-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.musicalbum-calendar-date-text-input::placeholder {
-  color: #9ca3af;
-  font-family: inherit;
+.musicalbum-calendar-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 @media (max-width: 768px) {
@@ -756,13 +734,8 @@
     margin-bottom: 0.25rem;
   }
   
-  .musicalbum-calendar-date-input,
-  .musicalbum-calendar-date-text-input {
+  .musicalbum-calendar-date-input {
     width: 100%;
-  }
-  
-  .musicalbum-calendar-nav-divider {
-    display: none;
   }
 }
 
