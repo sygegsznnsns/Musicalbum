@@ -1058,10 +1058,9 @@
           if (data && data.length > 0) {
             data.forEach(function(item) {
               if (item.view_date) {
-                events.push({
+                var eventData = {
                   id: item.id,
                   title: item.title,
-                  start: item.view_date,
                   extendedProps: {
                     category: item.category,
                     theater: item.theater,
@@ -1071,7 +1070,34 @@
                     view_time_end: item.view_time_end,
                     url: item.url
                   }
-                });
+                };
+                
+                // 如果有开始时间或结束时间，创建带时间的事件
+                if (item.view_time_start || item.view_time_end) {
+                  // 构建完整的日期时间字符串
+                  var startDateTime = item.view_date;
+                  if (item.view_time_start) {
+                    startDateTime += 'T' + item.view_time_start + ':00';
+                  } else {
+                    // 如果只有结束时间，使用00:00作为开始时间
+                    startDateTime += 'T00:00:00';
+                  }
+                  
+                  eventData.start = startDateTime;
+                  eventData.allDay = false; // 明确设置为非全天事件
+                  
+                  // 如果有结束时间，设置结束时间
+                  if (item.view_time_end) {
+                    var endDateTime = item.view_date + 'T' + item.view_time_end + ':00';
+                    eventData.end = endDateTime;
+                  }
+                } else {
+                  // 没有时间信息，创建全天事件
+                  eventData.start = item.view_date;
+                  eventData.allDay = true;
+                }
+                
+                events.push(eventData);
               }
             });
           }
@@ -1083,6 +1109,26 @@
       eventClick: function(info) {
         var item = info.event.extendedProps;
         showCalendarEventDetail(info.event.id, info.event.title, item);
+      },
+      eventContent: function(arg) {
+        // 在listWeek视图中，如果是全天事件，移除"all-day"文本
+        if (arg.view.type === 'listWeek' && arg.event.allDay) {
+          // 克隆默认内容
+          var content = document.createElement('div');
+          content.innerHTML = arg.defaultContent.innerHTML || arg.defaultContent;
+          
+          // 查找并移除"all-day"文本
+          var timeElement = content.querySelector('.fc-list-event-time');
+          if (timeElement) {
+            // 移除整个时间元素（因为全天事件不需要显示时间）
+            timeElement.remove();
+          }
+          
+          return { domNodes: [content] };
+        }
+        // 对于有具体时间的事件，显示时间信息
+        // 其他情况返回默认内容
+        return { domNodes: [arg.defaultContent] };
       }
     });
     calendar.render();
