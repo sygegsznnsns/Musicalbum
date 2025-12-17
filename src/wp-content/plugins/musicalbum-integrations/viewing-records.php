@@ -28,8 +28,197 @@ final class Viewing_Records {
         add_action('rest_api_init', array(__CLASS__, 'register_rest_routes'));
         add_action('acf/init', array(__CLASS__, 'register_acf_fields'));
         add_action('admin_menu', array(__CLASS__, 'add_admin_menu'));
+        
+        // 注册激活和停用钩子
+        register_activation_hook(__FILE__, array(__CLASS__, 'activate'));
+        
         // 示例：与第三方插件交互（替换为实际钩子）
         // add_filter('some_plugin_output', [__CLASS__, 'filter_some_plugin_output'], 10, 1);
+    }
+    
+    /**
+     * 插件激活时的处理
+     */
+    public static function activate() {
+        // 检查是否需要数据迁移
+        $migration_done = get_option('viewing_records_migration_done', false);
+        if (!$migration_done) {
+            // 在后台异步执行迁移，避免激活时超时
+            add_action('admin_init', array(__CLASS__, 'maybe_migrate_data'));
+        }
+    }
+    
+    /**
+     * 检查并执行数据迁移
+     */
+    public static function maybe_migrate_data() {
+        $migration_done = get_option('viewing_records_migration_done', false);
+        if ($migration_done) {
+            return;
+        }
+        
+        // 检查是否有旧数据需要迁移
+        $old_posts = get_posts(array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => 1,
+            'post_status' => 'any'
+        ));
+        
+        $has_old_options = get_option('musicalbum_baidu_api_key', false);
+        
+        if (!empty($old_posts) || $has_old_options) {
+            // 有旧数据，执行迁移
+            self::migrate_data();
+        } else {
+            // 没有旧数据，标记为已完成
+            update_option('viewing_records_migration_done', true);
+        }
+    }
+    
+    /**
+     * 执行数据迁移
+     */
+    public static function migrate_data() {
+        global $wpdb;
+        
+        // 1. 迁移自定义文章类型：musicalbum_viewing -> viewing_record
+        $posts_migrated = $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
+            'viewing_record',
+            'musicalbum_viewing'
+        ));
+        
+        // 2. 迁移选项名称
+        $options_to_migrate = array(
+            'musicalbum_ocr_provider' => 'viewing_ocr_provider',
+            'musicalbum_baidu_api_key' => 'viewing_baidu_api_key',
+            'musicalbum_baidu_secret_key' => 'viewing_baidu_secret_key',
+            'musicalbum_aliyun_api_key' => 'viewing_aliyun_api_key',
+            'musicalbum_aliyun_endpoint' => 'viewing_aliyun_endpoint',
+            'musicalbum_aliyun_mode' => 'viewing_aliyun_mode'
+        );
+        
+        $options_migrated = 0;
+        foreach ($options_to_migrate as $old_key => $new_key) {
+            $old_value = get_option($old_key, null);
+            if ($old_value !== null) {
+                // 如果新选项不存在，则迁移
+                if (get_option($new_key, null) === null) {
+                    update_option($new_key, $old_value);
+                    $options_migrated++;
+                }
+            }
+        }
+        
+        // 3. 迁移 ACF 字段组（如果存在）
+        // ACF 字段组存储在 wp_posts 表中，post_type = 'acf-field-group'
+        $field_groups = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->posts} WHERE post_type = %s AND post_excerpt LIKE %s",
+            'acf-field-group',
+            '%group_malbum_viewing%'
+        ));
+        
+        $field_groups_migrated = 0;
+        foreach ($field_groups as $group) {
+            $post_content = maybe_unserialize($group->post_content);
+            if (is_array($post_content) && isset($post_content['key']) && $post_content['key'] === 'group_malbum_viewing') {
+                // 更新字段组 key
+                $post_content['key'] = 'group_viewing_record';
+                
+                // 更新 location 规则
+                if (isset($post_content['location']) && is_array($post_content['location'])) {
+                    foreach ($post_content['location'] as &$location_group) {
+                        if (is_array($location_group)) {
+                            foreach ($location_group as &$rule) {
+                                if (isset($rule['param']) && $rule['param'] === 'post_type' && 
+                                    isset($rule['value']) && $rule['value'] === 'musicalbum_viewing') {
+                                    $rule['value'] = 'viewing_record';
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 更新字段的 key
+                if (isset($post_content['fields']) && is_array($post_content['fields'])) {
+                    foreach ($post_content['fields'] as &$field) {
+                        if (isset($field['key']) && strpos($field['key'], 'field_malbum_') === 0) {
+                            $field['key'] = str_replace('field_malbum_', 'field_viewing_', $field['key']);
+                        }
+                    }
+                }
+                
+                // 更新数据库
+                $wpdb->update(
+                    $wpdb->posts,
+                    array('post_content' => maybe_serialize($post_content)),
+                    array('ID' => $group->ID)
+                );
+                $field_groups_migrated++;
+            }
+        }
+        
+        // 4. 迁移 ACF 字段（如果存在）
+        $fields = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->posts} WHERE post_type = %s AND post_excerpt LIKE %s",
+            'acf-field',
+            '%field_malbum_%'
+        ));
+        
+        $fields_migrated = 0;
+        foreach ($fields as $field) {
+            $post_content = maybe_unserialize($field->post_content);
+            $post_excerpt = $field->post_excerpt;
+            
+            if (strpos($post_excerpt, 'field_malbum_') === 0) {
+                $new_excerpt = str_replace('field_malbum_', 'field_viewing_', $post_excerpt);
+                
+                // 更新字段 key
+                if (is_array($post_content) && isset($post_content['key'])) {
+                    $post_content['key'] = str_replace('field_malbum_', 'field_viewing_', $post_content['key']);
+                }
+                
+                // 更新父字段组引用
+                if (is_array($post_content) && isset($post_content['parent']) && 
+                    $post_content['parent'] === 'group_malbum_viewing') {
+                    $post_content['parent'] = 'group_viewing_record';
+                }
+                
+                // 更新数据库
+                $wpdb->update(
+                    $wpdb->posts,
+                    array(
+                        'post_excerpt' => $new_excerpt,
+                        'post_content' => maybe_serialize($post_content)
+                    ),
+                    array('ID' => $field->ID)
+                );
+                $fields_migrated++;
+            }
+        }
+        
+        // 5. 标记迁移完成
+        update_option('viewing_records_migration_done', true);
+        update_option('viewing_records_migration_stats', array(
+            'posts_migrated' => $posts_migrated,
+            'options_migrated' => $options_migrated,
+            'field_groups_migrated' => $field_groups_migrated,
+            'fields_migrated' => $fields_migrated,
+            'migration_date' => current_time('mysql')
+        ));
+        
+        // 显示迁移完成通知（如果是在后台）
+        if (is_admin()) {
+            add_action('admin_notices', function() use ($posts_migrated, $options_migrated, $field_groups_migrated, $fields_migrated) {
+                echo '<div class="notice notice-success is-dismissible"><p>';
+                echo '✓ 数据迁移完成！';
+                if ($posts_migrated > 0) echo " 迁移了 {$posts_migrated} 条观演记录。";
+                if ($options_migrated > 0) echo " 迁移了 {$options_migrated} 个配置选项。";
+                if ($field_groups_migrated > 0) echo " 迁移了 {$field_groups_migrated} 个字段组。";
+                if ($fields_migrated > 0) echo " 迁移了 {$fields_migrated} 个字段。";
+                echo '</p></div>';
+            });
+        }
     }
 
     /**
@@ -107,26 +296,45 @@ final class Viewing_Records {
         register_post_type('viewing_record', array(
             'labels' => array(
                 'name' => '观演记录',
-                'singular_name' => '观演记录'
+                'singular_name' => '观演记录',
+                'add_new' => '添加新记录',
+                'add_new_item' => '添加新观演记录',
+                'edit_item' => '编辑观演记录',
+                'new_item' => '新观演记录',
+                'view_item' => '查看观演记录',
+                'search_items' => '搜索观演记录',
+                'not_found' => '未找到观演记录',
+                'not_found_in_trash' => '回收站中未找到观演记录'
             ),
             'public' => true,
             'has_archive' => true,
             'show_in_rest' => true,
             'supports' => array('title'),
-            'menu_position' => 20
+            'menu_position' => 20,
+            'menu_icon' => 'dashicons-calendar-alt'
         ));
         
-        // 注册旧的文章类型以保持向后兼容（隐藏，不显示在菜单中）
+        // 注册旧的文章类型以保持向后兼容（显示在后台，合并到同一个菜单）
         register_post_type('musicalbum_viewing', array(
             'labels' => array(
-                'name' => '观演记录（旧）',
-                'singular_name' => '观演记录（旧）'
+                'name' => '观演记录（旧数据）',
+                'singular_name' => '观演记录（旧）',
+                'add_new' => '添加新记录',
+                'add_new_item' => '添加新观演记录',
+                'edit_item' => '编辑观演记录',
+                'new_item' => '新观演记录',
+                'view_item' => '查看观演记录',
+                'search_items' => '搜索观演记录',
+                'not_found' => '未找到观演记录',
+                'not_found_in_trash' => '回收站中未找到观演记录'
             ),
-            'public' => false,
-            'show_ui' => false,
-            'show_in_menu' => false,
+            'public' => true,
+            'has_archive' => false, // 旧类型不显示归档页面
+            'show_ui' => true,
+            'show_in_menu' => 'edit.php?post_type=viewing_record', // 合并到新类型的菜单下
             'show_in_rest' => true,
-            'supports' => array('title')
+            'supports' => array('title'),
+            'menu_icon' => 'dashicons-calendar-alt'
         ));
     }
 
@@ -1667,7 +1875,7 @@ final class Viewing_Records {
     }
 
     /**
-     * 添加管理菜单：OCR API配置
+     * 添加管理菜单：OCR API配置和数据迁移
      */
     public static function add_admin_menu() {
         add_submenu_page(
@@ -1678,6 +1886,219 @@ final class Viewing_Records {
             'viewing-ocr-config',
             array(__CLASS__, 'render_ocr_config_page')
         );
+        
+        add_submenu_page(
+            'options-general.php',
+            '数据迁移',
+            '观演记录 - 数据迁移',
+            'manage_options',
+            'viewing-data-migration',
+            array(__CLASS__, 'render_migration_page')
+        );
+    }
+    
+    /**
+     * 执行数据迁移
+     */
+    public static function migrate_data() {
+        global $wpdb;
+        
+        $results = array(
+            'posts_migrated' => 0,
+            'options_migrated' => 0,
+            'errors' => array()
+        );
+        
+        // 1. 迁移自定义文章类型：musicalbum_viewing -> viewing_record
+        $posts_migrated = $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
+            'viewing_record',
+            'musicalbum_viewing'
+        ));
+        
+        if ($posts_migrated === false) {
+            $results['errors'][] = '迁移文章类型时出错：' . $wpdb->last_error;
+        } else {
+            $results['posts_migrated'] = $posts_migrated;
+        }
+        
+        // 2. 迁移选项名称
+        $options_to_migrate = array(
+            'musicalbum_ocr_provider' => 'viewing_ocr_provider',
+            'musicalbum_baidu_api_key' => 'viewing_baidu_api_key',
+            'musicalbum_baidu_secret_key' => 'viewing_baidu_secret_key',
+            'musicalbum_aliyun_api_key' => 'viewing_aliyun_api_key',
+            'musicalbum_aliyun_endpoint' => 'viewing_aliyun_endpoint',
+            'musicalbum_aliyun_mode' => 'viewing_aliyun_mode'
+        );
+        
+        foreach ($options_to_migrate as $old_key => $new_key) {
+            $old_value = get_option($old_key, null);
+            if ($old_value !== null) {
+                // 如果新选项不存在，则迁移；如果存在但为空，也迁移
+                $new_value = get_option($new_key, null);
+                if ($new_value === null || $new_value === '') {
+                    update_option($new_key, $old_value);
+                    $results['options_migrated']++;
+                }
+            }
+        }
+        
+        // 3. 迁移 post_meta 中的 ACF 字段引用（如果有的话）
+        // 注意：ACF 字段通常通过字段名（name）存储，而不是 key，所以可能不需要迁移
+        
+        return $results;
+    }
+    
+    /**
+     * 渲染数据迁移页面
+     */
+    public static function render_migration_page() {
+        $migration_done = false;
+        $migration_results = null;
+        
+        // 处理迁移请求
+        if (isset($_POST['viewing_migrate_data']) && check_admin_referer('viewing_migrate_data')) {
+            $migration_results = self::migrate_data();
+            $migration_done = true;
+            update_option('viewing_records_migration_done', true);
+        }
+        
+        // 检查是否有旧数据
+        $old_posts_count = 0;
+        $old_posts = get_posts(array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => -1,
+            'post_status' => 'any'
+        ));
+        if ($old_posts) {
+            $old_posts_count = count($old_posts);
+        }
+        
+        $old_options = array();
+        $old_option_keys = array(
+            'musicalbum_ocr_provider',
+            'musicalbum_baidu_api_key',
+            'musicalbum_baidu_secret_key',
+            'musicalbum_aliyun_api_key',
+            'musicalbum_aliyun_endpoint',
+            'musicalbum_aliyun_mode'
+        );
+        foreach ($old_option_keys as $key) {
+            $value = get_option($key, null);
+            if ($value !== null) {
+                $old_options[$key] = $value;
+            }
+        }
+        
+        ?>
+        <div class="wrap">
+            <h1>数据迁移</h1>
+            
+            <?php if ($migration_done && $migration_results): ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><strong>✓ 数据迁移完成！</strong></p>
+                    <ul>
+                        <li>迁移了 <strong><?php echo esc_html($migration_results['posts_migrated']); ?></strong> 条观演记录</li>
+                        <li>迁移了 <strong><?php echo esc_html($migration_results['options_migrated']); ?></strong> 个配置选项</li>
+                    </ul>
+                    <?php if (!empty($migration_results['errors'])): ?>
+                        <p><strong>错误：</strong></p>
+                        <ul>
+                            <?php foreach ($migration_results['errors'] as $error): ?>
+                                <li><?php echo esc_html($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            
+            <div class="card">
+                <h2>迁移说明</h2>
+                <p>此工具将帮助您将旧的数据迁移到新的命名规范：</p>
+                <ul>
+                    <li><strong>自定义文章类型：</strong>将 <code>musicalbum_viewing</code> 迁移为 <code>viewing_record</code></li>
+                    <li><strong>配置选项：</strong>将 <code>musicalbum_*</code> 选项迁移为 <code>viewing_*</code> 选项</li>
+                </ul>
+                <p><strong>注意：</strong>迁移操作会直接修改数据库，建议在执行前备份数据库。</p>
+            </div>
+            
+            <div class="card">
+                <h2>待迁移数据统计</h2>
+                <table class="widefat">
+                    <thead>
+                        <tr>
+                            <th>数据类型</th>
+                            <th>数量</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>旧观演记录 (musicalbum_viewing)</td>
+                            <td><?php echo esc_html($old_posts_count); ?></td>
+                            <td><?php echo $old_posts_count > 0 ? '<span style="color:orange;">待迁移</span>' : '<span style="color:green;">无数据</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td>旧配置选项 (musicalbum_*)</td>
+                            <td><?php echo esc_html(count($old_options)); ?></td>
+                            <td><?php echo count($old_options) > 0 ? '<span style="color:orange;">待迁移</span>' : '<span style="color:green;">无数据</span>'; ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <?php if ($old_posts_count > 0 || count($old_options) > 0): ?>
+                <div class="card">
+                    <h2>执行迁移</h2>
+                    <p>检测到有待迁移的数据。点击下方按钮开始迁移：</p>
+                    <form method="post" action="">
+                        <?php wp_nonce_field('viewing_migrate_data'); ?>
+                        <p>
+                            <button type="submit" name="viewing_migrate_data" class="button button-primary" 
+                                    onclick="return confirm('确定要执行数据迁移吗？此操作将修改数据库，建议先备份。');">
+                                开始迁移数据
+                            </button>
+                        </p>
+                    </form>
+                </div>
+            <?php else: ?>
+                <div class="notice notice-info">
+                    <p>✓ 没有需要迁移的数据，所有数据已使用新的命名规范。</p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($old_options)): ?>
+                <div class="card">
+                    <h2>旧配置选项详情</h2>
+                    <table class="widefat">
+                        <thead>
+                            <tr>
+                                <th>选项名称</th>
+                                <th>值（部分显示）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($old_options as $key => $value): ?>
+                                <tr>
+                                    <td><code><?php echo esc_html($key); ?></code></td>
+                                    <td>
+                                        <?php 
+                                        if (is_string($value) && strlen($value) > 50) {
+                                            echo esc_html(substr($value, 0, 50)) . '...';
+                                        } else {
+                                            echo esc_html($value);
+                                        }
+                                        ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 
     /**
