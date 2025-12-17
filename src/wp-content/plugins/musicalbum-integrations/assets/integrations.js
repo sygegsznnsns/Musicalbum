@@ -1092,12 +1092,9 @@
                 // 优先使用类别颜色，如果没有类别则使用ID分配颜色
                 var eventColor = item.category ? getColorForCategory(item.category) : colors[item.id % colors.length];
                 
-                // 统一设置为全天事件，不显示时段
                 var eventData = {
                   id: item.id,
-                  title: item.title, // 只显示标题，不包含时间信息
-                  start: item.view_date,
-                  allDay: true, // 统一设置为全天事件
+                  title: item.title,
                   backgroundColor: eventColor,
                   borderColor: eventColor,
                   textColor: '#ffffff', // 白色文字
@@ -1112,6 +1109,30 @@
                   }
                 };
                 
+                // 如果有开始时间或结束时间，在周视图中显示具体时间
+                if (item.view_time_start || item.view_time_end) {
+                  // 构建完整的日期时间字符串
+                  var startDateTime = item.view_date;
+                  if (item.view_time_start) {
+                    startDateTime += 'T' + item.view_time_start + ':00';
+                  } else {
+                    startDateTime += 'T00:00:00';
+                  }
+                  
+                  eventData.start = startDateTime;
+                  eventData.allDay = false; // 在周视图中显示具体时间
+                  
+                  // 如果有结束时间，设置结束时间
+                  if (item.view_time_end) {
+                    var endDateTime = item.view_date + 'T' + item.view_time_end + ':00';
+                    eventData.end = endDateTime;
+                  }
+                } else {
+                  // 没有时间信息，创建全天事件
+                  eventData.start = item.view_date;
+                  eventData.allDay = true;
+                }
+                
                 events.push(eventData);
               }
             });
@@ -1124,6 +1145,21 @@
       eventClick: function(info) {
         var item = info.event.extendedProps;
         showCalendarEventDetail(info.event.id, info.event.title, item);
+      },
+      eventDidMount: function(arg) {
+        // 在月视图中，将所有事件统一显示为全天事件（不显示时段）
+        if (arg.view.type === 'dayGridMonth') {
+          // 强制设置为全天事件样式
+          if (!arg.event.allDay) {
+            // 如果原本不是全天事件，在月视图中也显示为全天样式
+            arg.el.classList.add('fc-event-all-day');
+            // 移除时间相关的显示
+            var timeEl = arg.el.querySelector('.fc-event-time');
+            if (timeEl) {
+              timeEl.style.display = 'none';
+            }
+          }
+        }
       }
     });
     calendar.render();
