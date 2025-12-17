@@ -107,6 +107,26 @@ final class Musicalbum_Integrations {
             'title' => '观演字段',
             'fields' => array(
                 array(
+                    'key' => 'field_malbum_category',
+                    'label' => '剧目类别',
+                    'name' => 'category',
+                    'type' => 'select',
+                    'choices' => array(
+                        '音乐剧' => '音乐剧',
+                        '话剧' => '话剧',
+                        '歌剧' => '歌剧',
+                        '舞剧' => '舞剧',
+                        '音乐会' => '音乐会',
+                        '戏曲' => '戏曲',
+                        '其他' => '其他'
+                    ),
+                    'default_value' => '',
+                    'allow_null' => 1,
+                    'multiple' => 0,
+                    'ui' => 1,
+                    'return_format' => 'value'
+                ),
+                array(
                     'key' => 'field_malbum_theater',
                     'label' => '剧院',
                     'name' => 'theater',
@@ -461,8 +481,11 @@ final class Musicalbum_Integrations {
             $cast = get_field('cast', $post_id);
             $price = get_field('price', $post_id);
 
-            // 统计剧目类别（从标题中提取关键词）
-            $category = self::extract_category_from_title($title);
+            // 统计剧目类别：优先使用category字段，如果没有则从标题中提取
+            $category = get_field('category', $post_id);
+            if (!$category || $category === '') {
+                $category = self::extract_category_from_title($title);
+            }
             if ($category) {
                 $category_data[$category] = isset($category_data[$category]) ? $category_data[$category] + 1 : 1;
             }
