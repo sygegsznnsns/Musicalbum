@@ -164,6 +164,22 @@ final class Musicalbum_Integrations {
                     'return_format' => 'Y-m-d'
                 ),
                 array(
+                    'key' => 'field_malbum_time_start',
+                    'label' => '观演开始时间',
+                    'name' => 'view_time_start',
+                    'type' => 'time_picker',
+                    'display_format' => 'H:i',
+                    'return_format' => 'H:i'
+                ),
+                array(
+                    'key' => 'field_malbum_time_end',
+                    'label' => '观演结束时间',
+                    'name' => 'view_time_end',
+                    'type' => 'time_picker',
+                    'display_format' => 'H:i',
+                    'return_format' => 'H:i'
+                ),
+                array(
                     'key' => 'field_malbum_ticket',
                     'label' => '票面图片',
                     'name' => 'ticket_image',
@@ -277,6 +293,12 @@ final class Musicalbum_Integrations {
             'methods' => 'POST',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_create')
+        ));
+        register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_get'),
+            'args' => array('id' => array('type' => 'integer'))
         ));
         register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
             'methods' => 'PUT',
@@ -1146,6 +1168,20 @@ final class Musicalbum_Integrations {
                                     </div>
                                 </div>
                                 <div class="musicalbum-form-group">
+                                    <label>观演时间</label>
+                                    <div style="display:flex;gap:1rem;align-items:flex-end;">
+                                        <div style="flex:1;">
+                                            <label for="musicalbum-form-time-start" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">开始时间</label>
+                                            <input type="time" id="musicalbum-form-time-start" name="view_time_start" placeholder="例如：19:30">
+                                        </div>
+                                        <div style="flex:1;">
+                                            <label for="musicalbum-form-time-end" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">结束时间</label>
+                                            <input type="time" id="musicalbum-form-time-end" name="view_time_end" placeholder="例如：22:00">
+                                        </div>
+                                    </div>
+                                    <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>
+                                </div>
+                                <div class="musicalbum-form-group">
                                     <label for="musicalbum-form-notes">备注</label>
                                     <textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>
                                 </div>
@@ -1200,6 +1236,20 @@ final class Musicalbum_Integrations {
                                         <input type="date" id="musicalbum-ocr-date-picker" class="musicalbum-calendar-date-picker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
                                         <button type="button" class="musicalbum-calendar-icon-btn" title="选择日期">📅</button>
                                     </div>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label>观演时间</label>
+                                    <div style="display:flex;gap:1rem;align-items:flex-end;">
+                                        <div style="flex:1;">
+                                            <label for="musicalbum-ocr-time-start" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">开始时间</label>
+                                            <input type="time" id="musicalbum-ocr-time-start" name="view_time_start" placeholder="例如：19:30">
+                                        </div>
+                                        <div style="flex:1;">
+                                            <label for="musicalbum-ocr-time-end" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">结束时间</label>
+                                            <input type="time" id="musicalbum-ocr-time-end" name="view_time_end" placeholder="例如：22:00">
+                                        </div>
+                                    </div>
+                                    <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>
                                 </div>
                                 <div class="musicalbum-form-actions">
                                     <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-ocr-cancel">取消</button>
@@ -1342,6 +1392,8 @@ final class Musicalbum_Integrations {
                 'cast' => $cast,
                 'price' => $price,
                 'view_date' => $view_date,
+                'view_time_start' => get_field('view_time_start', $post_id),
+                'view_time_end' => get_field('view_time_end', $post_id),
                 'notes' => $notes,
                 'ticket_image' => get_field('ticket_image', $post_id),
                 'url' => get_permalink($post_id),
@@ -1388,6 +1440,46 @@ final class Musicalbum_Integrations {
     }
 
     /**
+     * 获取单个观演记录 REST API
+     */
+    public static function rest_viewings_get($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $post_id = intval($request->get_param('id'));
+        $post = get_post($post_id);
+
+        if (!$post || $post->post_type !== 'musicalbum_viewing') {
+            return new WP_Error('not_found', '记录不存在', array('status' => 404));
+        }
+
+        // 检查权限：只能查看自己的记录，除非是管理员
+        if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+            return new WP_Error('forbidden', '无权查看此记录', array('status' => 403));
+        }
+
+        $result = array(
+            'id' => $post_id,
+            'title' => get_the_title($post_id),
+            'category' => get_field('category', $post_id),
+            'theater' => get_field('theater', $post_id),
+            'cast' => get_field('cast', $post_id),
+            'price' => get_field('price', $post_id),
+            'view_date' => get_field('view_date', $post_id),
+            'view_time_start' => get_field('view_time_start', $post_id),
+            'view_time_end' => get_field('view_time_end', $post_id),
+            'notes' => get_field('notes', $post_id),
+            'ticket_image' => get_field('ticket_image', $post_id),
+            'url' => get_permalink($post_id),
+            'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
+        );
+
+        return rest_ensure_response($result);
+    }
+
+    /**
      * 创建观演记录 REST API
      */
     public static function rest_viewings_create($request) {
@@ -1429,6 +1521,12 @@ final class Musicalbum_Integrations {
         }
         if (isset($params['view_date'])) {
             update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
+        }
+        if (isset($params['view_time_start'])) {
+            update_field('view_time_start', sanitize_text_field($params['view_time_start']), $post_id);
+        }
+        if (isset($params['view_time_end'])) {
+            update_field('view_time_end', sanitize_text_field($params['view_time_end']), $post_id);
         }
         if (isset($params['notes'])) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
@@ -1486,6 +1584,12 @@ final class Musicalbum_Integrations {
         }
         if (isset($params['view_date'])) {
             update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
+        }
+        if (isset($params['view_time_start'])) {
+            update_field('view_time_start', sanitize_text_field($params['view_time_start']), $post_id);
+        }
+        if (isset($params['view_time_end'])) {
+            update_field('view_time_end', sanitize_text_field($params['view_time_end']), $post_id);
         }
         if (isset($params['notes'])) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);

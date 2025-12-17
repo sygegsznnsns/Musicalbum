@@ -904,7 +904,23 @@
           if (item.theater) html += '<span>剧院：' + escapeHtml(item.theater) + '</span>';
           if (item.cast) html += '<span>卡司：' + escapeHtml(item.cast) + '</span>';
           if (item.price) html += '<span>票价：' + escapeHtml(item.price) + '</span>';
-          if (item.view_date) html += '<span>日期：' + escapeHtml(item.view_date) + '</span>';
+          if (item.view_date) {
+            var dateTimeStr = escapeHtml(item.view_date);
+            if (item.view_time_start || item.view_time_end) {
+              var timeStr = '';
+              if (item.view_time_start && item.view_time_end) {
+                timeStr = escapeHtml(item.view_time_start) + ' - ' + escapeHtml(item.view_time_end);
+              } else if (item.view_time_start) {
+                timeStr = escapeHtml(item.view_time_start) + ' 开始';
+              } else if (item.view_time_end) {
+                timeStr = escapeHtml(item.view_time_end) + ' 结束';
+              }
+              if (timeStr) {
+                dateTimeStr += ' ' + timeStr;
+              }
+            }
+            html += '<span>日期：' + dateTimeStr + '</span>';
+          }
           html += '</div>';
           if (item.notes) {
             html += '<div class="musicalbum-item-notes">' + escapeHtml(item.notes) + '</div>';
@@ -1003,6 +1019,8 @@
                     theater: item.theater,
                     cast: item.cast,
                     price: item.price,
+                    view_time_start: item.view_time_start,
+                    view_time_end: item.view_time_end,
                     url: item.url
                   }
                 });
@@ -1139,18 +1157,80 @@
       });
     }
     
-    var html = '<h3><a href="' + props.url + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
-    if (props.category) html += '<p><strong>类别：</strong>' + escapeHtml(props.category) + '</p>';
-    if (props.theater) html += '<p><strong>剧院：</strong>' + escapeHtml(props.theater) + '</p>';
-    if (props.cast) html += '<p><strong>卡司：</strong>' + escapeHtml(props.cast) + '</p>';
-    if (props.price) html += '<p><strong>票价：</strong>' + escapeHtml(props.price) + '</p>';
-    html += '<div class="musicalbum-calendar-actions" style="margin-top:1rem;">';
-    html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">编辑</button>';
-    html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">删除</button>';
-    html += '</div>';
-    
-    modal.find('.musicalbum-modal-body').html(html);
-    modal.show();
+    // 先获取完整记录信息（包含时间）
+    $.ajax({
+      url: MusicalbumIntegrations.rest.viewings + '/' + id,
+      method: 'GET',
+      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+    }).done(function(item) {
+      var html = '<h3><a href="' + (item.url || props.url) + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
+      if (item.category || props.category) html += '<p><strong>类别：</strong>' + escapeHtml(item.category || props.category) + '</p>';
+      if (item.theater || props.theater) html += '<p><strong>剧院：</strong>' + escapeHtml(item.theater || props.theater) + '</p>';
+      if (item.cast || props.cast) html += '<p><strong>卡司：</strong>' + escapeHtml(item.cast || props.cast) + '</p>';
+      if (item.price || props.price) html += '<p><strong>票价：</strong>' + escapeHtml(item.price || props.price) + '</p>';
+      if (item.view_date) {
+        var dateTimeStr = escapeHtml(item.view_date);
+        if (item.view_time_start || item.view_time_end) {
+          var timeStr = '';
+          if (item.view_time_start && item.view_time_end) {
+            timeStr = escapeHtml(item.view_time_start) + ' - ' + escapeHtml(item.view_time_end);
+          } else if (item.view_time_start) {
+            timeStr = escapeHtml(item.view_time_start) + ' 开始';
+          } else if (item.view_time_end) {
+            timeStr = escapeHtml(item.view_time_end) + ' 结束';
+          }
+          if (timeStr) {
+            dateTimeStr += ' ' + timeStr;
+          }
+        }
+        html += '<p><strong>观演时间：</strong>' + dateTimeStr + '</p>';
+      }
+      html += '<div class="musicalbum-calendar-actions" style="margin-top:1rem;">';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">编辑</button>';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">删除</button>';
+      html += '</div>';
+      
+      modal.find('.musicalbum-modal-body').html(html);
+      modal.show();
+      
+      // 绑定事件
+      modal.find('.musicalbum-btn-edit').on('click', function() {
+        modal.hide();
+        editViewing(id);
+      });
+      modal.find('.musicalbum-btn-delete').on('click', function() {
+        if (confirm('确定要删除这条记录吗？')) {
+          deleteViewing(id);
+          modal.hide();
+        }
+      });
+    }).fail(function() {
+      // 如果获取失败，使用props中的信息
+      var html = '<h3><a href="' + props.url + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
+      if (props.category) html += '<p><strong>类别：</strong>' + escapeHtml(props.category) + '</p>';
+      if (props.theater) html += '<p><strong>剧院：</strong>' + escapeHtml(props.theater) + '</p>';
+      if (props.cast) html += '<p><strong>卡司：</strong>' + escapeHtml(props.cast) + '</p>';
+      if (props.price) html += '<p><strong>票价：</strong>' + escapeHtml(props.price) + '</p>';
+      html += '<div class="musicalbum-calendar-actions" style="margin-top:1rem;">';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">编辑</button>';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">删除</button>';
+      html += '</div>';
+      
+      modal.find('.musicalbum-modal-body').html(html);
+      modal.show();
+      
+      // 绑定事件
+      modal.find('.musicalbum-btn-edit').on('click', function() {
+        modal.hide();
+        editViewing(id);
+      });
+      modal.find('.musicalbum-btn-delete').on('click', function() {
+        if (confirm('确定要删除这条记录吗？')) {
+          deleteViewing(id);
+          modal.hide();
+        }
+      });
+    });
     
     // 绑定事件
     modal.find('.musicalbum-btn-edit').on('click', function() {
@@ -1226,6 +1306,8 @@
         $('#musicalbum-form-price').val(item.price || '');
         $('#musicalbum-form-date').val(item.view_date || '');
         $('#musicalbum-form-date-picker').val(item.view_date || '');
+        $('#musicalbum-form-time-start').val(item.view_time_start || '');
+        $('#musicalbum-form-time-end').val(item.view_time_end || '');
         $('#musicalbum-form-notes').val(item.notes || '');
         
         $('#musicalbum-form-title').text('编辑观演记录');
@@ -1256,9 +1338,11 @@
 
   // 重置表单
   function resetForm() {
-    // 重置日期输入框
+    // 重置日期和时间输入框
     $('#musicalbum-form-date, #musicalbum-ocr-date').val('');
     $('#musicalbum-form-date-picker, #musicalbum-ocr-date-picker').val('');
+    $('#musicalbum-form-time-start, #musicalbum-ocr-time-start').val('');
+    $('#musicalbum-form-time-end, #musicalbum-ocr-time-end').val('');
     $('#musicalbum-edit-id').val('');
     $('#musicalbum-manual-form')[0].reset();
     $('#musicalbum-ocr-form')[0].reset();
