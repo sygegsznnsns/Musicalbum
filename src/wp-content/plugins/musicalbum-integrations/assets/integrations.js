@@ -831,27 +831,12 @@
       window.musicalbumCalendar.destroy();
     }
 
-    // 创建快速导航容器
+    // 创建快速导航容器（只保留日期输入框）
     var navContainer = $('<div class="musicalbum-calendar-nav"></div>');
-    var yearSelect = $('<select class="musicalbum-calendar-year-select"></select>');
-    var monthSelect = $('<select class="musicalbum-calendar-month-select"></select>');
-    var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="快速跳转">');
+    var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="快速跳转到日期">');
     var jumpBtn = $('<button type="button" class="musicalbum-calendar-jump-btn">跳转</button>');
     
-    // 填充年份选项（当前年份前后10年）
-    var currentYear = new Date().getFullYear();
-    for (var y = currentYear - 10; y <= currentYear + 10; y++) {
-      yearSelect.append($('<option value="' + y + '">' + y + '年</option>'));
-    }
-    
-    // 填充月份选项
-    var months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-    months.forEach(function(month, index) {
-      monthSelect.append($('<option value="' + (index + 1) + '">' + month + '</option>'));
-    });
-    
-    navContainer.append(yearSelect);
-    navContainer.append(monthSelect);
+    navContainer.append($('<label class="musicalbum-calendar-nav-label">快速跳转：</label>'));
     navContainer.append(dateInput);
     navContainer.append(jumpBtn);
     
@@ -874,13 +859,12 @@
         day: '日'
       },
       datesSet: function(dateInfo) {
-        // 当日历日期改变时，更新选择器的值
+        // 当日历日期改变时，更新日期输入框的值（显示当前月份的第一天）
         var currentDate = dateInfo.view.currentStart;
         var year = currentDate.getFullYear();
-        var month = currentDate.getMonth() + 1;
-        yearSelect.val(year);
-        monthSelect.val(month);
-        dateInput.val('');
+        var month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        var day = String(currentDate.getDate()).padStart(2, '0');
+        dateInput.val(year + '-' + month + '-' + day);
       },
       events: function(fetchInfo, successCallback, failureCallback) {
         $.ajax({
@@ -922,40 +906,39 @@
     // 保存日历实例以便刷新
     window.musicalbumCalendar = calendar;
     
-    // 设置初始值
+    // 设置初始值（当前日期）
     var today = new Date();
-    yearSelect.val(today.getFullYear());
-    monthSelect.val(today.getMonth() + 1);
+    var year = today.getFullYear();
+    var month = String(today.getMonth() + 1).padStart(2, '0');
+    var day = String(today.getDate()).padStart(2, '0');
+    dateInput.val(year + '-' + month + '-' + day);
     
-    // 年份/月份选择器改变事件
-    yearSelect.add(monthSelect).on('change', function() {
-      var year = parseInt(yearSelect.val());
-      var month = parseInt(monthSelect.val());
-      calendar.gotoDate(new Date(year, month - 1, 1));
-    });
-    
-    // 日期输入框快速跳转
+    // 日期输入框快速跳转（输入后自动跳转）
     dateInput.on('change', function() {
       var dateStr = $(this).val();
       if (dateStr) {
         calendar.gotoDate(dateStr);
-        // 更新年份和月份选择器
-        var date = new Date(dateStr);
-        yearSelect.val(date.getFullYear());
-        monthSelect.val(date.getMonth() + 1);
       }
     });
     
-    // 跳转按钮
+    // 跳转按钮（点击后跳转）
     jumpBtn.on('click', function() {
       var dateStr = dateInput.val();
       if (dateStr) {
         calendar.gotoDate(dateStr);
-        var date = new Date(dateStr);
-        yearSelect.val(date.getFullYear());
-        monthSelect.val(date.getMonth() + 1);
       } else {
         alert('请先选择日期');
+      }
+    });
+    
+    // 支持回车键跳转
+    dateInput.on('keypress', function(e) {
+      if (e.which === 13) { // Enter键
+        e.preventDefault();
+        var dateStr = $(this).val();
+        if (dateStr) {
+          calendar.gotoDate(dateStr);
+        }
       }
     });
   }
