@@ -1140,7 +1140,7 @@ final class Musicalbum_Integrations {
                                 <div class="musicalbum-form-group">
                                     <label for="musicalbum-form-date">观演日期</label>
                                     <div class="musicalbum-calendar-input-wrapper">
-                                        <input type="text" id="musicalbum-form-date" name="view_date" class="musicalbum-calendar-date-input" placeholder="输入日期（YYYY-MM-DD）或点击选择" autocomplete="off">
+                                        <input type="text" id="musicalbum-form-date" name="view_date" class="musicalbum-calendar-date-input" placeholder="YYYY-MM-DD或点击选择" autocomplete="off">
                                         <input type="date" id="musicalbum-form-date-picker" class="musicalbum-calendar-date-picker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
                                         <button type="button" class="musicalbum-calendar-icon-btn" title="选择日期">📅</button>
                                     </div>
