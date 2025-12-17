@@ -714,27 +714,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.musicalbum-calendar-jump-btn {
-  padding: 0.5rem 1.25rem;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-}
-
-.musicalbum-calendar-jump-btn:hover {
-  background: #2563eb;
-}
-
-.musicalbum-calendar-jump-btn:active {
-  background: #1d4ed8;
-}
-
 @media (max-width: 768px) {
   .musicalbum-calendar-nav {
     flex-direction: column;
@@ -745,8 +724,7 @@
     margin-bottom: 0.25rem;
   }
   
-  .musicalbum-calendar-date-input,
-  .musicalbum-calendar-jump-btn {
+  .musicalbum-calendar-date-input {
     width: 100%;
   }
 }

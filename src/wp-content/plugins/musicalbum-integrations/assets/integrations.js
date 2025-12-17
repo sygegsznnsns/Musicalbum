@@ -834,11 +834,9 @@
     // 创建快速导航容器（只保留日期输入框）
     var navContainer = $('<div class="musicalbum-calendar-nav"></div>');
     var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="快速跳转到日期">');
-    var jumpBtn = $('<button type="button" class="musicalbum-calendar-jump-btn">跳转</button>');
     
     navContainer.append($('<label class="musicalbum-calendar-nav-label">快速跳转：</label>'));
     navContainer.append(dateInput);
-    navContainer.append(jumpBtn);
     
     // 插入到日历容器前
     $(calendarEl).before(navContainer);
@@ -913,32 +911,11 @@
     var day = String(today.getDate()).padStart(2, '0');
     dateInput.val(year + '-' + month + '-' + day);
     
-    // 日期输入框快速跳转（输入后自动跳转）
+    // 日期输入框快速跳转（选择后自动跳转）
     dateInput.on('change', function() {
       var dateStr = $(this).val();
       if (dateStr) {
         calendar.gotoDate(dateStr);
-      }
-    });
-    
-    // 跳转按钮（点击后跳转）
-    jumpBtn.on('click', function() {
-      var dateStr = dateInput.val();
-      if (dateStr) {
-        calendar.gotoDate(dateStr);
-      } else {
-        alert('请先选择日期');
-      }
-    });
-    
-    // 支持回车键跳转
-    dateInput.on('keypress', function(e) {
-      if (e.which === 13) { // Enter键
-        e.preventDefault();
-        var dateStr = $(this).val();
-        if (dateStr) {
-          calendar.gotoDate(dateStr);
-        }
       }
     });
   }
