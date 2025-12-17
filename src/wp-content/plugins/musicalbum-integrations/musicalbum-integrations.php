@@ -309,10 +309,28 @@ final class Musicalbum_Integrations {
         $result = apply_filters('musicalbum_ocr_process', null, $data);
         if (!is_array($result)) {
             $provider = get_option('musicalbum_ocr_provider');
-            if ($provider === 'aliyun' || get_option('musicalbum_aliyun_api_key')) {
+            $baidu_api_key = get_option('musicalbum_baidu_api_key');
+            $baidu_secret_key = get_option('musicalbum_baidu_secret_key');
+            $aliyun_api_key = get_option('musicalbum_aliyun_api_key');
+            $aliyun_endpoint = get_option('musicalbum_aliyun_endpoint');
+            
+            // 检查API配置
+            $has_baidu = !empty($baidu_api_key) && !empty($baidu_secret_key);
+            $has_aliyun = !empty($aliyun_api_key) && !empty($aliyun_endpoint);
+            
+            if ($provider === 'aliyun' || ($has_aliyun && !$has_baidu)) {
                 $result = self::default_aliyun_ocr($data);
-            } else {
+                if (empty($result) && !$has_aliyun) {
+                    $result = array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
+                }
+            } else if ($has_baidu) {
                 $result = self::default_baidu_ocr($data);
+                if (empty($result) && !$has_baidu) {
+                    $result = array('_debug_message' => '百度OCR API未配置（需要API密钥和Secret密钥）');
+                }
+            } else {
+                // 没有任何OCR API配置
+                $result = array('_debug_message' => 'OCR API未配置。请配置百度OCR（API密钥和Secret密钥）或阿里云OCR（API密钥和端点）');
             }
         }
         
@@ -324,7 +342,7 @@ final class Musicalbum_Integrations {
                 'cast' => '',
                 'price' => '',
                 'view_date' => '',
-                '_debug_message' => 'OCR API未配置或返回空结果'
+                '_debug_message' => isset($result['_debug_message']) ? $result['_debug_message'] : 'OCR API返回空结果'
             );
         }
         
@@ -338,18 +356,26 @@ final class Musicalbum_Integrations {
     private static function default_baidu_ocr($bytes) {
         $api_key = get_option('musicalbum_baidu_api_key');
         $secret_key = get_option('musicalbum_baidu_secret_key');
-        if (!$api_key || !$secret_key) { return array(); }
+        if (!$api_key || !$secret_key) { 
+            return array('_debug_message' => '百度OCR API密钥未配置');
+        }
         $token = self::baidu_token($api_key, $secret_key);
-        if (!$token) { return array(); }
+        if (!$token) { 
+            return array('_debug_message' => '百度OCR获取访问令牌失败，请检查API密钥和Secret密钥是否正确');
+        }
         $url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=' . urlencode($token);
         $body = http_build_query(array('image' => base64_encode($bytes)));
         $resp = wp_remote_post($url, array('headers' => array('Content-Type' => 'application/x-www-form-urlencoded'), 'body' => $body, 'timeout' => 20));
-        if (is_wp_error($resp)) { return array(); }
+        if (is_wp_error($resp)) { 
+            return array('_debug_message' => '百度OCR API请求失败: ' . $resp->get_error_message());
+        }
         $json = json_decode(wp_remote_retrieve_body($resp), true);
         
         // 检查API返回是否有错误
         if (isset($json['error_code']) || isset($json['error_msg'])) {
-            return array(); // 返回空数组，前端会提示
+            $error_msg = isset($json['error_msg']) ? $json['error_msg'] : '未知错误';
+            $error_code = isset($json['error_code']) ? $json['error_code'] : '未知';
+            return array('_debug_message' => '百度OCR API错误: ' . $error_msg . ' (错误码: ' . $error_code . ')', '_debug_json' => $json);
         }
         
         $lines = array();
@@ -397,7 +423,9 @@ final class Musicalbum_Integrations {
         $api_key = get_option('musicalbum_aliyun_api_key');
         $endpoint = get_option('musicalbum_aliyun_endpoint');
         $mode = get_option('musicalbum_aliyun_mode');
-        if (!$api_key || !$endpoint) { return array(); }
+        if (!$api_key || !$endpoint) { 
+            return array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
+        }
         $headers = array('Authorization' => 'Bearer ' . $api_key);
         $resp = null;
         if ($mode === 'octet') {
@@ -408,7 +436,9 @@ final class Musicalbum_Integrations {
             $payload = json_encode(array('image' => base64_encode($bytes)));
             $resp = wp_remote_post($endpoint, array('headers' => $headers, 'body' => $payload, 'timeout' => 30));
         }
-        if (is_wp_error($resp)) { return array(); }
+        if (is_wp_error($resp)) { 
+            return array('_debug_message' => '阿里云OCR API请求失败: ' . $resp->get_error_message());
+        }
         $json = json_decode(wp_remote_retrieve_body($resp), true);
         $text = '';
         if (is_string($json)) { $text = $json; }

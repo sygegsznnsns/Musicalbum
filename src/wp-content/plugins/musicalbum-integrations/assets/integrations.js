@@ -654,7 +654,13 @@
           }
           
           if (res._debug_message) {
-            console.warn('OCR: 调试消息:', res._debug_message);
+            console.error('OCR: 错误信息:', res._debug_message);
+            // 显示详细的错误提示
+            var errorMsg = 'OCR识别失败\n\n' + res._debug_message;
+            if (res._debug_text) {
+              errorMsg += '\n\n识别到的原始文本：\n' + res._debug_text;
+            }
+            alert(errorMsg);
           }
           
           // 填充表单字段
