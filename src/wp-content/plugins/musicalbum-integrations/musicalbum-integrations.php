@@ -1260,12 +1260,6 @@ final class Musicalbum_Integrations {
             $args['author'] = $user_id;
         }
 
-        // 搜索过滤
-        $search = $request->get_param('search');
-        if ($search) {
-            $args['s'] = $search;
-        }
-
         // 类别过滤
         $category = $request->get_param('category');
         if ($category) {
@@ -1278,39 +1272,99 @@ final class Musicalbum_Integrations {
             );
         }
 
-        // 排序
-        $sort = $request->get_param('sort');
-        if ($sort === 'date_asc') {
-            $args['order'] = 'ASC';
-        } elseif ($sort === 'title_asc') {
-            $args['orderby'] = 'title';
-            $args['order'] = 'ASC';
-        } elseif ($sort === 'title_desc') {
-            $args['orderby'] = 'title';
-            $args['order'] = 'DESC';
-        }
-
+        // 先获取所有符合条件的记录（不考虑搜索）
         $query = new WP_Query($args);
         $results = array();
+        $search = $request->get_param('search');
+        $search_lower = $search ? mb_strtolower(trim($search), 'UTF-8') : '';
 
         while ($query->have_posts()) {
             $query->the_post();
             $post_id = get_the_ID();
+            
+            // 获取所有字段
+            $title = get_the_title();
+            $theater = get_field('theater', $post_id);
+            $cast = get_field('cast', $post_id);
+            $category_field = get_field('category', $post_id);
+            $price = get_field('price', $post_id);
+            $view_date = get_field('view_date', $post_id);
+            $notes = get_field('notes', $post_id);
+            
+            // 如果有搜索关键词，检查是否匹配
+            if ($search_lower) {
+                $matched = false;
+                
+                // 搜索标题
+                if (mb_stripos($title, $search_lower) !== false) {
+                    $matched = true;
+                }
+                
+                // 搜索剧院
+                if ($theater && mb_stripos(mb_strtolower($theater, 'UTF-8'), $search_lower) !== false) {
+                    $matched = true;
+                }
+                
+                // 搜索卡司
+                if ($cast && mb_stripos(mb_strtolower($cast, 'UTF-8'), $search_lower) !== false) {
+                    $matched = true;
+                }
+                
+                // 搜索类别
+                if ($category_field && mb_stripos(mb_strtolower($category_field, 'UTF-8'), $search_lower) !== false) {
+                    $matched = true;
+                }
+                
+                // 搜索备注
+                if ($notes && mb_stripos(mb_strtolower($notes, 'UTF-8'), $search_lower) !== false) {
+                    $matched = true;
+                }
+                
+                // 如果不匹配，跳过这条记录
+                if (!$matched) {
+                    continue;
+                }
+            }
+            
             $results[] = array(
                 'id' => $post_id,
-                'title' => get_the_title(),
-                'category' => get_field('category', $post_id),
-                'theater' => get_field('theater', $post_id),
-                'cast' => get_field('cast', $post_id),
-                'price' => get_field('price', $post_id),
-                'view_date' => get_field('view_date', $post_id),
-                'notes' => get_field('notes', $post_id),
+                'title' => $title,
+                'category' => $category_field,
+                'theater' => $theater,
+                'cast' => $cast,
+                'price' => $price,
+                'view_date' => $view_date,
+                'notes' => $notes,
                 'ticket_image' => get_field('ticket_image', $post_id),
                 'url' => get_permalink($post_id),
                 'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
             );
         }
         wp_reset_postdata();
+        
+        // 排序（在过滤后进行）
+        $sort = $request->get_param('sort');
+        if ($sort === 'date_asc') {
+            usort($results, function($a, $b) {
+                $date_a = $a['view_date'] ? strtotime($a['view_date']) : 0;
+                $date_b = $b['view_date'] ? strtotime($b['view_date']) : 0;
+                return $date_a - $date_b;
+            });
+        } elseif ($sort === 'date_desc') {
+            usort($results, function($a, $b) {
+                $date_a = $a['view_date'] ? strtotime($a['view_date']) : 0;
+                $date_b = $b['view_date'] ? strtotime($b['view_date']) : 0;
+                return $date_b - $date_a;
+            });
+        } elseif ($sort === 'title_asc') {
+            usort($results, function($a, $b) {
+                return strcmp($a['title'], $b['title']);
+            });
+        } elseif ($sort === 'title_desc') {
+            usort($results, function($a, $b) {
+                return strcmp($b['title'], $a['title']);
+            });
+        }
 
         return rest_ensure_response($results);
     }
