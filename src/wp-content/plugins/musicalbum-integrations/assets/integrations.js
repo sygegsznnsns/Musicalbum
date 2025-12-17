@@ -417,7 +417,16 @@
     var btn = $('#musicalbum-export-btn');
     if (btn.length === 0) return;
     
-    var menu = $('<div class="musicalbum-export-menu"><a href="#" data-format="csv">导出为 CSV</a><a href="#" data-format="json">导出为 JSON</a></div>');
+    var menu = $('<div class="musicalbum-export-menu">' +
+      '<div class="musicalbum-export-section"><strong>导出数据</strong></div>' +
+      '<a href="#" data-type="data" data-format="csv">导出为 CSV</a>' +
+      '<a href="#" data-type="data" data-format="json">导出为 JSON</a>' +
+      '<div class="musicalbum-export-section"><strong>导出图表</strong></div>' +
+      '<a href="#" data-type="chart" data-chart="category">导出类别分布图</a>' +
+      '<a href="#" data-type="chart" data-chart="cast">导出演员频率图</a>' +
+      '<a href="#" data-type="chart" data-chart="price">导出票价分布图</a>' +
+      '<a href="#" data-type="chart" data-chart="all">导出所有图表</a>' +
+      '</div>');
     
     var btnOffset = btn.offset();
     if (btnOffset) {
@@ -431,20 +440,30 @@
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         padding: '8px 0',
         zIndex: 10000,
-        minWidth: '150px'
+        minWidth: '180px'
       });
     }
     
     menu.find('a').on('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
+      var type = $(this).data('type');
       var format = $(this).data('format');
-      if (MusicalbumIntegrations && MusicalbumIntegrations.rest && MusicalbumIntegrations.rest.statisticsExport) {
-        var url = MusicalbumIntegrations.rest.statisticsExport + '?format=' + format + '&_wpnonce=' + MusicalbumIntegrations.rest.nonce;
-        window.location.href = url;
-      } else {
-        alert('导出功能暂时不可用，请刷新页面后重试');
+      var chart = $(this).data('chart');
+      
+      if (type === 'data') {
+        // 导出数据
+        if (MusicalbumIntegrations && MusicalbumIntegrations.rest && MusicalbumIntegrations.rest.statisticsExport) {
+          var url = MusicalbumIntegrations.rest.statisticsExport + '?format=' + format + '&_wpnonce=' + MusicalbumIntegrations.rest.nonce;
+          window.location.href = url;
+        } else {
+          alert('导出功能暂时不可用，请刷新页面后重试');
+        }
+      } else if (type === 'chart') {
+        // 导出图表
+        exportChart(chart);
       }
+      
       menu.remove();
     });
     
@@ -458,5 +477,64 @@
     }, 100);
     
     $('body').append(menu);
+  }
+
+  /**
+   * 导出图表为图片
+   */
+  function exportChart(chartType) {
+    if (!chartInstances || typeof Chart === 'undefined') {
+      alert('图表尚未加载完成，请稍后再试');
+      return;
+    }
+    
+    if (chartType === 'all') {
+      // 导出所有图表
+      var charts = ['category', 'cast', 'price'];
+      var chartNames = {
+        'category': '剧目类别分布',
+        'cast': '演员出场频率',
+        'price': '票价区间分布'
+      };
+      
+      charts.forEach(function(chartName, index) {
+        setTimeout(function() {
+          exportSingleChart(chartName, chartNames[chartName]);
+        }, index * 500); // 延迟导出，避免浏览器阻止多个下载
+      });
+    } else {
+      // 导出单个图表
+      var chartNames = {
+        'category': '剧目类别分布',
+        'cast': '演员出场频率',
+        'price': '票价区间分布'
+      };
+      exportSingleChart(chartType, chartNames[chartType] || chartType);
+    }
+  }
+
+  /**
+   * 导出单个图表
+   */
+  function exportSingleChart(chartType, chartName) {
+    var chart = chartInstances[chartType];
+    if (!chart) {
+      alert('图表 "' + chartName + '" 尚未加载');
+      return;
+    }
+    
+    try {
+      // 使用Chart.js的toBase64Image方法
+      var url = chart.toBase64Image('image/png', 1);
+      var link = document.createElement('a');
+      link.download = '观演统计_' + chartName + '_' + new Date().toISOString().slice(0, 10) + '.png';
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error('导出图表失败:', e);
+      alert('导出图表失败，请稍后重试');
+    }
   }
 })(jQuery);
