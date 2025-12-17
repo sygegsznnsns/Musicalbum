@@ -831,16 +831,15 @@
       window.musicalbumCalendar.destroy();
     }
 
-    // 创建快速导航容器（合并选择和输入功能）
+    // 创建快速导航容器（使用文本输入框避免浏览器限制）
     var navContainer = $('<div class="musicalbum-calendar-nav"></div>');
-    // 设置合理的年份范围（1900-2100），避免默认限制
-    var currentYear = new Date().getFullYear();
-    var minDate = '1900-01-01';
-    var maxDate = '2100-12-31';
-    var dateInput = $('<input type="date" class="musicalbum-calendar-date-input" placeholder="选择或输入日期（YYYY-MM-DD）" min="' + minDate + '" max="' + maxDate + '">');
+    // 使用text类型，避免type="date"的浏览器限制
+    var dateInput = $('<input type="text" class="musicalbum-calendar-date-input" placeholder="输入日期（YYYY-MM-DD）或点击选择" autocomplete="off">');
+    // 创建一个隐藏的date输入框用于日期选择器
+    var datePicker = $('<input type="date" class="musicalbum-calendar-date-picker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">');
     
     navContainer.append($('<label class="musicalbum-calendar-nav-label">快速跳转：</label>'));
-    navContainer.append(dateInput);
+    navContainer.append($('<div class="musicalbum-calendar-input-wrapper"></div>').append(dateInput).append(datePicker));
     
     // 插入到日历容器前
     $(calendarEl).before(navContainer);
@@ -868,6 +867,7 @@
         var day = String(currentDate.getDate()).padStart(2, '0');
         var dateStr = year + '-' + month + '-' + day;
         dateInput.val(dateStr);
+        datePicker.val(dateStr);
       },
       events: function(fetchInfo, successCallback, failureCallback) {
         $.ajax({
@@ -916,12 +916,54 @@
     var day = String(today.getDate()).padStart(2, '0');
     var todayStr = year + '-' + month + '-' + day;
     dateInput.val(todayStr);
+    datePicker.val(todayStr);
     
-    // 日期输入框快速跳转（支持选择和直接输入）
-    dateInput.on('change', function() {
+    // 验证和格式化日期
+    function validateAndFormatDate(dateStr) {
+      if (!dateStr) return null;
+      
+      // 支持多种格式：YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+      var datePattern = /^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})$/;
+      var match = dateStr.trim().match(datePattern);
+      
+      if (!match) {
+        return null;
+      }
+      
+      var year = parseInt(match[1]);
+      var month = parseInt(match[2]);
+      var day = parseInt(match[3]);
+      
+      // 验证日期有效性
+      if (year < 1900 || year > 2100) {
+        return null;
+      }
+      
+      var date = new Date(year, month - 1, day);
+      if (date.getFullYear() === year && 
+          date.getMonth() === month - 1 && 
+          date.getDate() === day) {
+        // 格式化为标准格式
+        return year + '-' + 
+               String(month).padStart(2, '0') + '-' + 
+               String(day).padStart(2, '0');
+      }
+      
+      return null;
+    }
+    
+    // 文本输入框：支持直接输入日期
+    dateInput.on('change blur', function() {
       var dateStr = $(this).val();
-      if (dateStr) {
-        calendar.gotoDate(dateStr);
+      var formattedDate = validateAndFormatDate(dateStr);
+      
+      if (formattedDate) {
+        $(this).val(formattedDate);
+        datePicker.val(formattedDate);
+        calendar.gotoDate(formattedDate);
+      } else if (dateStr) {
+        alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
+        $(this).focus();
       }
     });
     
@@ -929,45 +971,41 @@
     dateInput.on('keypress', function(e) {
       if (e.which === 13) { // Enter键
         e.preventDefault();
-        var dateStr = $(this).val();
-        if (dateStr) {
-          calendar.gotoDate(dateStr);
-        }
+        $(this).trigger('change');
       }
     });
     
-    // 处理输入过程中的年份输入问题
-    // 当用户正在输入时，暂时移除min/max限制，输入完成后再恢复
-    var originalMin = dateInput.attr('min');
-    var originalMax = dateInput.attr('max');
-    
-    dateInput.on('focus', function() {
-      // 聚焦时暂时移除限制，方便输入
-      $(this).removeAttr('min').removeAttr('max');
+    // 点击输入框右侧区域时，触发日期选择器
+    dateInput.on('click', function(e) {
+      // 如果点击的是输入框右侧区域，触发日期选择器
+      var input = this;
+      var clickX = e.pageX - $(input).offset().left;
+      var inputWidth = $(input).outerWidth();
+      
+      // 如果点击在右侧20%区域，触发日期选择器
+      if (clickX > inputWidth * 0.8) {
+        datePicker[0].showPicker();
+      }
     });
     
-    dateInput.on('blur', function() {
-      // 失去焦点时恢复限制并验证
+    // 日期选择器改变时，同步到文本输入框
+    datePicker.on('change', function() {
       var dateStr = $(this).val();
       if (dateStr) {
-        // 验证日期是否在合理范围内
-        var date = new Date(dateStr);
-        var year = date.getFullYear();
-        if (year >= 1900 && year <= 2100) {
-          // 日期有效，恢复限制
-          $(this).attr('min', originalMin).attr('max', originalMax);
-          calendar.gotoDate(dateStr);
-        } else {
-          // 日期超出范围，清空并提示
-          $(this).val('');
-          alert('请输入1900-2100年之间的日期');
-          $(this).attr('min', originalMin).attr('max', originalMax);
-        }
-      } else {
-        // 没有输入，恢复限制
-        $(this).attr('min', originalMin).attr('max', originalMax);
+        dateInput.val(dateStr);
+        calendar.gotoDate(dateStr);
       }
     });
+    
+    // 添加一个日历图标按钮
+    var calendarIcon = $('<button type="button" class="musicalbum-calendar-icon-btn" title="选择日期">📅</button>');
+    calendarIcon.on('click', function(e) {
+      e.preventDefault();
+      datePicker[0].showPicker();
+    });
+    
+    // 将图标按钮添加到输入框容器中
+    navContainer.find('.musicalbum-calendar-input-wrapper').append(calendarIcon);
   }
 
   // 显示日历事件详情
