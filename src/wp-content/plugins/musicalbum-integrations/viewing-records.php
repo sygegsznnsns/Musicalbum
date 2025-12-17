@@ -361,11 +361,12 @@ final class Viewing_Records {
         
         $result = apply_filters('viewing_ocr_process', null, $data);
         if (!is_array($result)) {
-            $provider = get_option('viewing_ocr_provider');
-            $baidu_api_key = get_option('viewing_baidu_api_key');
-            $baidu_secret_key = get_option('viewing_baidu_secret_key');
-            $aliyun_api_key = get_option('viewing_aliyun_api_key');
-            $aliyun_endpoint = get_option('viewing_aliyun_endpoint');
+            // 向后兼容：同时读取新旧选项名称
+            $provider = get_option('viewing_ocr_provider') ?: get_option('musicalbum_ocr_provider');
+            $baidu_api_key = get_option('viewing_baidu_api_key') ?: get_option('musicalbum_baidu_api_key');
+            $baidu_secret_key = get_option('viewing_baidu_secret_key') ?: get_option('musicalbum_baidu_secret_key');
+            $aliyun_api_key = get_option('viewing_aliyun_api_key') ?: get_option('musicalbum_aliyun_api_key');
+            $aliyun_endpoint = get_option('viewing_aliyun_endpoint') ?: get_option('musicalbum_aliyun_endpoint');
             
             // 检查API配置
             $has_baidu = !empty($baidu_api_key) && !empty($baidu_secret_key);
@@ -421,8 +422,9 @@ final class Viewing_Records {
      * 返回结构化字段（标题、剧院、卡司、票价、日期）
      */
     private static function default_baidu_ocr($bytes) {
-        $api_key = get_option('viewing_baidu_api_key');
-        $secret_key = get_option('viewing_baidu_secret_key');
+        // 向后兼容：同时读取新旧选项名称
+        $api_key = get_option('viewing_baidu_api_key') ?: get_option('musicalbum_baidu_api_key');
+        $secret_key = get_option('viewing_baidu_secret_key') ?: get_option('musicalbum_baidu_secret_key');
         if (!$api_key || !$secret_key) { 
             return array('_debug_message' => '百度OCR API密钥未配置');
         }
@@ -487,9 +489,10 @@ final class Viewing_Records {
      * 默认阿里云 OCR：根据模式发送二进制或 JSON
      */
     private static function default_aliyun_ocr($bytes) {
-        $api_key = get_option('viewing_aliyun_api_key');
-        $endpoint = get_option('viewing_aliyun_endpoint');
-        $mode = get_option('viewing_aliyun_mode');
+        // 向后兼容：同时读取新旧选项名称
+        $api_key = get_option('viewing_aliyun_api_key') ?: get_option('musicalbum_aliyun_api_key');
+        $endpoint = get_option('viewing_aliyun_endpoint') ?: get_option('musicalbum_aliyun_endpoint');
+        $mode = get_option('viewing_aliyun_mode') ?: get_option('musicalbum_aliyun_mode');
         if (!$api_key || !$endpoint) { 
             return array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
         }
@@ -1686,15 +1689,20 @@ final class Viewing_Records {
             $api_key = sanitize_text_field($_POST['baidu_api_key']);
             $secret_key = sanitize_text_field($_POST['baidu_secret_key']);
             
+            // 保存到新选项名称
             update_option('viewing_baidu_api_key', $api_key);
             update_option('viewing_baidu_secret_key', $secret_key);
+            
+            // 同时更新旧选项名称（向后兼容）
+            update_option('musicalbum_baidu_api_key', $api_key);
+            update_option('musicalbum_baidu_secret_key', $secret_key);
             
             echo '<div class="notice notice-success is-dismissible"><p>✓ OCR API配置已保存！</p></div>';
         }
         
-        // 获取当前配置
-        $current_api_key = get_option('viewing_baidu_api_key', '');
-        $current_secret_key = get_option('viewing_baidu_secret_key', '');
+        // 获取当前配置（向后兼容：优先读取新选项，如果不存在则读取旧选项）
+        $current_api_key = get_option('viewing_baidu_api_key', '') ?: get_option('musicalbum_baidu_api_key', '');
+        $current_secret_key = get_option('viewing_baidu_secret_key', '') ?: get_option('musicalbum_baidu_secret_key', '');
         
         ?>
         <div class="wrap">
