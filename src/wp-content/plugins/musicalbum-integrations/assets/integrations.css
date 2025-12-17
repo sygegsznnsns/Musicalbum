@@ -609,7 +609,7 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 1rem 1.25rem;
   transition: all 0.2s;
 }
 
@@ -618,31 +618,64 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.musicalbum-item-header {
+/* 主要信息区域（标题和类型） */
+.musicalbum-item-main {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+  align-items: center;
+  gap: 1rem;
 }
 
-.musicalbum-item-header h4 {
+.musicalbum-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.musicalbum-item-title-row h4 {
   margin: 0;
   flex: 1;
 }
 
-.musicalbum-item-header h4 a {
+.musicalbum-item-title-row h4 a {
   color: #1f2937;
   text-decoration: none;
   font-size: 1.125rem;
+  font-weight: 600;
 }
 
-.musicalbum-item-header h4 a:hover {
+.musicalbum-item-title-row h4 a:hover {
   color: #3b82f6;
+}
+
+/* 详细信息区域（可展开） */
+.musicalbum-item-details {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
 }
 
 .musicalbum-item-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.musicalbum-btn-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6b7280;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.musicalbum-btn-toggle:hover {
+  color: #3b82f6;
 }
 
 .musicalbum-btn-icon {

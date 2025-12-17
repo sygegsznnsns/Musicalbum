@@ -941,17 +941,34 @@
         var html = '<div class="musicalbum-list-items">';
         data.forEach(function(item) {
           html += '<div class="musicalbum-list-item" data-id="' + item.id + '">';
-          html += '<div class="musicalbum-item-header">';
+          
+          // 主要信息区域（默认显示：标题和类型）
+          html += '<div class="musicalbum-item-main">';
+          html += '<div class="musicalbum-item-title-row">';
           html += '<h4><a href="' + item.url + '" target="_blank">' + escapeHtml(item.title) + '</a></h4>';
+          if (item.category) {
+            html += '<span class="musicalbum-meta-tag">' + escapeHtml(item.category) + '</span>';
+          }
+          html += '</div>';
           html += '<div class="musicalbum-item-actions">';
           html += '<button type="button" class="musicalbum-btn-icon musicalbum-btn-edit" data-id="' + item.id + '" title="编辑">✏️</button>';
           html += '<button type="button" class="musicalbum-btn-icon musicalbum-btn-delete" data-id="' + item.id + '" title="删除">🗑️</button>';
-          html += '</div></div>';
+          html += '<button type="button" class="musicalbum-btn-toggle" data-id="' + item.id + '" title="展开详情">▼</button>';
+          html += '</div>';
+          html += '</div>';
+          
+          // 详细信息区域（默认隐藏，可展开）
+          html += '<div class="musicalbum-item-details" id="details-' + item.id + '" style="display:none;">';
           html += '<div class="musicalbum-item-meta">';
-          if (item.category) html += '<span class="musicalbum-meta-tag">' + escapeHtml(item.category) + '</span>';
-          if (item.theater) html += '<span>剧院：' + escapeHtml(item.theater) + '</span>';
-          if (item.cast) html += '<span>卡司：' + escapeHtml(item.cast) + '</span>';
-          if (item.price) html += '<span>票价：' + escapeHtml(item.price) + '</span>';
+          if (item.theater) {
+            html += '<span>剧院：' + escapeHtml(item.theater) + '</span>';
+          }
+          if (item.cast) {
+            html += '<span>卡司：' + escapeHtml(item.cast) + '</span>';
+          }
+          if (item.price) {
+            html += '<span>票价：' + escapeHtml(item.price) + '</span>';
+          }
           if (item.view_date) {
             var dateTimeStr = escapeHtml(item.view_date);
             if (item.view_time_start || item.view_time_end) {
@@ -974,6 +991,8 @@
             html += '<div class="musicalbum-item-notes">' + escapeHtml(item.notes) + '</div>';
           }
           html += '</div>';
+          
+          html += '</div>';
         });
         html += '</div>';
         container.html(html);
@@ -987,6 +1006,36 @@
           var id = $(this).data('id');
           if (confirm('确定要删除这条记录吗？')) {
             deleteViewing(id);
+          }
+        });
+        
+        // 绑定展开/收起按钮
+        $('.musicalbum-btn-toggle').on('click', function() {
+          var id = $(this).data('id');
+          var $details = $('#details-' + id);
+          var $btn = $(this);
+          
+          if ($details.is(':visible')) {
+            $details.slideUp(200);
+            $btn.html('▼').attr('title', '展开详情');
+          } else {
+            $details.slideDown(200);
+            $btn.html('▲').attr('title', '收起详情');
+          }
+        });
+        
+        // 绑定展开/收起按钮
+        $('.musicalbum-btn-toggle').on('click', function() {
+          var id = $(this).data('id');
+          var $details = $('#details-' + id);
+          var $btn = $(this);
+          
+          if ($details.is(':visible')) {
+            $details.slideUp(200);
+            $btn.html('▼').attr('title', '展开详情');
+          } else {
+            $details.slideDown(200);
+            $btn.html('▲').attr('title', '收起详情');
           }
         });
       } else {
