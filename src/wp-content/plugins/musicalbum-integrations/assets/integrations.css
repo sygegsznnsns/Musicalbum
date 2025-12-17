@@ -414,6 +414,10 @@
 
 .musicalbum-view-content {
   display: none;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .musicalbum-view-content.active {
@@ -763,6 +767,58 @@
   padding: 1.5rem;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+/* FullCalendar 样式调整 - 确保日历适应容器 */
+#musicalbum-calendar-container .fc {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#musicalbum-calendar-container .fc-view-harness {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#musicalbum-calendar-container .fc-scroller {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+#musicalbum-calendar-container .fc-daygrid-body {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#musicalbum-calendar-container .fc-col-header {
+  width: 100% !important;
+}
+
+#musicalbum-calendar-container .fc-col-header-cell {
+  min-width: 0 !important;
+  flex: 1 1 0% !important;
+  padding: 0.5rem 0.25rem !important;
+}
+
+#musicalbum-calendar-container .fc-daygrid-day {
+  min-width: 0 !important;
+  flex: 1 1 0% !important;
+}
+
+#musicalbum-calendar-container .fc-daygrid-day-frame {
+  min-height: 80px;
+}
+
+/* 确保日历视图容器不溢出 */
+.musicalbum-view-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .musicalbum-calendar-actions {
