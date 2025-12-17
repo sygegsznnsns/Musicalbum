@@ -1009,8 +1009,11 @@
           }
         });
         
-        // 绑定展开/收起按钮
-        $('.musicalbum-btn-toggle').on('click', function() {
+        // 绑定展开/收起按钮（使用off先移除可能存在的旧绑定，避免重复绑定）
+        $('.musicalbum-btn-toggle').off('click').on('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
           var id = $(this).data('id');
           var $details = $('#details-' + id);
           var $btn = $(this);
@@ -1022,21 +1025,8 @@
             $details.slideDown(200);
             $btn.html('▲').attr('title', '收起详情');
           }
-        });
-        
-        // 绑定展开/收起按钮
-        $('.musicalbum-btn-toggle').on('click', function() {
-          var id = $(this).data('id');
-          var $details = $('#details-' + id);
-          var $btn = $(this);
           
-          if ($details.is(':visible')) {
-            $details.slideUp(200);
-            $btn.html('▼').attr('title', '展开详情');
-          } else {
-            $details.slideDown(200);
-            $btn.html('▲').attr('title', '收起详情');
-          }
+          return false;
         });
       } else {
         container.html('<div class="musicalbum-empty">暂无记录</div>');
