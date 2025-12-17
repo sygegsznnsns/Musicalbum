@@ -67,159 +67,14 @@ final class Viewing_Records {
         $has_old_options = get_option('musicalbum_baidu_api_key', false);
         
         if (!empty($old_posts) || $has_old_options) {
-            // 有旧数据，执行迁移
-            self::migrate_data();
+            // 有旧数据，执行迁移（使用简化版本，不返回结果）
+            self::migrate_data_simple();
         } else {
             // 没有旧数据，标记为已完成
             update_option('viewing_records_migration_done', true);
         }
     }
     
-    /**
-     * 执行数据迁移
-     */
-    public static function migrate_data() {
-        global $wpdb;
-        
-        // 1. 迁移自定义文章类型：musicalbum_viewing -> viewing_record
-        $posts_migrated = $wpdb->query($wpdb->prepare(
-            "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
-            'viewing_record',
-            'musicalbum_viewing'
-        ));
-        
-        // 2. 迁移选项名称
-        $options_to_migrate = array(
-            'musicalbum_ocr_provider' => 'viewing_ocr_provider',
-            'musicalbum_baidu_api_key' => 'viewing_baidu_api_key',
-            'musicalbum_baidu_secret_key' => 'viewing_baidu_secret_key',
-            'musicalbum_aliyun_api_key' => 'viewing_aliyun_api_key',
-            'musicalbum_aliyun_endpoint' => 'viewing_aliyun_endpoint',
-            'musicalbum_aliyun_mode' => 'viewing_aliyun_mode'
-        );
-        
-        $options_migrated = 0;
-        foreach ($options_to_migrate as $old_key => $new_key) {
-            $old_value = get_option($old_key, null);
-            if ($old_value !== null) {
-                // 如果新选项不存在，则迁移
-                if (get_option($new_key, null) === null) {
-                    update_option($new_key, $old_value);
-                    $options_migrated++;
-                }
-            }
-        }
-        
-        // 3. 迁移 ACF 字段组（如果存在）
-        // ACF 字段组存储在 wp_posts 表中，post_type = 'acf-field-group'
-        $field_groups = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$wpdb->posts} WHERE post_type = %s AND post_excerpt LIKE %s",
-            'acf-field-group',
-            '%group_malbum_viewing%'
-        ));
-        
-        $field_groups_migrated = 0;
-        foreach ($field_groups as $group) {
-            $post_content = maybe_unserialize($group->post_content);
-            if (is_array($post_content) && isset($post_content['key']) && $post_content['key'] === 'group_malbum_viewing') {
-                // 更新字段组 key
-                $post_content['key'] = 'group_viewing_record';
-                
-                // 更新 location 规则
-                if (isset($post_content['location']) && is_array($post_content['location'])) {
-                    foreach ($post_content['location'] as &$location_group) {
-                        if (is_array($location_group)) {
-                            foreach ($location_group as &$rule) {
-                                if (isset($rule['param']) && $rule['param'] === 'post_type' && 
-                                    isset($rule['value']) && $rule['value'] === 'musicalbum_viewing') {
-                                    $rule['value'] = 'viewing_record';
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // 更新字段的 key
-                if (isset($post_content['fields']) && is_array($post_content['fields'])) {
-                    foreach ($post_content['fields'] as &$field) {
-                        if (isset($field['key']) && strpos($field['key'], 'field_malbum_') === 0) {
-                            $field['key'] = str_replace('field_malbum_', 'field_viewing_', $field['key']);
-                        }
-                    }
-                }
-                
-                // 更新数据库
-                $wpdb->update(
-                    $wpdb->posts,
-                    array('post_content' => maybe_serialize($post_content)),
-                    array('ID' => $group->ID)
-                );
-                $field_groups_migrated++;
-            }
-        }
-        
-        // 4. 迁移 ACF 字段（如果存在）
-        $fields = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$wpdb->posts} WHERE post_type = %s AND post_excerpt LIKE %s",
-            'acf-field',
-            '%field_malbum_%'
-        ));
-        
-        $fields_migrated = 0;
-        foreach ($fields as $field) {
-            $post_content = maybe_unserialize($field->post_content);
-            $post_excerpt = $field->post_excerpt;
-            
-            if (strpos($post_excerpt, 'field_malbum_') === 0) {
-                $new_excerpt = str_replace('field_malbum_', 'field_viewing_', $post_excerpt);
-                
-                // 更新字段 key
-                if (is_array($post_content) && isset($post_content['key'])) {
-                    $post_content['key'] = str_replace('field_malbum_', 'field_viewing_', $post_content['key']);
-                }
-                
-                // 更新父字段组引用
-                if (is_array($post_content) && isset($post_content['parent']) && 
-                    $post_content['parent'] === 'group_malbum_viewing') {
-                    $post_content['parent'] = 'group_viewing_record';
-                }
-                
-                // 更新数据库
-                $wpdb->update(
-                    $wpdb->posts,
-                    array(
-                        'post_excerpt' => $new_excerpt,
-                        'post_content' => maybe_serialize($post_content)
-                    ),
-                    array('ID' => $field->ID)
-                );
-                $fields_migrated++;
-            }
-        }
-        
-        // 5. 标记迁移完成
-        update_option('viewing_records_migration_done', true);
-        update_option('viewing_records_migration_stats', array(
-            'posts_migrated' => $posts_migrated,
-            'options_migrated' => $options_migrated,
-            'field_groups_migrated' => $field_groups_migrated,
-            'fields_migrated' => $fields_migrated,
-            'migration_date' => current_time('mysql')
-        ));
-        
-        // 显示迁移完成通知（如果是在后台）
-        if (is_admin()) {
-            add_action('admin_notices', function() use ($posts_migrated, $options_migrated, $field_groups_migrated, $fields_migrated) {
-                echo '<div class="notice notice-success is-dismissible"><p>';
-                echo '✓ 数据迁移完成！';
-                if ($posts_migrated > 0) echo " 迁移了 {$posts_migrated} 条观演记录。";
-                if ($options_migrated > 0) echo " 迁移了 {$options_migrated} 个配置选项。";
-                if ($field_groups_migrated > 0) echo " 迁移了 {$field_groups_migrated} 个字段组。";
-                if ($fields_migrated > 0) echo " 迁移了 {$fields_migrated} 个字段。";
-                echo '</p></div>';
-            });
-        }
-    }
 
     /**
      * 注册短码：
@@ -1898,7 +1753,44 @@ final class Viewing_Records {
     }
     
     /**
-     * 执行数据迁移
+     * 执行数据迁移（简化版本，用于自动迁移，不返回结果）
+     */
+    public static function migrate_data_simple() {
+        global $wpdb;
+        
+        // 1. 迁移自定义文章类型：musicalbum_viewing -> viewing_record
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
+            'viewing_record',
+            'musicalbum_viewing'
+        ));
+        
+        // 2. 迁移选项名称
+        $options_to_migrate = array(
+            'musicalbum_ocr_provider' => 'viewing_ocr_provider',
+            'musicalbum_baidu_api_key' => 'viewing_baidu_api_key',
+            'musicalbum_baidu_secret_key' => 'viewing_baidu_secret_key',
+            'musicalbum_aliyun_api_key' => 'viewing_aliyun_api_key',
+            'musicalbum_aliyun_endpoint' => 'viewing_aliyun_endpoint',
+            'musicalbum_aliyun_mode' => 'viewing_aliyun_mode'
+        );
+        
+        foreach ($options_to_migrate as $old_key => $new_key) {
+            $old_value = get_option($old_key, null);
+            if ($old_value !== null) {
+                // 如果新选项不存在，则迁移
+                if (get_option($new_key, null) === null) {
+                    update_option($new_key, $old_value);
+                }
+            }
+        }
+        
+        // 3. 标记迁移完成
+        update_option('viewing_records_migration_done', true);
+    }
+    
+    /**
+     * 执行数据迁移（完整版本，用于管理页面，返回详细结果）
      */
     public static function migrate_data() {
         global $wpdb;
