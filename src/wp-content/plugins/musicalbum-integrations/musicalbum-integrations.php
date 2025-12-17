@@ -207,13 +207,17 @@ final class Musicalbum_Integrations {
      */
     public static function shortcode_profile_viewings($atts = array(), $content = '') {
         if (!is_user_logged_in()) { return ''; }
-        $q = new WP_Query(array(
+        $args = array(
             'post_type' => 'musicalbum_viewing',
             'posts_per_page' => 20,
-            'author' => get_current_user_id(),
             'orderby' => 'date',
             'order' => 'DESC'
-        ));
+        );
+        // 如果不是管理员，只显示当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = get_current_user_id();
+        }
+        $q = new WP_Query($args);
         ob_start();
         echo '<div class="musicalbum-viewings-list">';
         while ($q->have_posts()) { $q->the_post();
@@ -475,7 +479,7 @@ final class Musicalbum_Integrations {
 
     /**
      * 统计数据 REST API 端点
-     * 返回当前用户的观演数据统计
+     * 返回当前用户的观演数据统计（管理员可查看所有数据）
      */
     public static function rest_statistics($request) {
         $user_id = get_current_user_id();
@@ -483,13 +487,17 @@ final class Musicalbum_Integrations {
             return new WP_Error('unauthorized', '未授权', array('status' => 401));
         }
 
-        // 查询当前用户的所有观演记录
+        // 查询观演记录：管理员查看所有，普通用户只看自己的
         $args = array(
             'post_type' => 'musicalbum_viewing',
             'posts_per_page' => -1,
-            'author' => $user_id,
             'post_status' => 'publish'
         );
+        
+        // 如果不是管理员，只查询当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
         $query = new WP_Query($args);
 
         $category_data = array(); // 剧目类别分布
@@ -632,7 +640,7 @@ final class Musicalbum_Integrations {
 
     /**
      * 统计数据详情 REST API 端点
-     * 根据筛选条件返回具体的观演记录列表
+     * 根据筛选条件返回具体的观演记录列表（管理员可查看所有数据）
      */
     public static function rest_statistics_details($request) {
         $user_id = get_current_user_id();
@@ -649,11 +657,15 @@ final class Musicalbum_Integrations {
             'post_type' => 'musicalbum_viewing',
             'posts_per_page' => $per_page,
             'paged' => $page,
-            'author' => $user_id,
             'post_status' => 'publish',
             'orderby' => 'date',
             'order' => 'DESC'
         );
+        
+        // 如果不是管理员，只查询当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
 
         // 根据类型添加meta查询
         if ($type === 'category') {
@@ -754,7 +766,7 @@ final class Musicalbum_Integrations {
 
     /**
      * 统计数据导出 REST API 端点
-     * 导出为CSV格式
+     * 导出为CSV格式（管理员可导出所有数据）
      */
     public static function rest_statistics_export($request) {
         $user_id = get_current_user_id();
@@ -767,11 +779,15 @@ final class Musicalbum_Integrations {
         $args = array(
             'post_type' => 'musicalbum_viewing',
             'posts_per_page' => -1,
-            'author' => $user_id,
             'post_status' => 'publish',
             'orderby' => 'date',
             'order' => 'DESC'
         );
+        
+        // 如果不是管理员，只导出当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
         $query = new WP_Query($args);
 
         if ($format === 'csv') {
