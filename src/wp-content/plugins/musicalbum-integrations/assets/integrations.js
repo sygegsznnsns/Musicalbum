@@ -1109,26 +1109,6 @@
       eventClick: function(info) {
         var item = info.event.extendedProps;
         showCalendarEventDetail(info.event.id, info.event.title, item);
-      },
-      eventContent: function(arg) {
-        // 在listWeek视图中，如果是全天事件，移除"all-day"文本
-        if (arg.view.type === 'listWeek' && arg.event.allDay) {
-          // 克隆默认内容
-          var content = document.createElement('div');
-          content.innerHTML = arg.defaultContent.innerHTML || arg.defaultContent;
-          
-          // 查找并移除"all-day"文本
-          var timeElement = content.querySelector('.fc-list-event-time');
-          if (timeElement) {
-            // 移除整个时间元素（因为全天事件不需要显示时间）
-            timeElement.remove();
-          }
-          
-          return { domNodes: [content] };
-        }
-        // 对于有具体时间的事件，显示时间信息
-        // 其他情况返回默认内容
-        return { domNodes: [arg.defaultContent] };
       }
     });
     calendar.render();

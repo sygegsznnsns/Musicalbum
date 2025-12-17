@@ -843,10 +843,9 @@
   box-sizing: border-box;
 }
 
-/* 在周列表视图中，只隐藏全天事件的"all-day"文本，保留有具体时间的事件的时间显示 */
-#musicalbum-calendar-container .fc-list-event.fc-list-event-time .fc-list-event-time:empty,
-#musicalbum-calendar-container .fc-list-event[data-all-day="true"] .fc-list-event-time {
-  display: none;
+/* 在周列表视图中，隐藏全天事件的"all-day"文本，保留有具体时间的事件的时间显示 */
+#musicalbum-calendar-container .fc-list-event.fc-event-all-day .fc-list-event-time {
+  display: none !important;
 }
 
 .musicalbum-calendar-actions {
