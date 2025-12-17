@@ -316,14 +316,15 @@ final class Musicalbum_Integrations {
             }
         }
         
-        // 如果OCR API没有配置，返回空结果而不是错误
-        if (empty($result)) {
+        // 如果OCR API没有配置或返回空结果，返回空结果而不是错误
+        if (empty($result) || !is_array($result)) {
             $result = array(
                 'title' => '',
                 'theater' => '',
                 'cast' => '',
                 'price' => '',
-                'view_date' => ''
+                'view_date' => '',
+                '_debug_message' => 'OCR API未配置或返回空结果'
             );
         }
         
@@ -361,9 +362,13 @@ final class Musicalbum_Integrations {
         }
         $text = implode("\n", $lines);
         
-        // 如果没有识别到文本，返回空结果
+        // 如果没有识别到文本，返回空结果（但包含调试信息）
+        $result = array();
         if (empty($text)) {
-            return array();
+            // 即使没有文本，也返回调试信息（始终可用，方便排查问题）
+            $result['_debug_text'] = 'OCR API未返回文本内容';
+            $result['_debug_json'] = $json;
+            return $result;
         }
         
         $title = self::extract_title($text);
@@ -372,7 +377,17 @@ final class Musicalbum_Integrations {
         $price = self::extract_price($text);
         $date = self::extract_date($text);
         
-        return array('title' => $title, 'theater' => $theater, 'cast' => $cast, 'price' => $price, 'view_date' => $date);
+        // 添加调试信息（始终可用，方便排查问题）
+        $result = array(
+            'title' => $title, 
+            'theater' => $theater, 
+            'cast' => $cast, 
+            'price' => $price, 
+            'view_date' => $date,
+            '_debug_text' => $text  // 始终包含原始文本，方便调试
+        );
+        
+        return $result;
     }
 
     /**
@@ -411,9 +426,13 @@ final class Musicalbum_Integrations {
             foreach($json['prism_wordsInfo'] as $w){ if (isset($w['word'])) { $lines[] = $w['word']; } }
             $text = implode("\n", $lines);
         }
-        // 如果没有识别到文本，返回空结果
+        // 如果没有识别到文本，返回空结果（但包含调试信息）
+        $result = array();
         if (empty($text)) {
-            return array();
+            // 即使没有文本，也返回调试信息（始终可用，方便排查问题）
+            $result['_debug_text'] = 'OCR API未返回文本内容';
+            $result['_debug_json'] = $json;
+            return $result;
         }
         
         $title = self::extract_title($text);
@@ -422,7 +441,17 @@ final class Musicalbum_Integrations {
         $price = self::extract_price($text);
         $date = self::extract_date($text);
         
-        return array('title' => $title, 'theater' => $theater, 'cast' => $cast, 'price' => $price, 'view_date' => $date);
+        // 添加调试信息（始终可用，方便排查问题）
+        $result = array(
+            'title' => $title, 
+            'theater' => $theater, 
+            'cast' => $cast, 
+            'price' => $price, 
+            'view_date' => $date,
+            '_debug_text' => $text  // 始终包含原始文本，方便调试
+        );
+        
+        return $result;
     }
 
     /**
@@ -440,25 +469,43 @@ final class Musicalbum_Integrations {
      * 支持格式：1) "标题：xxx" 2) 首行文本
      */
     private static function extract_title($text) {
-        // 先尝试提取"标题："格式
-        if (preg_match('/标题[:：]\s*(.+?)(?:\n|$)/u', $text, $m)) {
-            return trim($m[1]);
+        // 先尝试提取"标题："格式（支持中英文冒号）
+        if (preg_match('/标题[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
         }
-        // 否则返回首行
+        // 尝试提取"标题"关键词后的内容（更宽松的匹配）
+        if (preg_match('/标题\s*[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
+        }
+        // 否则返回首行（排除空行）
         $lines = preg_split('/\r?\n/', $text);
-        return isset($lines[0]) ? trim($lines[0]) : '';
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (!empty($line) && !preg_match('/^(标题|日期|剧院|卡司|票价)[:：]/u', $line)) {
+                return $line;
+            }
+        }
+        return '';
     }
     
     /** 提取剧院行 */
     private static function extract_theater($text) {
-        // 优先提取"剧院："格式
-        if (preg_match('/剧院[:：]\s*(.+?)(?:\n|$)/u', $text, $m)) {
-            return trim($m[1]);
+        // 优先提取"剧院："格式（支持多行匹配）
+        if (preg_match('/剧院[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
+        }
+        // 尝试更宽松的匹配
+        if (preg_match('/剧院\s*[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
         }
         // 否则使用原有逻辑
-        if (preg_match('/(剧院|剧场|大剧院)[^\n]*/u', $text, $m)) {
+        if (preg_match('/(剧院|剧场|大剧院)[:：]?\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = isset($m[2]) ? trim($m[2]) : trim($m[0]);
             // 移除"剧院"等关键词，只返回名称
-            $result = $m[0];
             $result = preg_replace('/^(剧院|剧场|大剧院)[:：]?\s*/u', '', $result);
             return trim($result);
         }
@@ -467,25 +514,38 @@ final class Musicalbum_Integrations {
     
     /** 提取卡司行 */
     private static function extract_cast($text) {
-        // 优先提取"卡司："格式
-        if (preg_match('/卡司[:：]\s*(.+?)(?:\n|$)/u', $text, $m)) {
-            return trim($m[1]);
+        // 优先提取"卡司："格式（支持多行匹配）
+        if (preg_match('/卡司[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
+        }
+        // 尝试更宽松的匹配
+        if (preg_match('/卡司\s*[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
         }
         // 否则使用原有逻辑
-        if (preg_match('/(主演|卡司|演出人员)[:：]?\s*(.+?)(?:\n|$)/u', $text, $m)) {
-            return isset($m[2]) ? trim($m[2]) : trim($m[0]);
+        if (preg_match('/(主演|卡司|演出人员)[:：]?\s*(.+?)(?:\n|$)/um', $text, $m)) {
+            $result = isset($m[2]) ? trim($m[2]) : trim($m[0]);
+            if (!empty($result)) return $result;
         }
         return '';
     }
     
     /** 提取票价数值 */
     private static function extract_price($text) {
-        // 优先提取"票价："格式
-        if (preg_match('/票价[:：]\s*([0-9]+(?:\.[0-9]+)?)/u', $text, $m)) {
-            return trim($m[1]);
+        // 优先提取"票价："格式（支持多行匹配）
+        if (preg_match('/票价[:：]\s*([0-9]+(?:\.[0-9]+)?)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
+        }
+        // 尝试更宽松的匹配
+        if (preg_match('/票价\s*[:：]\s*([0-9]+(?:\.[0-9]+)?)/um', $text, $m)) {
+            $result = trim($m[1]);
+            if (!empty($result)) return $result;
         }
         // 原有逻辑
-        if (preg_match('/(票价|Price)[:：]?\s*([0-9]+(\.[0-9]+)?)/u', $text, $m)) {
+        if (preg_match('/(票价|Price)[:：]?\s*([0-9]+(\.[0-9]+)?)/um', $text, $m)) {
             return $m[2];
         }
         if (preg_match('/([0-9]+)[元¥]/u', $text, $m)) {
@@ -496,12 +556,14 @@ final class Musicalbum_Integrations {
     
     /** 提取日期并格式化为 YYYY-MM-DD */
     private static function extract_date($text) {
-        // 优先提取"日期："格式
-        if (preg_match('/日期[:：]\s*([0-9]{4}[-年\.\/][0-9]{1,2}[-月\.\/][0-9]{1,2})/u', $text, $m)) {
+        // 优先提取"日期："格式（支持多行匹配）
+        if (preg_match('/日期[:：]\s*([0-9]{4}[-年\.\/][0-9]{1,2}[-月\.\/][0-9]{1,2})/um', $text, $m)) {
+            $date_str = $m[1];
+        } else if (preg_match('/日期\s*[:：]\s*([0-9]{4}[-年\.\/][0-9]{1,2}[-月\.\/][0-9]{1,2})/um', $text, $m)) {
             $date_str = $m[1];
         } else {
-            // 原有逻辑
-            if (!preg_match('/(20[0-9]{2})[-年\.\/](0?[1-9]|1[0-2])[-月\.\/](0?[1-9]|[12][0-9]|3[01])/u', $text, $m)) {
+            // 原有逻辑：查找任何日期格式
+            if (!preg_match('/(20[0-9]{2})[-年\.\/](0?[1-9]|1[0-2])[-月\.\/](0?[1-9]|[12][0-9]|3[01])/um', $text, $m)) {
                 return '';
             }
             $date_str = $m[0];

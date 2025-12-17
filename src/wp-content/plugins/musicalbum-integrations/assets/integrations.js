@@ -628,6 +628,7 @@
       }).done(function(res) {
         $btn.prop('disabled', false).text(originalText);
         if (res) {
+          // 填充表单字段
           if (res.title) $('#musicalbum-ocr-title').val(res.title);
           if (res.theater) $('#musicalbum-ocr-theater').val(res.theater);
           if (res.cast) $('#musicalbum-ocr-cast').val(res.cast);
@@ -637,9 +638,20 @@
           
           // 如果识别到数据，显示提示
           if (res.title || res.theater || res.cast || res.price || res.view_date) {
-            // 可以添加成功提示
+            // 识别成功，不显示提示
+            console.log('OCR识别成功:', res);
+            // 如果有调试信息，也显示
+            if (res._debug_text) {
+              console.log('OCR原始文本:', res._debug_text);
+            }
           } else {
-            alert('未能识别到有效信息，请检查图片或手动填写');
+            // 显示更详细的错误信息
+            var errorMsg = '未能识别到有效信息，请检查图片或手动填写';
+            if (res._debug_text) {
+              errorMsg += '\n\n识别到的原始文本：\n' + res._debug_text;
+              console.log('OCR原始文本:', res._debug_text);
+            }
+            alert(errorMsg);
           }
         } else {
           alert('识别失败，请检查图片或稍后重试');
@@ -649,7 +661,10 @@
         var errorMsg = '识别失败';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
+        } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.status) {
+          errorMsg = '识别失败 (状态码: ' + xhr.responseJSON.data.status + ')';
         }
+        console.error('OCR识别错误:', xhr);
         alert(errorMsg);
       });
     });
