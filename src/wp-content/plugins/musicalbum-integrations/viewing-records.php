@@ -1782,6 +1782,8 @@ final class Viewing_Records {
                 if (get_option($new_key, null) === null) {
                     update_option($new_key, $old_value);
                 }
+                // 迁移完成后，删除旧选项
+                delete_option($old_key);
             }
         }
         
@@ -1833,6 +1835,8 @@ final class Viewing_Records {
                     update_option($new_key, $old_value);
                     $results['options_migrated']++;
                 }
+                // 迁移完成后，删除旧选项（无论是否成功迁移到新选项）
+                delete_option($old_key);
             }
         }
         
