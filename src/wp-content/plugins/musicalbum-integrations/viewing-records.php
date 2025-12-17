@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: Musicalbum Integrations
-Description: 自定义集成层，用于与第三方主题与插件协作。
+Plugin Name: Viewing Records
+Description: 观演记录管理插件，支持记录管理、数据统计和OCR识别功能。
 Version: 0.1.0
 Author: chen pan
 */
@@ -9,7 +9,7 @@ Author: chen pan
 defined('ABSPATH') || exit;
 
 /**
- * 集成插件主类
+ * 观演记录插件主类
  *
  * - 注册短码供页面/模板插入功能模块
  * - 注册自定义文章类型存储观演记录
@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
  * - 代码化声明 ACF 字段结构（非内容值）
  * - 入队前端资源并注入 REST 端点与安全 nonce
  */
-final class Musicalbum_Integrations {
+final class Viewing_Records {
     /**
      * 插件初始化：挂载所有必要钩子
      */
@@ -34,14 +34,22 @@ final class Musicalbum_Integrations {
 
     /**
      * 注册短码：
-     * - [musicalbum_hello]
-     * - [musicalbum_viewing_form]
-     * - [musicalbum_profile_viewings]
-     * - [musicalbum_statistics]
-     * - [musicalbum_viewing_manager]
+     * - [viewing_hello] / [musicalbum_hello] (兼容)
+     * - [viewing_form] / [musicalbum_viewing_form] (兼容)
+     * - [viewing_list] / [musicalbum_profile_viewings] (兼容)
+     * - [viewing_statistics] / [musicalbum_statistics] (兼容)
+     * - [viewing_manager] / [musicalbum_viewing_manager] (兼容)
      */
     public static function register_shortcodes() {
-        add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_musicalbum_hello'));
+        // 新短码名称
+        add_shortcode('viewing_hello', array(__CLASS__, 'shortcode_hello'));
+        add_shortcode('viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
+        add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
+        add_shortcode('viewing_statistics', array(__CLASS__, 'shortcode_statistics'));
+        add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
+        
+        // 兼容旧短码名称
+        add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
@@ -51,8 +59,8 @@ final class Musicalbum_Integrations {
     /**
      * 示例短码：输出简单的欢迎块
      */
-    public static function shortcode_musicalbum_hello($atts = array(), $content = '') {
-        return '<div class="musicalbum-hello">Hello Musicalbum</div>';
+    public static function shortcode_hello($atts = array(), $content = '') {
+        return '<div class="viewing-hello">Hello Viewing Records</div>';
     }
 
     /**
@@ -60,8 +68,8 @@ final class Musicalbum_Integrations {
      * 脚本通过 wp_localize_script 注入 REST 端点与 nonce
      */
     public static function enqueue_assets() {
-        wp_register_style('musicalbum-integrations', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
-        wp_enqueue_style('musicalbum-integrations');
+        wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
+        wp_enqueue_style('viewing-records');
         // 引入 Chart.js 库
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
         // 引入 FullCalendar 库（用于日历视图）
@@ -69,18 +77,18 @@ final class Musicalbum_Integrations {
         wp_enqueue_script('fullcalendar', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js', array(), '6.1.10', true);
         // 引入 FullCalendar 中文语言包
         wp_enqueue_script('fullcalendar-locale', 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/zh-cn.global.min.js', array('fullcalendar'), '6.1.10', true);
-        wp_register_script('musicalbum-integrations', plugins_url('assets/integrations.js', __FILE__), array('jquery', 'chart-js', 'fullcalendar'), '0.3.0', true);
-        wp_localize_script('musicalbum-integrations', 'MusicalbumIntegrations', array(
+        wp_register_script('viewing-records', plugins_url('assets/integrations.js', __FILE__), array('jquery', 'chart-js', 'fullcalendar'), '0.3.0', true);
+        wp_localize_script('viewing-records', 'ViewingRecords', array(
             'rest' => array(
-                'ocr' => esc_url_raw(rest_url('musicalbum/v1/ocr')),
-                'statistics' => esc_url_raw(rest_url('musicalbum/v1/statistics')),
-                'statisticsDetails' => esc_url_raw(rest_url('musicalbum/v1/statistics/details')),
-                'statisticsExport' => esc_url_raw(rest_url('musicalbum/v1/statistics/export')),
-                'viewings' => esc_url_raw(rest_url('musicalbum/v1/viewings')),
+                'ocr' => esc_url_raw(rest_url('viewing/v1/ocr')),
+                'statistics' => esc_url_raw(rest_url('viewing/v1/statistics')),
+                'statisticsDetails' => esc_url_raw(rest_url('viewing/v1/statistics/details')),
+                'statisticsExport' => esc_url_raw(rest_url('viewing/v1/statistics/export')),
+                'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
-        wp_enqueue_script('musicalbum-integrations');
+        wp_enqueue_script('viewing-records');
     }
 
     /**
@@ -91,10 +99,10 @@ final class Musicalbum_Integrations {
     }
 
     /**
-     * 注册自定义文章类型：musicalbum_viewing（观演记录）
+     * 注册自定义文章类型：viewing_record（观演记录）
      */
     public static function register_viewing_post_type() {
-        register_post_type('musicalbum_viewing', array(
+        register_post_type('viewing_record', array(
             'labels' => array(
                 'name' => '观演记录',
                 'singular_name' => '观演记录'
@@ -114,11 +122,11 @@ final class Musicalbum_Integrations {
     public static function register_acf_fields() {
         if (!function_exists('acf_add_local_field_group')) { return; }
         acf_add_local_field_group(array(
-            'key' => 'group_malbum_viewing',
+            'key' => 'group_viewing_record',
             'title' => '观演字段',
             'fields' => array(
                 array(
-                    'key' => 'field_malbum_category',
+                    'key' => 'field_viewing_category',
                     'label' => '剧目类别',
                     'name' => 'category',
                     'type' => 'select',
@@ -138,25 +146,25 @@ final class Musicalbum_Integrations {
                     'return_format' => 'value'
                 ),
                 array(
-                    'key' => 'field_malbum_theater',
+                    'key' => 'field_viewing_theater',
                     'label' => '剧院',
                     'name' => 'theater',
                     'type' => 'text',
                 ),
                 array(
-                    'key' => 'field_malbum_cast',
+                    'key' => 'field_viewing_cast',
                     'label' => '卡司',
                     'name' => 'cast',
                     'type' => 'text',
                 ),
                 array(
-                    'key' => 'field_malbum_price',
+                    'key' => 'field_viewing_price',
                     'label' => '票价',
                     'name' => 'price',
                     'type' => 'text',
                 ),
                 array(
-                    'key' => 'field_malbum_date',
+                    'key' => 'field_viewing_date',
                     'label' => '观演日期',
                     'name' => 'view_date',
                     'type' => 'date_picker',
@@ -164,7 +172,7 @@ final class Musicalbum_Integrations {
                     'return_format' => 'Y-m-d'
                 ),
                 array(
-                    'key' => 'field_malbum_time_start',
+                    'key' => 'field_viewing_time_start',
                     'label' => '观演开始时间',
                     'name' => 'view_time_start',
                     'type' => 'time_picker',
@@ -180,14 +188,14 @@ final class Musicalbum_Integrations {
                     'return_format' => 'H:i'
                 ),
                 array(
-                    'key' => 'field_malbum_ticket',
+                    'key' => 'field_viewing_ticket',
                     'label' => '票面图片',
                     'name' => 'ticket_image',
                     'type' => 'image',
                     'return_format' => 'array'
                 ),
                 array(
-                    'key' => 'field_malbum_notes',
+                    'key' => 'field_viewing_notes',
                     'label' => '备注',
                     'name' => 'notes',
                     'type' => 'textarea'
@@ -198,7 +206,7 @@ final class Musicalbum_Integrations {
                     array(
                         'param' => 'post_type',
                         'operator' => '==',
-                        'value' => 'musicalbum_viewing'
+                        'value' => 'viewing_record'
                     )
                 )
             ),
@@ -217,7 +225,7 @@ final class Musicalbum_Integrations {
         acf_form(array(
             'post_id' => 'new_post',
             'new_post' => array(
-                'post_type' => 'musicalbum_viewing',
+                'post_type' => 'viewing_record',
                 'post_status' => 'publish'
             ),
             'post_title' => true,
@@ -233,7 +241,7 @@ final class Musicalbum_Integrations {
     public static function shortcode_profile_viewings($atts = array(), $content = '') {
         if (!is_user_logged_in()) { return ''; }
         $args = array(
-            'post_type' => 'musicalbum_viewing',
+            'post_type' => 'viewing_record',
             'posts_per_page' => 20,
             'orderby' => 'date',
             'order' => 'DESC'
@@ -258,55 +266,55 @@ final class Musicalbum_Integrations {
      * 注册 REST 路由：OCR、iCalendar 导出与统计数据
      */
     public static function register_rest_routes() {
-        register_rest_route('musicalbum/v1', '/ocr', array(
+        register_rest_route('viewing/v1', '/ocr', array(
             'methods' => 'POST',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_ocr')
         ));
-        register_rest_route('musicalbum/v1', '/viewings.ics', array(
+        register_rest_route('viewing/v1', '/viewings.ics', array(
             'methods' => 'GET',
             'permission_callback' => '__return_true',
             'callback' => array(__CLASS__, 'rest_ics')
         ));
-        register_rest_route('musicalbum/v1', '/statistics', array(
+        register_rest_route('viewing/v1', '/statistics', array(
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics')
         ));
-        register_rest_route('musicalbum/v1', '/statistics/details', array(
+        register_rest_route('viewing/v1', '/statistics/details', array(
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics_details')
         ));
-        register_rest_route('musicalbum/v1', '/statistics/export', array(
+        register_rest_route('viewing/v1', '/statistics/export', array(
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics_export')
         ));
         // 观演记录管理 API
-        register_rest_route('musicalbum/v1', '/viewings', array(
+        register_rest_route('viewing/v1', '/viewings', array(
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_list')
         ));
-        register_rest_route('musicalbum/v1', '/viewings', array(
+        register_rest_route('viewing/v1', '/viewings', array(
             'methods' => 'POST',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_create')
         ));
-        register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
+        register_rest_route('viewing/v1', '/viewings/(?P<id>\d+)', array(
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_get'),
             'args' => array('id' => array('type' => 'integer'))
         ));
-        register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
+        register_rest_route('viewing/v1', '/viewings/(?P<id>\d+)', array(
             'methods' => 'PUT',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_update'),
             'args' => array('id' => array('type' => 'integer'))
         ));
-        register_rest_route('musicalbum/v1', '/viewings/(?P<id>\d+)', array(
+        register_rest_route('viewing/v1', '/viewings/(?P<id>\d+)', array(
             'methods' => 'DELETE',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_delete'),
@@ -329,13 +337,13 @@ final class Musicalbum_Integrations {
             return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); 
         }
         
-        $result = apply_filters('musicalbum_ocr_process', null, $data);
+        $result = apply_filters('viewing_ocr_process', null, $data);
         if (!is_array($result)) {
-            $provider = get_option('musicalbum_ocr_provider');
-            $baidu_api_key = get_option('musicalbum_baidu_api_key');
-            $baidu_secret_key = get_option('musicalbum_baidu_secret_key');
-            $aliyun_api_key = get_option('musicalbum_aliyun_api_key');
-            $aliyun_endpoint = get_option('musicalbum_aliyun_endpoint');
+            $provider = get_option('viewing_ocr_provider');
+            $baidu_api_key = get_option('viewing_baidu_api_key');
+            $baidu_secret_key = get_option('viewing_baidu_secret_key');
+            $aliyun_api_key = get_option('viewing_aliyun_api_key');
+            $aliyun_endpoint = get_option('viewing_aliyun_endpoint');
             
             // 检查API配置
             $has_baidu = !empty($baidu_api_key) && !empty($baidu_secret_key);
@@ -391,8 +399,8 @@ final class Musicalbum_Integrations {
      * 返回结构化字段（标题、剧院、卡司、票价、日期）
      */
     private static function default_baidu_ocr($bytes) {
-        $api_key = get_option('musicalbum_baidu_api_key');
-        $secret_key = get_option('musicalbum_baidu_secret_key');
+        $api_key = get_option('viewing_baidu_api_key');
+        $secret_key = get_option('viewing_baidu_secret_key');
         if (!$api_key || !$secret_key) { 
             return array('_debug_message' => '百度OCR API密钥未配置');
         }
@@ -457,9 +465,9 @@ final class Musicalbum_Integrations {
      * 默认阿里云 OCR：根据模式发送二进制或 JSON
      */
     private static function default_aliyun_ocr($bytes) {
-        $api_key = get_option('musicalbum_aliyun_api_key');
-        $endpoint = get_option('musicalbum_aliyun_endpoint');
-        $mode = get_option('musicalbum_aliyun_mode');
+        $api_key = get_option('viewing_aliyun_api_key');
+        $endpoint = get_option('viewing_aliyun_endpoint');
+        $mode = get_option('viewing_aliyun_mode');
         if (!$api_key || !$endpoint) { 
             return array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
         }
@@ -650,12 +658,12 @@ final class Musicalbum_Integrations {
      * iCalendar 导出接口：返回所有观演记录的日历条目
      */
     public static function rest_ics($request) {
-        $args = array('post_type' => 'musicalbum_viewing', 'posts_per_page' => -1, 'post_status' => 'publish');
+        $args = array('post_type' => 'viewing_record', 'posts_per_page' => -1, 'post_status' => 'publish');
         $q = new WP_Query($args);
         $lines = array(
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//Musicalbum//Viewing//CN'
+            'PRODID:-//ViewingRecords//Viewing//CN'
         );
         while($q->have_posts()){ $q->the_post();
             $date = get_field('view_date', get_the_ID());
@@ -664,7 +672,7 @@ final class Musicalbum_Integrations {
             $summary = get_the_title();
             $desc = trim('剧院: '.(get_field('theater', get_the_ID()) ?: '')."\n".'卡司: '.(get_field('cast', get_the_ID()) ?: '')."\n".'票价: '.(get_field('price', get_the_ID()) ?: ''));
             $lines[] = 'BEGIN:VEVENT';
-            $lines[] = 'UID:' . get_the_ID() . '@musicalbum';
+            $lines[] = 'UID:' . get_the_ID() . '@viewing';
             $lines[] = 'DTSTART;VALUE=DATE:' . $dt;
             $lines[] = 'SUMMARY:' . self::escape_ics($summary);
             $lines[] = 'DESCRIPTION:' . self::escape_ics($desc);
@@ -687,7 +695,7 @@ final class Musicalbum_Integrations {
 
     /**
      * 统计数据短码：显示数据可视化图表
-     * 使用 [musicalbum_statistics] 在页面中插入
+     * 使用 [viewing_statistics] 或 [musicalbum_statistics] 在页面中插入
      */
     public static function shortcode_statistics($atts = array(), $content = '') {
         if (!is_user_logged_in()) {
@@ -739,7 +747,7 @@ final class Musicalbum_Integrations {
 
         // 查询观演记录：管理员查看所有，普通用户只看自己的
         $args = array(
-            'post_type' => 'musicalbum_viewing',
+            'post_type' => 'viewing_record',
             'posts_per_page' => -1,
             'post_status' => 'publish'
         );
@@ -904,7 +912,7 @@ final class Musicalbum_Integrations {
         $per_page = absint($request->get_param('per_page')) ?: 20;
 
         $args = array(
-            'post_type' => 'musicalbum_viewing',
+            'post_type' => 'viewing_record',
             'posts_per_page' => $per_page,
             'paged' => $page,
             'post_status' => 'publish',
@@ -1027,7 +1035,7 @@ final class Musicalbum_Integrations {
         $format = $request->get_param('format') ?: 'csv'; // csv, json
 
         $args = array(
-            'post_type' => 'musicalbum_viewing',
+            'post_type' => 'viewing_record',
             'posts_per_page' => -1,
             'post_status' => 'publish',
             'orderby' => 'date',
@@ -1093,7 +1101,7 @@ final class Musicalbum_Integrations {
 
     /**
      * 观演记录管理短码：提供完整的记录管理界面
-     * 使用 [musicalbum_viewing_manager] 在页面中插入
+     * 使用 [viewing_manager] 或 [musicalbum_viewing_manager] 在页面中插入
      */
     public static function shortcode_viewing_manager($atts = array(), $content = '') {
         if (!is_user_logged_in()) {
@@ -1306,7 +1314,7 @@ final class Musicalbum_Integrations {
         }
 
         $args = array(
-            'post_type' => 'musicalbum_viewing',
+            'post_type' => 'viewing_record',
             'posts_per_page' => -1,
             'post_status' => 'publish'
             // 不在这里使用orderby，因为要按view_date（观演日期）排序，而不是post_date（记录创建日期）
@@ -1451,7 +1459,7 @@ final class Musicalbum_Integrations {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'musicalbum_viewing') {
+        if (!$post || $post->post_type !== 'viewing_record') {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1496,7 +1504,7 @@ final class Musicalbum_Integrations {
         }
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'musicalbum_viewing',
+            'post_type' => 'viewing_record',
             'post_title' => $title,
             'post_status' => 'publish',
             'post_author' => $user_id
@@ -1550,7 +1558,7 @@ final class Musicalbum_Integrations {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'musicalbum_viewing') {
+        if (!$post || $post->post_type !== 'viewing_record') {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1613,7 +1621,7 @@ final class Musicalbum_Integrations {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'musicalbum_viewing') {
+        if (!$post || $post->post_type !== 'viewing_record') {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1642,7 +1650,7 @@ final class Musicalbum_Integrations {
             'OCR API 配置',
             'OCR API 配置',
             'manage_options',
-            'musicalbum-ocr-config',
+            'viewing-ocr-config',
             array(__CLASS__, 'render_ocr_config_page')
         );
     }
@@ -1652,26 +1660,26 @@ final class Musicalbum_Integrations {
      */
     public static function render_ocr_config_page() {
         // 处理表单提交
-        if (isset($_POST['musicalbum_ocr_save']) && check_admin_referer('musicalbum_ocr_config')) {
+        if (isset($_POST['viewing_ocr_save']) && check_admin_referer('viewing_ocr_config')) {
             $api_key = sanitize_text_field($_POST['baidu_api_key']);
             $secret_key = sanitize_text_field($_POST['baidu_secret_key']);
             
-            update_option('musicalbum_baidu_api_key', $api_key);
-            update_option('musicalbum_baidu_secret_key', $secret_key);
+            update_option('viewing_baidu_api_key', $api_key);
+            update_option('viewing_baidu_secret_key', $secret_key);
             
             echo '<div class="notice notice-success is-dismissible"><p>✓ OCR API配置已保存！</p></div>';
         }
         
         // 获取当前配置
-        $current_api_key = get_option('musicalbum_baidu_api_key', '');
-        $current_secret_key = get_option('musicalbum_baidu_secret_key', '');
+        $current_api_key = get_option('viewing_baidu_api_key', '');
+        $current_secret_key = get_option('viewing_baidu_secret_key', '');
         
         ?>
         <div class="wrap">
             <h1>OCR API 配置</h1>
             
             <form method="post" action="">
-                <?php wp_nonce_field('musicalbum_ocr_config'); ?>
+                <?php wp_nonce_field('viewing_ocr_config'); ?>
                 
                 <table class="form-table">
                     <tr>
@@ -1740,4 +1748,4 @@ final class Musicalbum_Integrations {
 }
 
 // 启动插件
-Musicalbum_Integrations::init();
+Viewing_Records::init();

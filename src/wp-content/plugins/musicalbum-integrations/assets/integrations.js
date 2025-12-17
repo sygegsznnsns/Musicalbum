@@ -9,9 +9,9 @@
       var fd = new FormData();
       fd.append('image', f);
       $.ajax({
-        url: MusicalbumIntegrations.rest.ocr,
+        url: ViewingRecords.rest.ocr,
         method: 'POST',
-        headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce },
+        headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce },
         data: fd,
         processData: false,
         contentType: false
@@ -84,9 +84,9 @@
     loadingEl.show();
 
     $.ajax({
-      url: MusicalbumIntegrations.rest.statistics,
+      url: ViewingRecords.rest.statistics,
       method: 'GET',
-      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
     }).done(function(data) {
       loadingEl.hide();
       
@@ -371,9 +371,9 @@
     
     // 加载详情数据
     $.ajax({
-      url: MusicalbumIntegrations.rest.statisticsDetails,
+      url: ViewingRecords.rest.statisticsDetails,
       method: 'GET',
-      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce },
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce },
       data: {
         type: type,
         value: value,
@@ -453,8 +453,8 @@
       
       if (type === 'data') {
         // 导出数据
-        if (MusicalbumIntegrations && MusicalbumIntegrations.rest && MusicalbumIntegrations.rest.statisticsExport) {
-          var url = MusicalbumIntegrations.rest.statisticsExport + '?format=' + format + '&_wpnonce=' + MusicalbumIntegrations.rest.nonce;
+        if (ViewingRecords && ViewingRecords.rest && ViewingRecords.rest.statisticsExport) {
+          var url = ViewingRecords.rest.statisticsExport + '?format=' + format + '&_wpnonce=' + ViewingRecords.rest.nonce;
           window.location.href = url;
         } else {
           alert('导出功能暂时不可用，请刷新页面后重试');
@@ -623,12 +623,12 @@
       var fd = new FormData();
       fd.append('image', file);
       
-      console.log('OCR: 发送请求到', MusicalbumIntegrations.rest.ocr);
+      console.log('OCR: 发送请求到', ViewingRecords.rest.ocr);
       
       $.ajax({
-        url: MusicalbumIntegrations.rest.ocr,
+        url: ViewingRecords.rest.ocr,
         method: 'POST',
-        headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce },
+        headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce },
         data: fd,
         processData: false,
         contentType: false
@@ -932,9 +932,9 @@
     };
 
     $.ajax({
-      url: MusicalbumIntegrations.rest.viewings,
+      url: ViewingRecords.rest.viewings,
       method: 'GET',
-      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce },
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce },
       data: params
     }).done(function(data) {
       if (data && data.length > 0) {
@@ -1045,8 +1045,8 @@
     }
 
     // 如果已经初始化，先销毁
-    if (window.musicalbumCalendar) {
-      window.musicalbumCalendar.destroy();
+    if (window.viewingCalendar) {
+      window.viewingCalendar.destroy();
     }
 
     // 创建快速导航容器（使用文本输入框避免浏览器限制）
@@ -1089,9 +1089,9 @@
       },
       events: function(fetchInfo, successCallback, failureCallback) {
         $.ajax({
-          url: MusicalbumIntegrations.rest.viewings,
+          url: ViewingRecords.rest.viewings,
           method: 'GET',
-          headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+          headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
         }).done(function(data) {
           var events = [];
           if (data && data.length > 0) {
@@ -1204,7 +1204,7 @@
     calendar.render();
     
     // 保存日历实例以便刷新
-    window.musicalbumCalendar = calendar;
+    window.viewingCalendar = calendar;
     
     // 设置初始值（当前日期）
     var today = new Date();
@@ -1323,9 +1323,9 @@
     
     // 先获取完整记录信息（包含时间）
     $.ajax({
-      url: MusicalbumIntegrations.rest.viewings + '/' + id,
+      url: ViewingRecords.rest.viewings + '/' + id,
       method: 'GET',
-      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
     }).done(function(item) {
       var html = '<h3><a href="' + (item.url || props.url) + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
       if (item.category || props.category) html += '<p><strong>类别：</strong>' + escapeHtml(item.category || props.category) + '</p>';
@@ -1441,7 +1441,7 @@
     }
 
     var id = $('#musicalbum-edit-id').val();
-    var url = MusicalbumIntegrations.rest.viewings;
+    var url = ViewingRecords.rest.viewings;
     var method = 'POST';
 
     if (id) {
@@ -1453,7 +1453,7 @@
       url: url,
       method: method,
       headers: {
-        'X-WP-Nonce': MusicalbumIntegrations.rest.nonce,
+        'X-WP-Nonce': ViewingRecords.rest.nonce,
         'Content-Type': 'application/json'
       },
       data: JSON.stringify(formData)
@@ -1488,9 +1488,9 @@
   // 编辑观演记录
   function editViewing(id) {
     $.ajax({
-      url: MusicalbumIntegrations.rest.viewings,
+      url: ViewingRecords.rest.viewings,
       method: 'GET',
-      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
     }).done(function(data) {
       var item = data.find(function(i) { return i.id == id; });
       if (item) {
@@ -1518,14 +1518,14 @@
   // 删除观演记录
   function deleteViewing(id) {
     $.ajax({
-      url: MusicalbumIntegrations.rest.viewings + '/' + id,
+      url: ViewingRecords.rest.viewings + '/' + id,
       method: 'DELETE',
-      headers: { 'X-WP-Nonce': MusicalbumIntegrations.rest.nonce }
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
     }).done(function() {
       alert('记录删除成功');
       loadListView();
-      if (window.musicalbumCalendar) {
-        window.musicalbumCalendar.refetchEvents();
+      if (window.viewingCalendar) {
+        window.viewingCalendar.refetchEvents();
       }
     }).fail(function() {
       alert('删除失败，请稍后重试');
