@@ -673,32 +673,76 @@ final class Musicalbum_Integrations {
                 )
             );
         } elseif ($type === 'price') {
-            // 解析票价区间
+            // 解析票价区间，例如 "100-150元"
             if (preg_match('/(\d+)-(\d+)/', $value, $matches)) {
                 $min_price = floatval($matches[1]);
                 $max_price = floatval($matches[2]);
-                // 这里需要更复杂的查询，简化处理
+                // 票价字段可能包含文字，需要先获取所有记录再过滤
+                // 暂时不设置meta_query，在循环中过滤
             }
         }
 
+        // 如果是票价区间筛选，需要先获取所有记录再过滤和分页
+        if ($type === 'price' && isset($min_price) && isset($max_price)) {
+            // 获取所有记录（不分页）
+            $args['posts_per_page'] = -1;
+            $args['paged'] = 1;
+        }
+
         $query = new WP_Query($args);
-        $results = array();
+        $all_results = array();
 
         while ($query->have_posts()) {
             $query->the_post();
             $post_id = get_the_ID();
-            $results[] = array(
+            $price_field = get_field('price', $post_id);
+            
+            // 如果是票价区间筛选，需要验证票价是否在区间内
+            if ($type === 'price' && isset($min_price) && isset($max_price)) {
+                // 从票价字段中提取数字
+                $price_num = 0;
+                if ($price_field) {
+                    // 移除所有非数字字符（除了小数点），提取数字
+                    $price_clean = preg_replace('/[^0-9.]/', '', $price_field);
+                    $price_num = floatval($price_clean);
+                }
+                
+                // 检查票价是否在区间内（包含最小值，不包含最大值，与统计逻辑一致）
+                if ($price_num < $min_price || $price_num >= $max_price) {
+                    continue; // 跳过不在区间内的记录
+                }
+            }
+            
+            $all_results[] = array(
                 'id' => $post_id,
                 'title' => get_the_title(),
                 'category' => get_field('category', $post_id),
                 'theater' => get_field('theater', $post_id),
                 'cast' => get_field('cast', $post_id),
-                'price' => get_field('price', $post_id),
+                'price' => $price_field,
                 'view_date' => get_field('view_date', $post_id),
                 'url' => get_permalink($post_id)
             );
         }
         wp_reset_postdata();
+        
+        // 如果是票价区间筛选，需要手动分页
+        if ($type === 'price' && isset($min_price) && isset($max_price)) {
+            $total_count = count($all_results);
+            $total_pages = ceil($total_count / $per_page);
+            $offset = ($page - 1) * $per_page;
+            $results = array_slice($all_results, $offset, $per_page);
+            
+            return rest_ensure_response(array(
+                'data' => $results,
+                'total' => $total_count,
+                'pages' => $total_pages,
+                'current_page' => $page
+            ));
+        }
+        
+        // 其他类型的查询直接返回
+        $results = $all_results;
 
         return rest_ensure_response(array(
             'data' => $results,
