@@ -144,7 +144,6 @@ final class Viewing_Records {
 
     /**
      * 注册自定义文章类型：viewing_record（观演记录）
-     * 同时注册旧的 musicalbum_viewing 以保持向后兼容
      */
     public static function register_viewing_post_type() {
         // 注册新的文章类型
@@ -166,29 +165,6 @@ final class Viewing_Records {
             'show_in_rest' => true,
             'supports' => array('title'),
             'menu_position' => 20,
-            'menu_icon' => 'dashicons-calendar-alt'
-        ));
-        
-        // 注册旧的文章类型以保持向后兼容（显示在后台，合并到同一个菜单）
-        register_post_type('musicalbum_viewing', array(
-            'labels' => array(
-                'name' => '观演记录（旧数据）',
-                'singular_name' => '观演记录（旧）',
-                'add_new' => '添加新记录',
-                'add_new_item' => '添加新观演记录',
-                'edit_item' => '编辑观演记录',
-                'new_item' => '新观演记录',
-                'view_item' => '查看观演记录',
-                'search_items' => '搜索观演记录',
-                'not_found' => '未找到观演记录',
-                'not_found_in_trash' => '回收站中未找到观演记录'
-            ),
-            'public' => true,
-            'has_archive' => false, // 旧类型不显示归档页面
-            'show_ui' => true,
-            'show_in_menu' => 'edit.php?post_type=viewing_record', // 合并到新类型的菜单下
-            'show_in_rest' => true,
-            'supports' => array('title'),
             'menu_icon' => 'dashicons-calendar-alt'
         ));
     }
