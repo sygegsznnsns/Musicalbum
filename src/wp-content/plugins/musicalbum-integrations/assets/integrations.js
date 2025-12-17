@@ -604,6 +604,18 @@
         alert('请先选择图片文件');
         return;
       }
+      
+      var $btn = $(this);
+      var originalText = $btn.text();
+      $btn.prop('disabled', true).text('识别中...');
+      
+      // 显示预览
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        $('#musicalbum-ocr-preview').html('<img src="' + e.target.result + '" alt="预览" style="max-width:100%;max-height:300px;border-radius:6px;margin-top:1rem;">');
+      };
+      reader.readAsDataURL(file);
+      
       var fd = new FormData();
       fd.append('image', file);
       $.ajax({
@@ -614,6 +626,7 @@
         processData: false,
         contentType: false
       }).done(function(res) {
+        $btn.prop('disabled', false).text(originalText);
         if (res) {
           if (res.title) $('#musicalbum-ocr-title').val(res.title);
           if (res.theater) $('#musicalbum-ocr-theater').val(res.theater);
@@ -621,7 +634,23 @@
           if (res.price) $('#musicalbum-ocr-price').val(res.price);
           if (res.view_date) $('#musicalbum-ocr-date').val(res.view_date);
           $('#musicalbum-ocr-form').show();
+          
+          // 如果识别到数据，显示提示
+          if (res.title || res.theater || res.cast || res.price || res.view_date) {
+            // 可以添加成功提示
+          } else {
+            alert('未能识别到有效信息，请检查图片或手动填写');
+          }
+        } else {
+          alert('识别失败，请检查图片或稍后重试');
         }
+      }).fail(function(xhr) {
+        $btn.prop('disabled', false).text(originalText);
+        var errorMsg = '识别失败';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+          errorMsg = xhr.responseJSON.message;
+        }
+        alert(errorMsg);
       });
     });
 

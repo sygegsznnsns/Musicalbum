@@ -297,10 +297,15 @@ final class Musicalbum_Integrations {
      */
     public static function rest_ocr($request) {
         $files = $request->get_file_params();
-        if (empty($files['image'])) { return new WP_Error('no_image', '缺少图片', array('status' => 400)); }
+        if (empty($files['image'])) { 
+            return new WP_Error('no_image', '缺少图片', array('status' => 400)); 
+        }
         $path = $files['image']['tmp_name'];
         $data = file_get_contents($path);
-        if (!$data) { return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); }
+        if (!$data) { 
+            return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); 
+        }
+        
         $result = apply_filters('musicalbum_ocr_process', null, $data);
         if (!is_array($result)) {
             $provider = get_option('musicalbum_ocr_provider');
@@ -310,6 +315,18 @@ final class Musicalbum_Integrations {
                 $result = self::default_baidu_ocr($data);
             }
         }
+        
+        // 如果OCR API没有配置，返回空结果而不是错误
+        if (empty($result)) {
+            $result = array(
+                'title' => '',
+                'theater' => '',
+                'cast' => '',
+                'price' => '',
+                'view_date' => ''
+            );
+        }
+        
         return rest_ensure_response($result);
     }
 
@@ -328,16 +345,33 @@ final class Musicalbum_Integrations {
         $resp = wp_remote_post($url, array('headers' => array('Content-Type' => 'application/x-www-form-urlencoded'), 'body' => $body, 'timeout' => 20));
         if (is_wp_error($resp)) { return array(); }
         $json = json_decode(wp_remote_retrieve_body($resp), true);
+        
+        // 检查API返回是否有错误
+        if (isset($json['error_code']) || isset($json['error_msg'])) {
+            return array(); // 返回空数组，前端会提示
+        }
+        
         $lines = array();
         if (isset($json['words_result'])) {
-            foreach($json['words_result'] as $w){ $lines[] = $w['words']; }
+            foreach($json['words_result'] as $w){ 
+                if (isset($w['words'])) {
+                    $lines[] = $w['words']; 
+                }
+            }
         }
         $text = implode("\n", $lines);
+        
+        // 如果没有识别到文本，返回空结果
+        if (empty($text)) {
+            return array();
+        }
+        
         $title = self::extract_title($text);
         $theater = self::extract_theater($text);
         $cast = self::extract_cast($text);
         $price = self::extract_price($text);
         $date = self::extract_date($text);
+        
         return array('title' => $title, 'theater' => $theater, 'cast' => $cast, 'price' => $price, 'view_date' => $date);
     }
 
@@ -377,11 +411,17 @@ final class Musicalbum_Integrations {
             foreach($json['prism_wordsInfo'] as $w){ if (isset($w['word'])) { $lines[] = $w['word']; } }
             $text = implode("\n", $lines);
         }
+        // 如果没有识别到文本，返回空结果
+        if (empty($text)) {
+            return array();
+        }
+        
         $title = self::extract_title($text);
         $theater = self::extract_theater($text);
         $cast = self::extract_cast($text);
         $price = self::extract_price($text);
         $date = self::extract_date($text);
+        
         return array('title' => $title, 'theater' => $theater, 'cast' => $cast, 'price' => $price, 'view_date' => $date);
     }
 
@@ -396,32 +436,82 @@ final class Musicalbum_Integrations {
     }
 
     /**
-     * 从 OCR 文本中提取标题（首行）
+     * 从 OCR 文本中提取标题
+     * 支持格式：1) "标题：xxx" 2) 首行文本
      */
     private static function extract_title($text) {
+        // 先尝试提取"标题："格式
+        if (preg_match('/标题[:：]\s*(.+?)(?:\n|$)/u', $text, $m)) {
+            return trim($m[1]);
+        }
+        // 否则返回首行
         $lines = preg_split('/\r?\n/', $text);
-        return isset($lines[0]) ? $lines[0] : '';
+        return isset($lines[0]) ? trim($lines[0]) : '';
     }
+    
     /** 提取剧院行 */
     private static function extract_theater($text) {
-        if (preg_match('/(剧院|剧场|大剧院)[^\n]*/u', $text, $m)) return $m[0];
+        // 优先提取"剧院："格式
+        if (preg_match('/剧院[:：]\s*(.+?)(?:\n|$)/u', $text, $m)) {
+            return trim($m[1]);
+        }
+        // 否则使用原有逻辑
+        if (preg_match('/(剧院|剧场|大剧院)[^\n]*/u', $text, $m)) {
+            // 移除"剧院"等关键词，只返回名称
+            $result = $m[0];
+            $result = preg_replace('/^(剧院|剧场|大剧院)[:：]?\s*/u', '', $result);
+            return trim($result);
+        }
         return '';
     }
+    
     /** 提取卡司行 */
     private static function extract_cast($text) {
-        if (preg_match('/(主演|卡司|演出人员)[^\n]*/u', $text, $m)) return $m[0];
+        // 优先提取"卡司："格式
+        if (preg_match('/卡司[:：]\s*(.+?)(?:\n|$)/u', $text, $m)) {
+            return trim($m[1]);
+        }
+        // 否则使用原有逻辑
+        if (preg_match('/(主演|卡司|演出人员)[:：]?\s*(.+?)(?:\n|$)/u', $text, $m)) {
+            return isset($m[2]) ? trim($m[2]) : trim($m[0]);
+        }
         return '';
     }
+    
     /** 提取票价数值 */
     private static function extract_price($text) {
-        if (preg_match('/(票价|Price)[:：]?\s*([0-9]+(\.[0-9]+)?)/u', $text, $m)) return $m[2];
-        if (preg_match('/([0-9]+)[元¥]/u', $text, $m)) return $m[1];
+        // 优先提取"票价："格式
+        if (preg_match('/票价[:：]\s*([0-9]+(?:\.[0-9]+)?)/u', $text, $m)) {
+            return trim($m[1]);
+        }
+        // 原有逻辑
+        if (preg_match('/(票价|Price)[:：]?\s*([0-9]+(\.[0-9]+)?)/u', $text, $m)) {
+            return $m[2];
+        }
+        if (preg_match('/([0-9]+)[元¥]/u', $text, $m)) {
+            return $m[1];
+        }
         return '';
     }
+    
     /** 提取日期并格式化为 YYYY-MM-DD */
     private static function extract_date($text) {
-        if (preg_match('/(20[0-9]{2})[-年\.\/](0?[1-9]|1[0-2])[-月\.\/](0?[1-9]|[12][0-9]|3[01])/u', $text, $m)) {
-            $y = $m[1]; $mth = str_pad($m[2], 2, '0', STR_PAD_LEFT); $d = str_pad($m[3], 2, '0', STR_PAD_LEFT);
+        // 优先提取"日期："格式
+        if (preg_match('/日期[:：]\s*([0-9]{4}[-年\.\/][0-9]{1,2}[-月\.\/][0-9]{1,2})/u', $text, $m)) {
+            $date_str = $m[1];
+        } else {
+            // 原有逻辑
+            if (!preg_match('/(20[0-9]{2})[-年\.\/](0?[1-9]|1[0-2])[-月\.\/](0?[1-9]|[12][0-9]|3[01])/u', $text, $m)) {
+                return '';
+            }
+            $date_str = $m[0];
+        }
+        
+        // 统一格式化
+        if (preg_match('/(20[0-9]{2})[-年\.\/](0?[1-9]|1[0-2])[-月\.\/](0?[1-9]|[12][0-9]|3[01])/u', $date_str, $m)) {
+            $y = $m[1];
+            $mth = str_pad($m[2], 2, '0', STR_PAD_LEFT);
+            $d = str_pad($m[3], 2, '0', STR_PAD_LEFT);
             return $y.'-'.$mth.'-'.$d;
         }
         return '';
