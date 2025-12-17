@@ -489,6 +489,11 @@
   transition: border-color 0.2s;
 }
 
+/* 表单中的日期输入框使用相同的样式 */
+.musicalbum-form-group .musicalbum-calendar-input-wrapper {
+  width: 100%;
+}
+
 .musicalbum-form-group input:focus,
 .musicalbum-form-group select:focus,
 .musicalbum-form-group textarea:focus {
@@ -703,6 +708,7 @@
   display: inline-flex;
   align-items: center;
   min-width: 200px;
+  width: 100%;
 }
 
 .musicalbum-calendar-date-input {

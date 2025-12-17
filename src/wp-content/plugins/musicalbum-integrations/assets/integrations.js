@@ -695,6 +695,7 @@
           }
           if (res.view_date) {
             $('#musicalbum-ocr-date').val(res.view_date);
+        $('#musicalbum-ocr-date-picker').val(res.view_date);
             console.log('✓ 已填充日期:', res.view_date);
           }
           $('#musicalbum-ocr-form').show();
@@ -755,6 +756,120 @@
 
     // 初始加载列表视图
     loadListView();
+    
+    // 初始化表单中的日期输入框（手动录入和OCR识别）
+    initFormDateInputs();
+  }
+  
+  // 初始化表单日期输入框（支持手动输入和选择）
+  function initFormDateInputs() {
+    // 手动录入表单的日期输入框
+    initDateInput('#musicalbum-form-date', '#musicalbum-form-date-picker');
+    
+    // OCR识别表单的日期输入框
+    initDateInput('#musicalbum-ocr-date', '#musicalbum-ocr-date-picker');
+  }
+  
+  // 初始化单个日期输入框
+  function initDateInput(textInputSelector, datePickerSelector) {
+    var $textInput = $(textInputSelector);
+    var $datePicker = $(datePickerSelector);
+    var $iconBtn = $textInput.siblings('.musicalbum-calendar-icon-btn');
+    
+    if ($textInput.length === 0 || $datePicker.length === 0) {
+      return;
+    }
+    
+    // 验证和格式化日期
+    function validateAndFormatDate(dateStr) {
+      if (!dateStr) return null;
+      
+      // 支持多种格式：YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+      var datePattern = /^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})$/;
+      var match = dateStr.trim().match(datePattern);
+      
+      if (!match) {
+        return null;
+      }
+      
+      var year = parseInt(match[1]);
+      var month = parseInt(match[2]);
+      var day = parseInt(match[3]);
+      
+      // 验证日期有效性
+      if (year < 1900 || year > 2100) {
+        return null;
+      }
+      
+      var date = new Date(year, month - 1, day);
+      if (date.getFullYear() === year && 
+          date.getMonth() === month - 1 && 
+          date.getDate() === day) {
+        // 格式化为标准格式
+        return year + '-' + 
+               String(month).padStart(2, '0') + '-' + 
+               String(day).padStart(2, '0');
+      }
+      
+      return null;
+    }
+    
+    // 文本输入框：支持直接输入日期
+    $textInput.on('change blur', function() {
+      var dateStr = $(this).val();
+      var formattedDate = validateAndFormatDate(dateStr);
+      
+      if (formattedDate) {
+        $(this).val(formattedDate);
+        $datePicker.val(formattedDate);
+      } else if (dateStr) {
+        alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
+        $(this).focus();
+      }
+    });
+    
+    // 支持回车键验证
+    $textInput.on('keypress', function(e) {
+      if (e.which === 13) { // Enter键
+        e.preventDefault();
+        $(this).trigger('change');
+      }
+    });
+    
+    // 日期选择器改变时，同步到文本输入框
+    $datePicker.on('change', function() {
+      var dateStr = $(this).val();
+      if (dateStr) {
+        $textInput.val(dateStr);
+      }
+    });
+    
+    // 日历图标按钮：点击后弹出日期选择器
+    $iconBtn.on('click', function(e) {
+      e.preventDefault();
+      if ($datePicker[0].showPicker) {
+        $datePicker[0].showPicker();
+      } else {
+        // 如果不支持showPicker，直接触发点击
+        $datePicker[0].click();
+      }
+    });
+    
+    // 点击输入框右侧区域时，也可以触发日期选择器
+    $textInput.on('click', function(e) {
+      var input = this;
+      var clickX = e.pageX - $(input).offset().left;
+      var inputWidth = $(input).outerWidth();
+      
+      // 如果点击在右侧20%区域，触发日期选择器
+      if (clickX > inputWidth * 0.8) {
+        if ($datePicker[0].showPicker) {
+          $datePicker[0].showPicker();
+        } else {
+          $datePicker[0].click();
+        }
+      }
+    });
   }
 
   // 加载列表视图
@@ -1110,6 +1225,7 @@
         $('#musicalbum-form-cast').val(item.cast || '');
         $('#musicalbum-form-price').val(item.price || '');
         $('#musicalbum-form-date').val(item.view_date || '');
+        $('#musicalbum-form-date-picker').val(item.view_date || '');
         $('#musicalbum-form-notes').val(item.notes || '');
         
         $('#musicalbum-form-title').text('编辑观演记录');
@@ -1140,6 +1256,9 @@
 
   // 重置表单
   function resetForm() {
+    // 重置日期输入框
+    $('#musicalbum-form-date, #musicalbum-ocr-date').val('');
+    $('#musicalbum-form-date-picker, #musicalbum-ocr-date-picker').val('');
     $('#musicalbum-edit-id').val('');
     $('#musicalbum-manual-form')[0].reset();
     $('#musicalbum-ocr-form')[0].reset();
