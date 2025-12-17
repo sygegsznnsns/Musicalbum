@@ -1250,9 +1250,9 @@ final class Musicalbum_Integrations {
         $args = array(
             'post_type' => 'musicalbum_viewing',
             'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'orderby' => 'date',
-            'order' => 'DESC'
+            'post_status' => 'publish'
+            // 不在这里使用orderby，因为要按view_date（观演日期）排序，而不是post_date（记录创建日期）
+            // 排序将在PHP端根据view_date字段进行
         );
 
         // 如果不是管理员，只查询当前用户的记录
@@ -1342,18 +1342,28 @@ final class Musicalbum_Integrations {
         }
         wp_reset_postdata();
         
-        // 排序（在过滤后进行）
+        // 排序（在过滤后进行，按观演日期view_date排序）
         $sort = $request->get_param('sort');
         if ($sort === 'date_asc') {
+            // 按观演日期升序（最早在前）
             usort($results, function($a, $b) {
                 $date_a = $a['view_date'] ? strtotime($a['view_date']) : 0;
                 $date_b = $b['view_date'] ? strtotime($b['view_date']) : 0;
+                // 没有日期的排在最后
+                if ($date_a === 0 && $date_b === 0) return 0;
+                if ($date_a === 0) return 1;
+                if ($date_b === 0) return -1;
                 return $date_a - $date_b;
             });
-        } elseif ($sort === 'date_desc') {
+        } elseif ($sort === 'date_desc' || !$sort) {
+            // 按观演日期降序（最新在前），默认排序
             usort($results, function($a, $b) {
                 $date_a = $a['view_date'] ? strtotime($a['view_date']) : 0;
                 $date_b = $b['view_date'] ? strtotime($b['view_date']) : 0;
+                // 没有日期的排在最后
+                if ($date_a === 0 && $date_b === 0) return 0;
+                if ($date_a === 0) return 1;
+                if ($date_b === 0) return -1;
                 return $date_b - $date_a;
             });
         } elseif ($sort === 'title_asc') {
