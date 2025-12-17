@@ -660,7 +660,20 @@
             if (res._debug_text) {
               errorMsg += '\n\n识别到的原始文本：\n' + res._debug_text;
             }
+            // 如果是API未配置的错误，提供配置说明
+            if (res._debug_message.indexOf('未配置') !== -1) {
+              errorMsg += '\n\n配置方法：\n';
+              errorMsg += '1. 登录WordPress数据库（phpMyAdmin）\n';
+              errorMsg += '2. 在 wp_options 表中添加以下选项：\n';
+              errorMsg += '   - musicalbum_baidu_api_key (百度OCR API Key)\n';
+              errorMsg += '   - musicalbum_baidu_secret_key (百度OCR Secret Key)\n';
+              errorMsg += '   或\n';
+              errorMsg += '   - musicalbum_aliyun_api_key (阿里云OCR API Key)\n';
+              errorMsg += '   - musicalbum_aliyun_endpoint (阿里云OCR端点URL)';
+            }
             alert(errorMsg);
+            // 如果有错误消息，不继续处理，直接返回
+            return;
           }
           
           // 填充表单字段

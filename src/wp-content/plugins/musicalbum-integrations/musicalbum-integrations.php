@@ -27,6 +27,7 @@ final class Musicalbum_Integrations {
         add_action('init', array(__CLASS__, 'register_viewing_post_type'));
         add_action('rest_api_init', array(__CLASS__, 'register_rest_routes'));
         add_action('acf/init', array(__CLASS__, 'register_acf_fields'));
+        add_action('admin_menu', array(__CLASS__, 'add_admin_menu'));
         // 示例：与第三方插件交互（替换为实际钩子）
         // add_filter('some_plugin_output', [__CLASS__, 'filter_some_plugin_output'], 10, 1);
     }
@@ -330,11 +331,18 @@ final class Musicalbum_Integrations {
                 }
             } else {
                 // 没有任何OCR API配置
-                $result = array('_debug_message' => 'OCR API未配置。请配置百度OCR（API密钥和Secret密钥）或阿里云OCR（API密钥和端点）');
+                $result = array(
+                    'title' => '',
+                    'theater' => '',
+                    'cast' => '',
+                    'price' => '',
+                    'view_date' => '',
+                    '_debug_message' => 'OCR API未配置。请配置百度OCR（API密钥和Secret密钥）或阿里云OCR（API密钥和端点）'
+                );
             }
         }
         
-        // 如果OCR API没有配置或返回空结果，返回空结果而不是错误
+        // 如果OCR API没有配置或返回空结果，确保返回完整的字段结构
         if (empty($result) || !is_array($result)) {
             $result = array(
                 'title' => '',
@@ -344,6 +352,13 @@ final class Musicalbum_Integrations {
                 'view_date' => '',
                 '_debug_message' => isset($result['_debug_message']) ? $result['_debug_message'] : 'OCR API返回空结果'
             );
+        } else {
+            // 确保所有字段都存在，即使API返回的结果中缺少某些字段
+            if (!isset($result['title'])) $result['title'] = '';
+            if (!isset($result['theater'])) $result['theater'] = '';
+            if (!isset($result['cast'])) $result['cast'] = '';
+            if (!isset($result['price'])) $result['price'] = '';
+            if (!isset($result['view_date'])) $result['view_date'] = '';
         }
         
         return rest_ensure_response($result);
@@ -1440,6 +1455,111 @@ final class Musicalbum_Integrations {
         return rest_ensure_response(array(
             'message' => '记录删除成功'
         ));
+    }
+
+    /**
+     * 添加管理菜单：OCR API配置
+     */
+    public static function add_admin_menu() {
+        add_submenu_page(
+            'options-general.php',
+            'OCR API 配置',
+            'OCR API 配置',
+            'manage_options',
+            'musicalbum-ocr-config',
+            array(__CLASS__, 'render_ocr_config_page')
+        );
+    }
+
+    /**
+     * 渲染OCR配置页面
+     */
+    public static function render_ocr_config_page() {
+        // 处理表单提交
+        if (isset($_POST['musicalbum_ocr_save']) && check_admin_referer('musicalbum_ocr_config')) {
+            $api_key = sanitize_text_field($_POST['baidu_api_key']);
+            $secret_key = sanitize_text_field($_POST['baidu_secret_key']);
+            
+            update_option('musicalbum_baidu_api_key', $api_key);
+            update_option('musicalbum_baidu_secret_key', $secret_key);
+            
+            echo '<div class="notice notice-success is-dismissible"><p>✓ OCR API配置已保存！</p></div>';
+        }
+        
+        // 获取当前配置
+        $current_api_key = get_option('musicalbum_baidu_api_key', '');
+        $current_secret_key = get_option('musicalbum_baidu_secret_key', '');
+        
+        ?>
+        <div class="wrap">
+            <h1>OCR API 配置</h1>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('musicalbum_ocr_config'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="baidu_api_key">百度OCR API Key</label>
+                        </th>
+                        <td>
+                            <input type="text" 
+                                   id="baidu_api_key" 
+                                   name="baidu_api_key" 
+                                   value="<?php echo esc_attr($current_api_key); ?>" 
+                                   class="regular-text"
+                                   placeholder="请输入百度OCR API Key">
+                            <p class="description">从百度智能云控制台获取</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="baidu_secret_key">百度OCR Secret Key</label>
+                        </th>
+                        <td>
+                            <input type="password" 
+                                   id="baidu_secret_key" 
+                                   name="baidu_secret_key" 
+                                   value="<?php echo esc_attr($current_secret_key); ?>" 
+                                   class="regular-text"
+                                   placeholder="请输入百度OCR Secret Key">
+                            <p class="description">从百度智能云控制台获取</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" 
+                           name="musicalbum_ocr_save" 
+                           class="button button-primary" 
+                           value="保存配置">
+                </p>
+            </form>
+            
+            <?php if (!empty($current_api_key) && !empty($current_secret_key)): ?>
+                <div class="notice notice-info">
+                    <p><strong>当前配置状态：</strong>已配置</p>
+                    <p>API Key: <code><?php echo esc_html($current_api_key); ?></code></p>
+                    <p>Secret Key: <code><?php echo !empty($current_secret_key) ? '已配置（已隐藏）' : '未配置'; ?></code></p>
+                </div>
+            <?php else: ?>
+                <div class="notice notice-warning">
+                    <p><strong>当前配置状态：</strong>未配置</p>
+                    <p>请填写API Key和Secret Key后点击"保存配置"。</p>
+                </div>
+            <?php endif; ?>
+            
+            <div class="card">
+                <h2>快速配置（使用你的密钥）</h2>
+                <p>你的百度OCR API密钥信息：</p>
+                <ul>
+                    <li><strong>API Key:</strong> <code>8vPJwV02JbdApar643L2J8ft</code></li>
+                    <li><strong>Secret Key:</strong> <code>gt4sMnjFvHlIyk3qLUTCiXz93KaK1PhV</code></li>
+                </ul>
+                <p>请将上述密钥填入上方表单并保存。</p>
+            </div>
+        </div>
+        <?php
     }
 }
 
