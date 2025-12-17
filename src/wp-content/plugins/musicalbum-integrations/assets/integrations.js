@@ -1109,6 +1109,20 @@
       eventClick: function(info) {
         var item = info.event.extendedProps;
         showCalendarEventDetail(info.event.id, info.event.title, item);
+      },
+      eventDidMount: function(arg) {
+        // 在listWeek视图中，如果是全天事件，隐藏时间元素中的"all-day"文本
+        if (arg.view.type === 'listWeek' && arg.event.allDay) {
+          // 查找时间元素
+          var timeEl = arg.el.querySelector('.fc-list-event-time');
+          if (timeEl) {
+            // 检查文本内容，如果包含"all-day"或"全天"，则隐藏
+            var timeText = timeEl.textContent || '';
+            if (timeText.trim() === 'all-day' || timeText.trim() === '全天' || timeText.indexOf('all-day') !== -1 || timeText.indexOf('全天') !== -1) {
+              timeEl.style.display = 'none';
+            }
+          }
+        }
       }
     });
     calendar.render();
