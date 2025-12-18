@@ -164,22 +164,4 @@ HTML;
     }
 }
 
-/**
- * 用户账户与权限模块说明
- * 
- * 1. 注册/登录/个人中心功能由 Profile Builder 插件提供，无需重复开发。
- *    - 页面可直接插入 Profile Builder 短码，如：
- *      [wppb-login]         // 登录
- *      [wppb-register]      // 注册
- *      [wppb-edit-profile]  // 编辑资料
- * 
- * 2. 观演数据管理与权限控制
- *    - “我的观演”列表（[musicalbum_profile_viewings]）仅显示当前用户数据。
- *    - 观演录入表单（[musicalbum_viewing_form]）新建记录自动归属当前用户。
- *    - 用户仅可编辑/删除自己创建的观演记录，无需额外权限逻辑。
- * 
- * 3. 如需前端“编辑观演”功能，可参考如下用法：
- *    [acf_form post_id="123"] // 仅允许作者本人编辑
- */
-
 Musicalbum_Smart_Recs::init();
