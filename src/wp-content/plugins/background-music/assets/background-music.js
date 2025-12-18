@@ -68,9 +68,18 @@
             
             // 鼠标按下事件
             musicPlayer.addEventListener('mousedown', function(e) {
-                // 如果点击的是按钮、滑块或选择框，不启动拖拽
-                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
-                    return;
+                // 在隐藏状态下，如果点击的是隐藏按钮的SVG图标，不启动拖拽（允许切换显示）
+                if (musicPlayer.classList.contains('hidden')) {
+                    if (e.target.closest('#music-toggle-hide svg') || e.target.closest('#music-toggle-hide')) {
+                        // 如果点击的是隐藏按钮，不拖拽，让点击事件处理切换
+                        return;
+                    }
+                    // 隐藏状态下，点击其他区域可以拖拽
+                } else {
+                    // 正常状态下，如果点击的是按钮、滑块或选择框，不启动拖拽
+                    if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
+                        return;
+                    }
                 }
                 
                 initialX = e.clientX - xOffset;
@@ -121,9 +130,16 @@
             
             // 触摸事件支持（移动设备）
             musicPlayer.addEventListener('touchstart', function(e) {
-                // 如果点击的是按钮、滑块或选择框，不启动拖拽
-                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
-                    return;
+                // 在隐藏状态下，如果点击的是隐藏按钮的SVG图标，不启动拖拽
+                if (musicPlayer.classList.contains('hidden')) {
+                    if (e.target.closest('#music-toggle-hide svg') || e.target.closest('#music-toggle-hide')) {
+                        return;
+                    }
+                } else {
+                    // 正常状态下，如果点击的是按钮、滑块或选择框，不启动拖拽
+                    if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
+                        return;
+                    }
                 }
                 
                 const touch = e.touches[0];
@@ -441,8 +457,12 @@
         // 隐藏按钮点击事件
         if (toggleHideBtn) {
             toggleHideBtn.addEventListener('click', function(e) {
-                e.stopPropagation(); // 防止触发拖拽
-                togglePlayerVisibility();
+                // 只有在点击SVG图标时才切换显示，点击按钮其他区域允许拖拽
+                if (e.target.closest('svg') || e.target.tagName === 'svg') {
+                    e.stopPropagation(); // 防止触发拖拽
+                    togglePlayerVisibility();
+                }
+                // 如果点击的是按钮但不是SVG，不阻止事件，允许拖拽
             });
         }
         

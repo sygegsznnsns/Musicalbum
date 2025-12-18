@@ -415,6 +415,13 @@
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
+    pointer-events: none; /* 按钮本身不阻止拖拽 */
+}
+
+/* 隐藏状态下，隐藏按钮的SVG图标区域可以点击 */
+#background-music-player.hidden #music-toggle-hide svg {
+    pointer-events: auto; /* SVG图标可以点击 */
 }
 
 #background-music-player.hidden #music-toggle-hide .hide-icon {
