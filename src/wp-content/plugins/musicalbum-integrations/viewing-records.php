@@ -117,6 +117,12 @@ final class Viewing_Records {
     public static function enqueue_assets() {
         wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
         wp_enqueue_style('viewing-records');
+        
+        // 获取主题颜色并注入动态 CSS
+        $theme_colors = self::get_theme_colors();
+        $dynamic_css = self::generate_theme_colored_css($theme_colors);
+        wp_add_inline_style('viewing-records', $dynamic_css);
+        
         // 引入 Chart.js 库
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
         // 引入 FullCalendar 库（用于日历视图）
@@ -136,6 +142,172 @@ final class Viewing_Records {
             )
         ));
         wp_enqueue_script('viewing-records');
+    }
+    
+    /**
+     * 获取主题颜色
+     */
+    private static function get_theme_colors() {
+        // 优先使用 CSS 变量（Astra 主题支持）
+        $primary_color = 'var(--ast-global-color-0, var(--wp--preset--color--primary, #3b82f6))';
+        $secondary_color = 'var(--ast-global-color-1, var(--wp--preset--color--secondary, #10b981))';
+        $accent_color = 'var(--ast-global-color-2, var(--wp--preset--color--accent, #8b5cf6))';
+        
+        // 尝试从主题设置获取颜色（Astra 主题）
+        $astra_primary = get_theme_mod('astra-color-palette-primary', '');
+        $astra_secondary = get_theme_mod('astra-color-palette-secondary', '');
+        $astra_accent = get_theme_mod('astra-color-palette-accent', '');
+        
+        // 如果获取到具体颜色值，使用具体值；否则使用 CSS 变量
+        if (!empty($astra_primary) && strpos($astra_primary, '#') === 0) {
+            $primary_color = $astra_primary;
+        }
+        if (!empty($astra_secondary) && strpos($astra_secondary, '#') === 0) {
+            $secondary_color = $astra_secondary;
+        }
+        if (!empty($astra_accent) && strpos($astra_accent, '#') === 0) {
+            $accent_color = $astra_accent;
+        }
+        
+        // 计算悬停颜色
+        // 如果是 CSS 变量，使用 filter: brightness() 或保持原样
+        // 如果是具体颜色值，计算加深后的颜色
+        $primary_hover = (strpos($primary_color, 'var(') !== false) 
+            ? $primary_color 
+            : self::darken_color($primary_color, 10);
+        $secondary_hover = (strpos($secondary_color, 'var(') !== false) 
+            ? $secondary_color 
+            : self::darken_color($secondary_color, 10);
+        $accent_hover = (strpos($accent_color, 'var(') !== false) 
+            ? $accent_color 
+            : self::darken_color($accent_color, 10);
+        
+        return array(
+            'primary' => $primary_color,
+            'primary_hover' => $primary_hover,
+            'secondary' => $secondary_color,
+            'secondary_hover' => $secondary_hover,
+            'accent' => $accent_color,
+            'accent_hover' => $accent_hover,
+        );
+    }
+    
+    /**
+     * 生成使用主题颜色的动态 CSS
+     */
+    private static function generate_theme_colored_css($colors) {
+        // 对于 CSS 变量，悬停时使用 filter: brightness()
+        $primary_hover_style = (strpos($colors['primary'], 'var(') !== false) 
+            ? 'filter: brightness(0.9);' 
+            : 'background: ' . esc_attr($colors['primary_hover']) . ' !important;';
+        $secondary_hover_style = (strpos($colors['secondary'], 'var(') !== false) 
+            ? 'filter: brightness(0.9);' 
+            : 'background: ' . esc_attr($colors['secondary_hover']) . ' !important;';
+        $accent_hover_style = (strpos($colors['accent'], 'var(') !== false) 
+            ? 'filter: brightness(0.9);' 
+            : 'background: ' . esc_attr($colors['accent_hover']) . ' !important;';
+        
+        $css = '
+        /* 主题颜色覆盖 - 使用主题颜色变量 */
+        .musicalbum-btn {
+            background: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-btn:hover {
+            ' . $primary_hover_style . '
+        }
+        .musicalbum-btn-refresh {
+            background: ' . esc_attr($colors['secondary']) . ' !important;
+        }
+        .musicalbum-btn-refresh:hover {
+            ' . $secondary_hover_style . '
+        }
+        .musicalbum-btn-export {
+            background: ' . esc_attr($colors['accent']) . ' !important;
+        }
+        .musicalbum-btn-export:hover {
+            ' . $accent_hover_style . '
+        }
+        .musicalbum-btn-primary {
+            background: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-btn-primary:hover {
+            ' . $primary_hover_style . '
+        }
+        .musicalbum-details-item:hover {
+            border-color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-details-item h4 a {
+            color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-details-item h4 a:hover {
+            ' . ((strpos($colors['primary'], 'var(') !== false) ? 'filter: brightness(0.85);' : 'color: ' . esc_attr($colors['primary_hover']) . ' !important;') . '
+        }
+        .musicalbum-tab-btn.active {
+            color: ' . esc_attr($colors['primary']) . ' !important;
+            border-bottom-color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-form-group input:focus,
+        .musicalbum-form-group select:focus,
+        .musicalbum-form-group textarea:focus {
+            border-color: ' . esc_attr($colors['primary']) . ' !important;
+            box-shadow: 0 0 0 3px ' . esc_attr(self::hex_to_rgba($colors['primary'], 0.1)) . ' !important;
+        }
+        .musicalbum-view-btn.active {
+            background: ' . esc_attr($colors['primary']) . ' !important;
+            color: #fff !important;
+        }
+        .musicalbum-calendar-nav-label {
+            color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        ';
+        
+        return $css;
+    }
+    
+    /**
+     * 将十六进制颜色转换为 rgba（用于 box-shadow）
+     */
+    private static function hex_to_rgba($hex, $alpha = 1) {
+        // 如果是 CSS 变量，返回默认值
+        if (strpos($hex, 'var(') !== false) {
+            return 'rgba(59, 130, 246, ' . $alpha . ')';
+        }
+        
+        $hex = ltrim($hex, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        return 'rgba(' . $r . ', ' . $g . ', ' . $b . ', ' . $alpha . ')';
+    }
+    
+    /**
+     * 加深颜色（用于悬停效果）
+     */
+    private static function darken_color($color, $percent) {
+        // 如果是 CSS 变量，直接返回
+        if (strpos($color, 'var(') !== false) {
+            // 对于 CSS 变量，使用 filter: brightness() 或返回原色
+            return $color;
+        }
+        
+        // 移除 # 号
+        $color = ltrim($color, '#');
+        
+        // 转换为 RGB
+        $r = hexdec(substr($color, 0, 2));
+        $g = hexdec(substr($color, 2, 2));
+        $b = hexdec(substr($color, 4, 2));
+        
+        // 加深
+        $r = max(0, min(255, $r - ($r * $percent / 100)));
+        $g = max(0, min(255, $g - ($g * $percent / 100)));
+        $b = max(0, min(255, $b - ($b * $percent / 100)));
+        
+        // 转换回十六进制
+        return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($g), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
     }
 
     /**
