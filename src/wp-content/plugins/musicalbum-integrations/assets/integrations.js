@@ -1760,21 +1760,10 @@
         resetForm();
       }
       
-      // 如果在详情页，刷新页面；否则刷新列表和日历
-      if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
-        // 延迟一下再刷新，确保数据已保存
-        setTimeout(function() {
-          location.reload();
-        }, 500);
-      } else {
-        // 刷新列表和日历
-        if (typeof loadListView === 'function') {
-          loadListView();
-        }
-        if (window.viewingCalendar) {
-          window.viewingCalendar.refetchEvents();
-        }
-      }
+      // 保存成功后自动刷新页面
+      setTimeout(function() {
+        location.reload();
+      }, 500);
     }).fail(function(xhr) {
       var msg = '保存失败';
       if (xhr.responseJSON) {
