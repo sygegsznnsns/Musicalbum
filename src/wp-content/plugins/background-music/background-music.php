@@ -83,8 +83,11 @@ final class Background_Music {
         register_setting('background_music_options', 'background_music_url');
         register_setting('background_music_options', 'selected_music_id');
         register_setting('background_music_options', 'preset_music_1_url');
+        register_setting('background_music_options', 'preset_music_1_name');
         register_setting('background_music_options', 'preset_music_2_url');
+        register_setting('background_music_options', 'preset_music_2_name');
         register_setting('background_music_options', 'preset_music_3_url');
+        register_setting('background_music_options', 'preset_music_3_name');
         
         add_settings_section(
             'background_music_section',
@@ -141,33 +144,65 @@ final class Background_Music {
      */
     public function render_preset_musics_field() {
         $preset_1_url = get_option('preset_music_1_url', '');
+        $preset_1_name = get_option('preset_music_1_name', '');
         $preset_2_url = get_option('preset_music_2_url', '');
+        $preset_2_name = get_option('preset_music_2_name', '');
         $preset_3_url = get_option('preset_music_3_url', '');
+        $preset_3_name = get_option('preset_music_3_name', '');
         
         echo '<table class="form-table">';
+        
+        // 预设音乐 1
         echo '<tr>';
-        echo '<th><label for="preset_music_1_url">预设音乐 1</label></th>';
+        echo '<th><label for="preset_music_1_name">预设音乐 1</label></th>';
         echo '<td>';
+        echo '<div style="margin-bottom: 8px;">';
+        echo '<label for="preset_music_1_name" style="display: block; margin-bottom: 4px; font-weight: 500;">显示名称：</label>';
+        echo '<input type="text" name="preset_music_1_name" id="preset_music_1_name" value="' . esc_attr($preset_1_name) . '" class="regular-text" placeholder="例如：轻松音乐" style="max-width: 300px;" />';
+        echo '<p class="description" style="margin-top: 4px;">这个名称会显示在前端音乐选择下拉菜单中，让用户知道这是什么音乐。</p>';
+        echo '</div>';
+        echo '<div>';
+        echo '<label for="preset_music_1_url" style="display: block; margin-bottom: 4px; font-weight: 500;">音频文件URL：</label>';
         echo '<input type="url" name="preset_music_1_url" id="preset_music_1_url" value="' . esc_attr($preset_1_url) . '" class="regular-text" placeholder="从媒体库选择音频文件URL" />';
-        echo '<p class="description">上传音频文件到<a href="' . admin_url('media-new.php') . '" target="_blank">媒体库</a>，然后复制文件URL粘贴到这里。留空则不显示此预设音乐。</p>';
+        echo '<p class="description" style="margin-top: 4px;">上传音频文件到<a href="' . admin_url('media-new.php') . '" target="_blank">媒体库</a>，然后复制文件URL粘贴到这里。留空则不显示此预设音乐。</p>';
+        echo '</div>';
         echo '</td>';
         echo '</tr>';
         
+        // 预设音乐 2
         echo '<tr>';
-        echo '<th><label for="preset_music_2_url">预设音乐 2</label></th>';
+        echo '<th><label for="preset_music_2_name">预设音乐 2</label></th>';
         echo '<td>';
+        echo '<div style="margin-bottom: 8px;">';
+        echo '<label for="preset_music_2_name" style="display: block; margin-bottom: 4px; font-weight: 500;">显示名称：</label>';
+        echo '<input type="text" name="preset_music_2_name" id="preset_music_2_name" value="' . esc_attr($preset_2_name) . '" class="regular-text" placeholder="例如：工作音乐" style="max-width: 300px;" />';
+        echo '<p class="description" style="margin-top: 4px;">这个名称会显示在前端音乐选择下拉菜单中，让用户知道这是什么音乐。</p>';
+        echo '</div>';
+        echo '<div>';
+        echo '<label for="preset_music_2_url" style="display: block; margin-bottom: 4px; font-weight: 500;">音频文件URL：</label>';
         echo '<input type="url" name="preset_music_2_url" id="preset_music_2_url" value="' . esc_attr($preset_2_url) . '" class="regular-text" placeholder="从媒体库选择音频文件URL" />';
-        echo '<p class="description">上传音频文件到<a href="' . admin_url('media-new.php') . '" target="_blank">媒体库</a>，然后复制文件URL粘贴到这里。留空则不显示此预设音乐。</p>';
+        echo '<p class="description" style="margin-top: 4px;">上传音频文件到<a href="' . admin_url('media-new.php') . '" target="_blank">媒体库</a>，然后复制文件URL粘贴到这里。留空则不显示此预设音乐。</p>';
+        echo '</div>';
         echo '</td>';
         echo '</tr>';
         
+        // 预设音乐 3
         echo '<tr>';
-        echo '<th><label for="preset_music_3_url">预设音乐 3</label></th>';
+        echo '<th><label for="preset_music_3_name">预设音乐 3</label></th>';
         echo '<td>';
+        echo '<div style="margin-bottom: 8px;">';
+        echo '<label for="preset_music_3_name" style="display: block; margin-bottom: 4px; font-weight: 500;">显示名称：</label>';
+        echo '<input type="text" name="preset_music_3_name" id="preset_music_3_name" value="' . esc_attr($preset_3_name) . '" class="regular-text" placeholder="例如：放松音乐" style="max-width: 300px;" />';
+        echo '<p class="description" style="margin-top: 4px;">这个名称会显示在前端音乐选择下拉菜单中，让用户知道这是什么音乐。</p>';
+        echo '</div>';
+        echo '<div>';
+        echo '<label for="preset_music_3_url" style="display: block; margin-bottom: 4px; font-weight: 500;">音频文件URL：</label>';
         echo '<input type="url" name="preset_music_3_url" id="preset_music_3_url" value="' . esc_attr($preset_3_url) . '" class="regular-text" placeholder="从媒体库选择音频文件URL" />';
-        echo '<p class="description">上传音频文件到<a href="' . admin_url('media-new.php') . '" target="_blank">媒体库</a>，然后复制文件URL粘贴到这里。留空则不显示此预设音乐。</p>';
+        echo '<p class="description" style="margin-top: 4px;">上传音频文件到<a href="' . admin_url('media-new.php') . '" target="_blank">媒体库</a>，然后复制文件URL粘贴到这里。留空则不显示此预设音乐。</p>';
+        echo '</div>';
         echo '</td>';
         echo '</tr>';
+        
         echo '</table>';
     }
     
@@ -176,29 +211,32 @@ final class Background_Music {
      */
     private function get_preset_musics() {
         $preset_1_url = get_option('preset_music_1_url', '');
+        $preset_1_name = get_option('preset_music_1_name', '');
         $preset_2_url = get_option('preset_music_2_url', '');
+        $preset_2_name = get_option('preset_music_2_name', '');
         $preset_3_url = get_option('preset_music_3_url', '');
+        $preset_3_name = get_option('preset_music_3_name', '');
         
         $presets = array();
         
         // 只有设置了URL的预设音乐才会显示
         if (!empty($preset_1_url)) {
             $presets['preset_1'] = array(
-                'name' => '预设音乐 1',
+                'name' => !empty($preset_1_name) ? $preset_1_name : '预设音乐 1',
                 'url' => $preset_1_url
             );
         }
         
         if (!empty($preset_2_url)) {
             $presets['preset_2'] = array(
-                'name' => '预设音乐 2',
+                'name' => !empty($preset_2_name) ? $preset_2_name : '预设音乐 2',
                 'url' => $preset_2_url
             );
         }
         
         if (!empty($preset_3_url)) {
             $presets['preset_3'] = array(
-                'name' => '预设音乐 3',
+                'name' => !empty($preset_3_name) ? $preset_3_name : '预设音乐 3',
                 'url' => $preset_3_url
             );
         }
