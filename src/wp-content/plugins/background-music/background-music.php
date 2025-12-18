@@ -353,14 +353,6 @@ final class Background_Music {
                 <span id="music-volume-icon">🔊</span>
                 <input type="range" id="music-volume" min="0" max="1" step="0.01" value="0.5" aria-label="音量控制">
             </div>
-            <button id="music-toggle-hide" aria-label="隐藏/显示播放器" title="隐藏/显示播放器">
-                <svg class="hide-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M6 4l4 4-4 4V4z"/>
-                </svg>
-                <svg class="show-icon" width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="display: none;">
-                    <path d="M3 2.5v11l9-5.5z"/>
-                </svg>
-            </button>
         </div>
         
         <div id="music-info" style="display: none; opacity: 0;">

@@ -14,7 +14,6 @@
         const musicInfo = document.getElementById('music-info');
         const musicPlayer = document.getElementById('background-music-player');
         const musicSelect = document.getElementById('music-select');
-        const toggleHideBtn = document.getElementById('music-toggle-hide');
         
         if (!audio) return;
         
@@ -65,46 +64,19 @@
                 
             }
             
-            // 长按检测相关变量
-            let longPressTimer = null;
-            let isLongPress = false;
-            let longPressDelay = 300; // 300ms 视为长按
-            
             // 鼠标按下事件
             musicPlayer.addEventListener('mousedown', function(e) {
-                // 在隐藏状态下，需要区分单击和长按
-                if (musicPlayer.classList.contains('hidden')) {
-                    // 隐藏状态下，点击任何地方都可能是要拖拽或切换
-                    // 先设置长按定时器
-                    isLongPress = false;
-                    longPressTimer = setTimeout(function() {
-                        // 长按触发，启动拖拽
-                        isLongPress = true;
-                        initialX = e.clientX - xOffset;
-                        initialY = e.clientY - yOffset;
-                        isDragging = true;
-                        musicPlayer.classList.add('dragging');
-                    }, longPressDelay);
-                } else {
-                    // 正常状态下，如果点击的是隐藏按钮，允许点击事件处理切换
-                    if (e.target.closest('#music-toggle-hide')) {
-                        // 不启动拖拽，让点击事件处理切换
-                        return;
-                    }
-                    
-                    // 正常状态下，如果点击的是其他按钮、滑块或选择框，不启动拖拽
-                    if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
-                        return;
-                    }
-                    
-                    // 正常状态下，直接启动拖拽
-                    initialX = e.clientX - xOffset;
-                    initialY = e.clientY - yOffset;
-                    
-                    if (e.target === musicPlayer || e.target.closest('#background-music-player')) {
-                        isDragging = true;
-                        musicPlayer.classList.add('dragging');
-                    }
+                // 如果点击的是按钮、滑块或选择框，不启动拖拽
+                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
+                    return;
+                }
+                
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                
+                if (e.target === musicPlayer || e.target.closest('#background-music-player')) {
+                    isDragging = true;
+                    musicPlayer.classList.add('dragging');
                 }
             });
             
@@ -146,97 +118,35 @@
             });
             
             // 鼠标释放事件
-            document.addEventListener('mouseup', function(e) {
-                // 清除长按定时器
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                
-                // 如果是拖拽状态，结束拖拽
+            document.addEventListener('mouseup', function() {
                 if (isDragging) {
                     isDragging = false;
                     musicPlayer.classList.remove('dragging');
                     // 恢复transition
                     musicPlayer.style.transition = '';
                     savePosition();
-                    isLongPress = false;
-                } else if (musicPlayer.classList.contains('hidden') && !isLongPress) {
-                    // 隐藏状态下，如果不是长按（即单击），切换显示
-                    togglePlayerVisibility();
-                } else if (!musicPlayer.classList.contains('hidden')) {
-                    // 正常状态下，如果点击的是隐藏按钮，切换隐藏
-                    const clickTarget = e.target;
-                    if (clickTarget.closest('#music-toggle-hide') || clickTarget === toggleHideBtn) {
-                        togglePlayerVisibility();
-                    }
                 }
-                
-                isLongPress = false;
             });
-            
-            let touchStartX = 0;
-            let touchStartY = 0;
             
             // 触摸事件支持（移动设备）
             musicPlayer.addEventListener('touchstart', function(e) {
+                // 如果点击的是按钮、滑块或选择框，不启动拖拽
+                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
+                    return;
+                }
+                
                 const touch = e.touches[0];
-                if (!touch) return;
+                initialX = touch.clientX - xOffset;
+                initialY = touch.clientY - yOffset;
                 
-                touchStartX = touch.clientX;
-                touchStartY = touch.clientY;
-                
-                // 在隐藏状态下，需要区分单击和长按
-                if (musicPlayer.classList.contains('hidden')) {
-                    // 隐藏状态下，先设置长按定时器
-                    isLongPress = false;
-                    longPressTimer = setTimeout(function() {
-                        // 长按触发，启动拖拽
-                        isLongPress = true;
-                        initialX = touch.clientX - xOffset;
-                        initialY = touch.clientY - yOffset;
-                        isDragging = true;
-                        musicPlayer.classList.add('dragging');
-                    }, longPressDelay);
-                } else {
-                    // 正常状态下，如果点击的是按钮、滑块或选择框，不启动拖拽
-                    if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
-                        return;
-                    }
-                    
-                    initialX = touch.clientX - xOffset;
-                    initialY = touch.clientY - yOffset;
-                    
-                    if (e.target === musicPlayer || e.target.closest('#background-music-player')) {
-                        isDragging = true;
-                        musicPlayer.classList.add('dragging');
-                        e.preventDefault();
-                    }
+                if (e.target === musicPlayer || e.target.closest('#background-music-player')) {
+                    isDragging = true;
+                    musicPlayer.classList.add('dragging');
+                    e.preventDefault();
                 }
             });
             
             document.addEventListener('touchmove', function(e) {
-                // 如果触摸移动了，且还在长按定时器期间，取消长按定时器（说明是拖拽）
-                if (longPressTimer && !isDragging) {
-                    const touch = e.touches[0];
-                    if (touch) {
-                        const moveDistance = Math.sqrt(
-                            Math.pow(touch.clientX - touchStartX, 2) + 
-                            Math.pow(touch.clientY - touchStartY, 2)
-                        );
-                        if (moveDistance > 5) {
-                            // 移动距离超过5px，视为拖拽，取消长按定时器，直接启动拖拽
-                            clearTimeout(longPressTimer);
-                            longPressTimer = null;
-                            isLongPress = true;
-                            initialX = touch.clientX - xOffset;
-                            initialY = touch.clientY - yOffset;
-                            isDragging = true;
-                            musicPlayer.classList.add('dragging');
-                        }
-                    }
-                }
-                
                 if (isDragging) {
                     e.preventDefault();
                     
@@ -255,26 +165,13 @@
                 }
             });
             
-            document.addEventListener('touchend', function(e) {
-                // 清除长按定时器
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                
-                // 如果是拖拽状态，结束拖拽
+            document.addEventListener('touchend', function() {
                 if (isDragging) {
                     isDragging = false;
                     musicPlayer.classList.remove('dragging');
                     musicPlayer.style.transition = '';
                     savePosition();
-                    isLongPress = false;
-                } else if (musicPlayer.classList.contains('hidden') && !isLongPress) {
-                    // 隐藏状态下，如果不是长按（即单击），切换显示
-                    togglePlayerVisibility();
                 }
-                
-                isLongPress = false;
             });
         }
         
@@ -521,52 +418,6 @@
             }, 3000);
         }
         
-        // 隐藏/显示播放器功能（在原位置缩小/展开）
-        function togglePlayerVisibility() {
-            if (!musicPlayer || !toggleHideBtn) return;
-            
-            const isHidden = musicPlayer.classList.contains('hidden');
-            const hideIcon = toggleHideBtn.querySelector('.hide-icon');
-            const showIcon = toggleHideBtn.querySelector('.show-icon');
-            
-            if (isHidden) {
-                // 展开播放器
-                musicPlayer.classList.remove('hidden');
-                if (hideIcon) hideIcon.style.display = 'block';
-                if (showIcon) showIcon.style.display = 'none';
-                localStorage.setItem('backgroundMusicHidden', 'false');
-            } else {
-                // 隐藏播放器（缩小成圆形按钮）
-                musicPlayer.classList.add('hidden');
-                if (hideIcon) hideIcon.style.display = 'none';
-                if (showIcon) showIcon.style.display = 'block';
-                localStorage.setItem('backgroundMusicHidden', 'true');
-            }
-        }
-        
-        // 隐藏按钮点击事件（作为备用，主要逻辑在mouseup/touchend中处理）
-        if (toggleHideBtn) {
-            toggleHideBtn.addEventListener('click', function(e) {
-                // 只在正常状态下处理，隐藏状态下由mouseup/touchend处理
-                if (!musicPlayer.classList.contains('hidden')) {
-                    e.stopPropagation();
-                    togglePlayerVisibility();
-                }
-            });
-        }
-        
-        // 恢复隐藏状态
-        const isHidden = localStorage.getItem('backgroundMusicHidden');
-        if (isHidden === 'true' && musicPlayer && toggleHideBtn) {
-            // 延迟执行，确保样式已加载
-            setTimeout(function() {
-                const hideIcon = toggleHideBtn.querySelector('.hide-icon');
-                const showIcon = toggleHideBtn.querySelector('.show-icon');
-                musicPlayer.classList.add('hidden');
-                if (hideIcon) hideIcon.style.display = 'none';
-                if (showIcon) showIcon.style.display = 'block';
-            }, 100);
-        }
     });
 })();
 
