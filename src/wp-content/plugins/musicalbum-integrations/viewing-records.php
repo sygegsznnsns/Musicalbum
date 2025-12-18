@@ -1078,6 +1078,89 @@ final class Viewing_Records {
     }
 
     /**
+     * 观影点滴仪表板短码：父页面概览
+     * 使用 [musicalbum_dashboard] 或 [viewing_dashboard] 在页面中插入
+     */
+    public static function shortcode_dashboard($atts = array(), $content = '') {
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-statistics-error">请先登录以查看观影点滴</div>';
+        }
+        
+        // 获取子页面链接（如果已创建）
+        $manager_page = get_option('musicalbum_manager_page_id');
+        $statistics_page = get_option('musicalbum_statistics_page_id');
+        
+        $manager_url = $manager_page ? get_permalink($manager_page) : '#';
+        $statistics_url = $statistics_page ? get_permalink($statistics_page) : '#';
+        
+        ob_start();
+        ?>
+        <div class="musicalbum-dashboard-container">
+            <div class="musicalbum-dashboard-header">
+                <h1 class="musicalbum-dashboard-title">观影点滴</h1>
+                <p class="musicalbum-dashboard-subtitle">记录每一次观演的美好时光</p>
+            </div>
+            
+            <!-- 快速导航卡片 -->
+            <div class="musicalbum-dashboard-nav">
+                <a href="<?php echo esc_url($manager_url); ?>" class="musicalbum-dashboard-card">
+                    <div class="musicalbum-dashboard-card-icon">📝</div>
+                    <h3>记录管理</h3>
+                    <p>管理您的观演记录，添加、编辑或删除记录</p>
+                </a>
+                <a href="<?php echo esc_url($statistics_url); ?>" class="musicalbum-dashboard-card">
+                    <div class="musicalbum-dashboard-card-icon">📊</div>
+                    <h3>数据统计</h3>
+                    <p>查看观演数据可视化图表和统计分析</p>
+                </a>
+            </div>
+            
+            <!-- 数据概览 -->
+            <div class="musicalbum-dashboard-overview" id="musicalbum-dashboard-overview">
+                <h2 class="musicalbum-dashboard-section-title">数据概览</h2>
+                <div class="musicalbum-dashboard-stats-grid">
+                    <div class="musicalbum-dashboard-stat-card">
+                        <div class="stat-value" id="stat-total-count">-</div>
+                        <div class="stat-label">总记录数</div>
+                    </div>
+                    <div class="musicalbum-dashboard-stat-card">
+                        <div class="stat-value" id="stat-this-month">-</div>
+                        <div class="stat-label">本月观演</div>
+                    </div>
+                    <div class="musicalbum-dashboard-stat-card">
+                        <div class="stat-value" id="stat-total-spent">-</div>
+                        <div class="stat-label">总花费</div>
+                    </div>
+                    <div class="musicalbum-dashboard-stat-card">
+                        <div class="stat-value" id="stat-favorite-category">-</div>
+                        <div class="stat-label">最爱类别</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 最近观演记录 -->
+            <div class="musicalbum-dashboard-recent" id="musicalbum-dashboard-recent">
+                <h2 class="musicalbum-dashboard-section-title">最近观演</h2>
+                <div class="musicalbum-dashboard-recent-list" id="musicalbum-recent-list">
+                    <div class="musicalbum-dashboard-loading">加载中...</div>
+                </div>
+            </div>
+            
+            <!-- 快速操作 -->
+            <div class="musicalbum-dashboard-actions">
+                <a href="<?php echo esc_url($manager_url); ?>" class="musicalbum-btn musicalbum-btn-primary">
+                    <span>+</span> 新增记录
+                </a>
+                <a href="<?php echo esc_url($statistics_url); ?>" class="musicalbum-btn musicalbum-btn-secondary">
+                    📊 查看统计
+                </a>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
      * 统计数据 REST API 端点
      * 返回当前用户的观演数据统计（管理员可查看所有数据）
      */
