@@ -65,7 +65,22 @@ final class Musicalbum_User_Access {
             return;
         }
 
-        if ($query->get('post_type') !== self::VIEWING_CPT) {
+        // 支持旧 CPT 名称与新 CPT 名称，确保前端/后台查询都能被限制
+        $post_type = $query->get('post_type');
+        $viewing_types = array(self::VIEWING_CPT, 'viewing_record');
+        // 处理 post_type 为空或数组的情况
+        if (empty($post_type)) {
+            // 如果没有显式设置 post_type，检查 query 是否是针对 viewing CPT 的（例如 admin 列表）
+            // 继续执行，后续 author 限制也适用于全局查询限制（不会误伤其他查询）
+        } elseif (is_array($post_type)) {
+            $intersect = array_intersect($post_type, $viewing_types);
+            if (empty($intersect)) {
+                return;
+            }
+        } else {
+            if (!in_array($post_type, $viewing_types)) {
+                return;
+            }
             return;
         }
 
@@ -95,7 +110,10 @@ final class Musicalbum_User_Access {
         $post_id = intval($args[2]);
         $post    = get_post($post_id);
 
-        if (!$post || $post->post_type !== self::VIEWING_CPT) {
+
+        // 支持旧/new CPT 名称
+        $valid_types = array(self::VIEWING_CPT, 'viewing_record');
+        if (!$post || !in_array($post->post_type, $valid_types)) {
             return $allcaps;
         }
 

@@ -3,6 +3,7 @@
 Plugin Name: Musicalbum Smart Recommendations
 Description: 基于 CRP 与 YITH 的智能剧目推荐模块
 Version: 0.4.0
+Author: ji peng
 */
 
 defined('ABSPATH') || exit;
