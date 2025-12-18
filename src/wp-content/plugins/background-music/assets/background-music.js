@@ -250,7 +250,23 @@
         if (musicSelect && Object.keys(presets).length > 1) {
             musicSelect.addEventListener('change', function() {
                 const selectedId = this.value;
+                
+                // 如果选择的是空选项（"选择音乐"），停止播放
                 if (!selectedId || !presets[selectedId]) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    updatePlayButton(false);
+                    if (musicInfo) {
+                        musicInfo.textContent = '已停止播放音乐';
+                        musicInfo.style.display = 'block';
+                        musicInfo.style.opacity = '1';
+                        setTimeout(function() {
+                            musicInfo.style.opacity = '0';
+                            setTimeout(function() {
+                                musicInfo.style.display = 'none';
+                            }, 500);
+                        }, 2000);
+                    }
                     return;
                 }
                 
@@ -258,6 +274,9 @@
                 const newUrl = selectedMusic.url;
                 
                 if (!newUrl) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    updatePlayButton(false);
                     if (musicInfo) {
                         musicInfo.textContent = '音乐URL无效';
                         musicInfo.style.display = 'block';

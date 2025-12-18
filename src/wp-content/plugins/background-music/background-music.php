@@ -340,7 +340,7 @@ final class Background_Music {
             <?php if (!empty($preset_musics) && count($preset_musics) > 1): ?>
             <div id="music-select-control">
                 <select id="music-select" aria-label="选择背景音乐">
-                    <option value="">选择音乐</option>
+                    <option value="">选择音乐--无</option>
                     <?php foreach ($preset_musics as $id => $music): ?>
                         <option value="<?php echo esc_attr($id); ?>" data-url="<?php echo esc_attr($music['url']); ?>" <?php echo ($selected_id === $id) ? 'selected' : ''; ?>>
                             <?php echo esc_html($music['name']); ?>
