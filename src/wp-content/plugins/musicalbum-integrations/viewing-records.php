@@ -1903,56 +1903,40 @@ final class Viewing_Records {
         }
 
         $params = $request->get_json_params();
-        
-        // 记录接收到的参数（用于调试）
-        error_log('Viewing Records Update Request: Post ID ' . $post_id . ', Params: ' . print_r($params, true));
 
         // 更新标题（即使为空也更新）
         if (array_key_exists('title', $params)) {
             $title = sanitize_text_field($params['title']);
-            $update_result = wp_update_post(array(
+            wp_update_post(array(
                 'ID' => $post_id,
                 'post_title' => $title
             ));
-            if (is_wp_error($update_result)) {
-                error_log('Viewing Records Update Error: ' . $update_result->get_error_message());
-            } else {
-                error_log('Viewing Records Update: Title updated to "' . $title . '"');
-            }
         }
 
         // 更新ACF字段（使用 array_key_exists 确保即使值为空也能更新）
         if (array_key_exists('category', $params)) {
-            $result = update_field('category', sanitize_text_field($params['category']), $post_id);
-            error_log('Viewing Records Update: category = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['category']);
+            update_field('category', sanitize_text_field($params['category']), $post_id);
         }
         if (array_key_exists('theater', $params)) {
-            $result = update_field('theater', sanitize_text_field($params['theater']), $post_id);
-            error_log('Viewing Records Update: theater = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['theater']);
+            update_field('theater', sanitize_text_field($params['theater']), $post_id);
         }
         if (array_key_exists('cast', $params)) {
-            $result = update_field('cast', sanitize_text_field($params['cast']), $post_id);
-            error_log('Viewing Records Update: cast = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['cast']);
+            update_field('cast', sanitize_text_field($params['cast']), $post_id);
         }
         if (array_key_exists('price', $params)) {
-            $result = update_field('price', sanitize_text_field($params['price']), $post_id);
-            error_log('Viewing Records Update: price = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['price']);
+            update_field('price', sanitize_text_field($params['price']), $post_id);
         }
         if (array_key_exists('view_date', $params)) {
-            $result = update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
-            error_log('Viewing Records Update: view_date = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['view_date']);
+            update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
         }
         if (array_key_exists('view_time_start', $params)) {
-            $result = update_field('view_time_start', sanitize_text_field($params['view_time_start']), $post_id);
-            error_log('Viewing Records Update: view_time_start = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['view_time_start']);
+            update_field('view_time_start', sanitize_text_field($params['view_time_start']), $post_id);
         }
         if (array_key_exists('view_time_end', $params)) {
-            $result = update_field('view_time_end', sanitize_text_field($params['view_time_end']), $post_id);
-            error_log('Viewing Records Update: view_time_end = ' . ($result ? 'success' : 'failed') . ', value = ' . $params['view_time_end']);
+            update_field('view_time_end', sanitize_text_field($params['view_time_end']), $post_id);
         }
         if (array_key_exists('notes', $params)) {
-            $result = update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
-            error_log('Viewing Records Update: notes = ' . ($result ? 'success' : 'failed') . ', value length = ' . strlen($params['notes']));
+            update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
         }
         // 处理票面图片：优先使用新上传的图片ID，如果没有新图片则保留或删除
         if (isset($params['ticket_image_id'])) {
@@ -1964,14 +1948,6 @@ final class Viewing_Records {
                 update_field('ticket_image', '', $post_id);
             }
         }
-        
-        // 记录更新日志（用于调试）
-        error_log('Viewing Records Update: Post ID ' . $post_id . ', Params: ' . print_r($params, true));
-        
-        // 验证更新是否成功
-        $updated_title = get_the_title($post_id);
-        $updated_category = get_field('category', $post_id);
-        error_log('Viewing Records Update Result: Title=' . $updated_title . ', Category=' . $updated_category);
 
         return rest_ensure_response(array(
             'id' => $post_id,

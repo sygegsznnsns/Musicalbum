@@ -538,7 +538,6 @@
       link.click();
       document.body.removeChild(link);
     } catch (e) {
-      console.error('导出图表失败:', e);
       alert('导出图表失败，请稍后重试');
     }
   }
@@ -621,15 +620,11 @@
 
     // OCR识别
     $('#musicalbum-ocr-manager-button').on('click', function() {
-      console.log('=== OCR识别开始 ===');
       var file = $('#musicalbum-ocr-manager-file')[0].files[0];
       if (!file) {
-        console.warn('OCR: 未选择文件');
         alert('请先选择图片文件');
         return;
       }
-      
-      console.log('OCR: 文件已选择', file.name, file.size + ' bytes');
       
       var $btn = $(this);
       var originalText = $btn.text();
@@ -644,8 +639,6 @@
       
       var fd = new FormData();
       fd.append('image', file);
-      
-      console.log('OCR: 发送请求到', ViewingRecords.rest.ocr);
       
       $.ajax({
         url: ViewingRecords.rest.ocr,
@@ -701,67 +694,45 @@
           // 填充表单字段
           if (res.title) {
             $('#musicalbum-ocr-title').val(res.title);
-            console.log('✓ 已填充标题:', res.title);
           }
           if (res.theater) {
             $('#musicalbum-ocr-theater').val(res.theater);
-            console.log('✓ 已填充剧院:', res.theater);
           }
           if (res.cast) {
             $('#musicalbum-ocr-cast').val(res.cast);
-            console.log('✓ 已填充卡司:', res.cast);
           }
           if (res.price) {
             $('#musicalbum-ocr-price').val(res.price);
-            console.log('✓ 已填充票价:', res.price);
           }
           if (res.view_date) {
             $('#musicalbum-ocr-date').val(res.view_date);
-        $('#musicalbum-ocr-date-picker').val(res.view_date);
-            console.log('✓ 已填充日期:', res.view_date);
+            $('#musicalbum-ocr-date-picker').val(res.view_date);
           }
           $('#musicalbum-ocr-form').show();
           
           // 检查是否识别到任何有效数据
           var hasData = !!(res.title || res.theater || res.cast || res.price || res.view_date);
-          console.log('OCR: 是否识别到有效数据:', hasData);
           
-          if (hasData) {
-            console.log('✓ OCR识别成功！已填充表单字段');
-          } else {
-            console.warn('⚠ OCR识别完成，但未提取到有效字段');
+          if (!hasData) {
             // 显示更详细的错误信息
             var errorMsg = '未能识别到有效信息，请检查图片或手动填写';
             if (res._debug_text) {
               errorMsg += '\n\n识别到的原始文本：\n' + res._debug_text;
-              console.log('OCR原始文本:', res._debug_text);
             }
             alert(errorMsg);
           }
         } else {
-          console.error('OCR: 响应为空或无效');
           alert('识别失败，请检查图片或稍后重试');
         }
-        console.log('=== OCR识别结束 ===');
       }).fail(function(xhr, status, error) {
-        console.error('=== OCR API请求失败 ===');
-        console.error('状态:', status);
-        console.error('错误:', error);
-        console.error('XHR对象:', xhr);
-        console.error('响应状态码:', xhr.status);
-        console.error('响应文本:', xhr.responseText);
-        
         $btn.prop('disabled', false).text(originalText);
         var errorMsg = '识别失败';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
-          console.error('错误消息:', xhr.responseJSON.message);
         } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.status) {
           errorMsg = '识别失败 (状态码: ' + xhr.responseJSON.data.status + ')';
         }
-        console.error('OCR识别错误:', xhr);
         alert(errorMsg);
-        console.log('=== OCR识别结束（失败）===');
       });
     });
 
@@ -829,18 +800,14 @@
         // 上传成功，保存新图片ID（会替换旧图片）
         var $hiddenInput = $(imageIdSelector);
         if ($hiddenInput.length === 0) {
-          console.error('未找到隐藏字段:', imageIdSelector);
           // 尝试在模态框内查找
           $hiddenInput = $('#musicalbum-form-modal').find('input[type="hidden"][name="ticket_image_id"]');
         }
         if ($hiddenInput.length > 0) {
           $hiddenInput.val(res.id);
-          console.log('图片上传成功，ID:', res.id, '已更新到:', imageIdSelector);
         } else {
-          console.error('无法找到隐藏字段来保存图片ID');
         }
       }).fail(function(xhr) {
-        console.error('图片上传失败:', xhr);
         alert('图片上传失败，请重试');
         // 上传失败，清空预览和ID
         $(previewSelector).empty();
@@ -1508,24 +1475,19 @@
 
   // 保存观演记录
   function saveViewing($form) {
-    console.log('saveViewing 被调用', $form);
-    
     var formData = {};
-    // 收集表单数据（包括详情页的模态框）
+    // 收集表单数据
     var $formToSearch = $form;
     
     // 如果表单为空或找不到标题输入框，尝试从模态框内查找
     if ($form.length === 0 || $form.find('input[name="title"], #musicalbum-form-title-input').length === 0) {
-      console.log('表单选择器找不到元素，尝试从模态框查找');
       $formToSearch = $('#musicalbum-form-modal').find('form');
       if ($formToSearch.length === 0) {
         $formToSearch = $form.closest('.musicalbum-modal-content').find('form');
       }
-      console.log('找到的表单:', $formToSearch.length > 0 ? '是' : '否');
     }
     
     if ($formToSearch.length === 0) {
-      console.error('无法找到表单元素！');
       alert('无法找到表单，请刷新页面后重试');
       return;
     }
@@ -1534,7 +1496,6 @@
       var $el = $(this);
       var name = $el.attr('name');
       var type = $el.attr('type') || '';
-      var id = $el.attr('id') || '';
       
       if (!name) return;
       
@@ -1546,30 +1507,7 @@
       // 收集所有其他字段（包括隐藏字段如 ticket_image_id）
       var value = $el.val();
       formData[name] = value;
-      console.log('收集字段:', name, '=', value, '类型:', type || 'text', 'ID:', id);
     });
-    
-    // 确保收集到所有必要的字段
-    console.log('表单字段检查:', {
-      hasTitle: !!formData.title,
-      hasCategory: !!formData.category,
-      hasTheater: !!formData.theater,
-      hasCast: !!formData.cast,
-      hasPrice: !!formData.price,
-      hasViewDate: !!formData.view_date,
-      hasViewTimeStart: !!formData.view_time_start,
-      hasViewTimeEnd: !!formData.view_time_end,
-      hasNotes: !!formData.notes,
-      hasTicketImageId: !!formData.ticket_image_id
-    });
-    
-    // 确保收集到编辑ID（从隐藏字段）
-    var editId = $formToSearch.find('input[name="id"]').val();
-    if (editId) {
-      console.log('从表单中找到编辑ID:', editId);
-    }
-    
-    console.log('收集到的表单数据:', formData);
 
     // 验证开始时间和结束时间
     var timeStart = formData.view_time_start;
@@ -1605,22 +1543,12 @@
       id = $formToSearch.find('#musicalbum-edit-id').val();
     }
     
-    console.log('编辑ID:', id);
-    console.log('编辑ID来源检查:', {
-      fromEditId: $('#musicalbum-edit-id').val(),
-      fromFormId: $formToSearch.find('input[name="id"]').val(),
-      fromModalId: $('#musicalbum-form-modal').find('input[name="id"]').val()
-    });
-    
     var url = ViewingRecords.rest.viewings;
     var method = 'POST';
 
     if (id) {
       url += '/' + id;
       method = 'PUT';
-      console.log('更新模式，URL:', url);
-    } else {
-      console.log('新建模式，URL:', url);
     }
 
     // 处理图片上传和替换
@@ -1647,20 +1575,8 @@
       var fileInput = ticketImageInput[0];
       if (fileInput.files && fileInput.files.length > 0) {
         hasNewFile = true;
-        console.log('检测到新选择的图片文件:', fileInput.files[0].name, '文件大小:', fileInput.files[0].size);
-      } else {
-        console.log('文件输入框存在，但没有选择新文件');
       }
-    } else {
-      console.log('未找到文件输入框');
     }
-    
-    console.log('图片处理状态:', {
-      hasNewFile: hasNewFile,
-      ticketImageId: ticketImageId,
-      isEdit: !!id,
-      fileInputFound: ticketImageInput.length > 0
-    });
     
     if (hasNewFile) {
       // 有新文件，先上传图片
@@ -1689,37 +1605,15 @@
       });
     } else if (ticketImageId) {
       // 没有新文件，但已有图片ID，保留原图片
-      console.log('保留原图片，ID:', ticketImageId);
       formData.ticket_image_id = ticketImageId;
       saveViewingData(url, method, formData, id);
     } else {
       // 没有新文件，也没有旧图片ID
-      if (id) {
-        // 编辑模式：如果没有图片ID，不传递ticket_image_id（保持原值不变）
-        // 如果需要删除图片，需要显式传递空字符串
-        console.log('编辑模式：没有新图片，也没有旧图片ID，保持原值');
-      } else {
-        // 新建模式：没有图片
-        console.log('新建模式：没有图片');
-      }
       saveViewingData(url, method, formData, id);
     }
   }
   
   function saveViewingData(url, method, formData, id) {
-    console.log('saveViewingData 被调用', {
-      url: url,
-      method: method,
-      formData: formData,
-      id: id,
-      formDataString: JSON.stringify(formData)
-    });
-    
-    // 确保 formData 包含所有必要的字段
-    if (!formData.title) {
-      console.warn('警告：表单数据中没有标题字段');
-    }
-    
     $.ajax({
       url: url,
       method: method,
@@ -1729,85 +1623,33 @@
       },
       data: JSON.stringify(formData)
     }).done(function(res) {
-      console.log('保存成功，响应:', res);
-      
-      // 保存关键日志到 localStorage（刷新后也能查看）
-      try {
-        var logData = {
-          timestamp: new Date().toISOString(),
-          url: url,
-          method: method,
-          formData: formData,
-          id: id,
-          response: res
-        };
-        localStorage.setItem('viewing_records_last_save', JSON.stringify(logData));
-        console.log('日志已保存到 localStorage，键名: viewing_records_last_save');
-      } catch(e) {
-        console.warn('无法保存日志到 localStorage:', e);
-      }
-      
       // 检查响应是否包含错误
       if (res && res.code && res.code !== 'success') {
-        console.error('保存返回错误:', res);
         alert(res.message || '保存失败：' + res.code);
         return;
       }
       
       // 检查响应是否包含错误信息（WP_Error格式）
       if (res && res.code && res.message) {
-        console.error('保存返回错误:', res);
         alert(res.message || '保存失败：' + res.code);
         return;
       }
       
-      var successMsg = id ? '记录更新成功！页面将在3秒后自动刷新，您可以在控制台查看详细日志。' : '记录创建成功！';
-      alert(successMsg);
+      alert(id ? '记录更新成功' : '记录创建成功');
       
       $('#musicalbum-form-modal').hide();
       if (typeof resetForm === 'function') {
         resetForm();
       }
       
-      // 如果在详情页，刷新页面；否则刷新列表
-      if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
-        // 延迟一下再刷新，确保数据已保存
-        setTimeout(function() {
-          location.reload();
-        }, 500);
-      } else {
-        if (typeof loadListView === 'function') {
-          loadListView();
-        }
-        if (window.viewingCalendar) {
-          window.viewingCalendar.refetchEvents();
-        }
+      // 刷新列表和日历
+      if (typeof loadListView === 'function') {
+        loadListView();
+      }
+      if (window.viewingCalendar) {
+        window.viewingCalendar.refetchEvents();
       }
     }).fail(function(xhr) {
-      console.error('保存失败:', xhr);
-      console.error('状态码:', xhr.status);
-      console.error('响应:', xhr.responseJSON || xhr.responseText);
-      console.error('请求URL:', url);
-      console.error('请求方法:', method);
-      console.error('请求数据:', JSON.stringify(formData));
-      
-      // 保存错误日志到 localStorage
-      try {
-        var errorLog = {
-          timestamp: new Date().toISOString(),
-          url: url,
-          method: method,
-          formData: formData,
-          id: id,
-          status: xhr.status,
-          response: xhr.responseJSON || xhr.responseText
-        };
-        localStorage.setItem('viewing_records_last_error', JSON.stringify(errorLog));
-        console.log('错误日志已保存到 localStorage，键名: viewing_records_last_error');
-      } catch(e) {
-        console.warn('无法保存错误日志到 localStorage:', e);
-      }
-      
       var msg = '保存失败';
       if (xhr.responseJSON) {
         if (xhr.responseJSON.message) {
@@ -1816,32 +1658,11 @@
           msg = '错误：' + xhr.responseJSON.code;
         }
       } else if (xhr.responseText) {
-        console.error('响应文本:', xhr.responseText);
         msg = '保存失败，请检查网络连接或刷新页面重试';
       }
-      alert(msg + '\n\n详细错误信息已记录在控制台和 localStorage 中。');
+      alert(msg);
     });
   }
-  
-  // 页面加载时，如果有保存的日志，显示在控制台
-  (function() {
-    try {
-      var lastSave = localStorage.getItem('viewing_records_last_save');
-      if (lastSave) {
-        console.log('=== 上次保存的日志 ===');
-        console.log(JSON.parse(lastSave));
-        console.log('==================');
-      }
-      var lastError = localStorage.getItem('viewing_records_last_error');
-      if (lastError) {
-        console.error('=== 上次保存的错误日志 ===');
-        console.error(JSON.parse(lastError));
-        console.error('==================');
-      }
-    } catch(e) {
-      // 忽略解析错误
-    }
-  })();
 
   // 将时间字符串（HH:MM格式）转换为分钟数，便于比较
   function timeToMinutes(timeStr) {
@@ -1909,7 +1730,6 @@
         $('.musicalbum-tab-btn[data-tab="manual"]').click();
         $('#musicalbum-form-modal').show();
         
-        console.log('编辑记录加载完成，编辑ID:', $('#musicalbum-edit-id').val());
       }
     }).fail(function() {
       alert('加载记录失败，请稍后重试');
