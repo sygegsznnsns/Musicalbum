@@ -1759,6 +1759,22 @@
     }).done(function(res) {
       console.log('保存成功，响应:', res);
       
+      // 保存关键日志到 localStorage（刷新后也能查看）
+      try {
+        var logData = {
+          timestamp: new Date().toISOString(),
+          url: url,
+          method: method,
+          formData: formData,
+          id: id,
+          response: res
+        };
+        localStorage.setItem('viewing_records_last_save', JSON.stringify(logData));
+        console.log('日志已保存到 localStorage，键名: viewing_records_last_save');
+      } catch(e) {
+        console.warn('无法保存日志到 localStorage:', e);
+      }
+      
       // 检查响应是否包含错误
       if (res && res.code && res.code !== 'success') {
         console.error('保存返回错误:', res);
@@ -1773,18 +1789,22 @@
         return;
       }
       
-      alert(id ? '记录更新成功' : '记录创建成功');
+      var successMsg = id ? '记录更新成功！页面将在3秒后自动刷新，您可以在控制台查看详细日志。' : '记录创建成功！';
+      alert(successMsg);
+      
       $('#musicalbum-form-modal').hide();
       if (typeof resetForm === 'function') {
         resetForm();
       }
       
-      // 如果在详情页，刷新页面；否则刷新列表
+      // 如果在详情页，延迟刷新页面，给用户时间查看日志
       if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
-        // 延迟一下再刷新，确保数据已保存
+        console.log('将在3秒后刷新页面，请查看上方的日志信息');
+        // 延迟3秒再刷新，确保用户有时间查看日志
         setTimeout(function() {
+          console.log('正在刷新页面...');
           location.reload();
-        }, 500);
+        }, 3000);
       } else {
         if (typeof loadListView === 'function') {
           loadListView();
@@ -1801,6 +1821,23 @@
       console.error('请求方法:', method);
       console.error('请求数据:', JSON.stringify(formData));
       
+      // 保存错误日志到 localStorage
+      try {
+        var errorLog = {
+          timestamp: new Date().toISOString(),
+          url: url,
+          method: method,
+          formData: formData,
+          id: id,
+          status: xhr.status,
+          response: xhr.responseJSON || xhr.responseText
+        };
+        localStorage.setItem('viewing_records_last_error', JSON.stringify(errorLog));
+        console.log('错误日志已保存到 localStorage，键名: viewing_records_last_error');
+      } catch(e) {
+        console.warn('无法保存错误日志到 localStorage:', e);
+      }
+      
       var msg = '保存失败';
       if (xhr.responseJSON) {
         if (xhr.responseJSON.message) {
@@ -1812,9 +1849,29 @@
         console.error('响应文本:', xhr.responseText);
         msg = '保存失败，请检查网络连接或刷新页面重试';
       }
-      alert(msg);
+      alert(msg + '\n\n详细错误信息已记录在控制台和 localStorage 中。');
     });
   }
+  
+  // 页面加载时，如果有保存的日志，显示在控制台
+  (function() {
+    try {
+      var lastSave = localStorage.getItem('viewing_records_last_save');
+      if (lastSave) {
+        console.log('=== 上次保存的日志 ===');
+        console.log(JSON.parse(lastSave));
+        console.log('==================');
+      }
+      var lastError = localStorage.getItem('viewing_records_last_error');
+      if (lastError) {
+        console.error('=== 上次保存的错误日志 ===');
+        console.error(JSON.parse(lastError));
+        console.error('==================');
+      }
+    } catch(e) {
+      // 忽略解析错误
+    }
+  })();
 
   // 将时间字符串（HH:MM格式）转换为分钟数，便于比较
   function timeToMinutes(timeStr) {
