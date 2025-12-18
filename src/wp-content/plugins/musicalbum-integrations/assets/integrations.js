@@ -1562,6 +1562,7 @@
       var $el = $(this);
       var name = $el.attr('name');
       var type = $el.attr('type') || '';
+      var id = $el.attr('id') || '';
       
       if (!name) return;
       
@@ -1573,7 +1574,21 @@
       // 收集所有其他字段（包括隐藏字段如 ticket_image_id）
       var value = $el.val();
       formData[name] = value;
-      console.log('收集字段:', name, '=', value, '类型:', type || 'text');
+      console.log('收集字段:', name, '=', value, '类型:', type || 'text', 'ID:', id);
+    });
+    
+    // 确保收集到所有必要的字段
+    console.log('表单字段检查:', {
+      hasTitle: !!formData.title,
+      hasCategory: !!formData.category,
+      hasTheater: !!formData.theater,
+      hasCast: !!formData.cast,
+      hasPrice: !!formData.price,
+      hasViewDate: !!formData.view_date,
+      hasViewTimeStart: !!formData.view_time_start,
+      hasViewTimeEnd: !!formData.view_time_end,
+      hasNotes: !!formData.notes,
+      hasTicketImageId: !!formData.ticket_image_id
     });
     
     // 确保收集到编辑ID（从隐藏字段）
@@ -1613,8 +1628,17 @@
     if (!id) {
       id = $('#musicalbum-form-modal').find('input[name="id"]').val();
     }
+    // 如果还是没有找到，尝试从表单的隐藏字段中获取
+    if (!id) {
+      id = $formToSearch.find('#musicalbum-edit-id').val();
+    }
     
     console.log('编辑ID:', id);
+    console.log('编辑ID来源检查:', {
+      fromEditId: $('#musicalbum-edit-id').val(),
+      fromFormId: $formToSearch.find('input[name="id"]').val(),
+      fromModalId: $('#musicalbum-form-modal').find('input[name="id"]').val()
+    });
     
     var url = ViewingRecords.rest.viewings;
     var method = 'POST';
@@ -1715,8 +1739,14 @@
       url: url,
       method: method,
       formData: formData,
-      id: id
+      id: id,
+      formDataString: JSON.stringify(formData)
     });
+    
+    // 确保 formData 包含所有必要的字段
+    if (!formData.title) {
+      console.warn('警告：表单数据中没有标题字段');
+    }
     
     $.ajax({
       url: url,
@@ -1731,6 +1761,13 @@
       
       // 检查响应是否包含错误
       if (res && res.code && res.code !== 'success') {
+        console.error('保存返回错误:', res);
+        alert(res.message || '保存失败：' + res.code);
+        return;
+      }
+      
+      // 检查响应是否包含错误信息（WP_Error格式）
+      if (res && res.code && res.message) {
         console.error('保存返回错误:', res);
         alert(res.message || '保存失败：' + res.code);
         return;
@@ -1760,6 +1797,9 @@
       console.error('保存失败:', xhr);
       console.error('状态码:', xhr.status);
       console.error('响应:', xhr.responseJSON || xhr.responseText);
+      console.error('请求URL:', url);
+      console.error('请求方法:', method);
+      console.error('请求数据:', JSON.stringify(formData));
       
       var msg = '保存失败';
       if (xhr.responseJSON) {
