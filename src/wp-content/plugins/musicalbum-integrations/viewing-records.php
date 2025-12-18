@@ -1690,6 +1690,25 @@ final class Viewing_Records {
                 }
             }
             
+            // 处理票面图片数据
+            $ticket_image_field = get_field('ticket_image', $post_id);
+            $ticket_image_data = null;
+            if ($ticket_image_field) {
+                if (is_array($ticket_image_field)) {
+                    $ticket_image_data = array(
+                        'id' => isset($ticket_image_field['ID']) ? $ticket_image_field['ID'] : (isset($ticket_image_field['id']) ? $ticket_image_field['id'] : ''),
+                        'url' => isset($ticket_image_field['url']) ? $ticket_image_field['url'] : ''
+                    );
+                } else {
+                    // 如果是附件ID
+                    $image_url = wp_get_attachment_image_url($ticket_image_field, 'full');
+                    $ticket_image_data = array(
+                        'id' => $ticket_image_field,
+                        'url' => $image_url ? $image_url : ''
+                    );
+                }
+            }
+            
             $results[] = array(
                 'id' => $post_id,
                 'title' => $title,
@@ -1701,7 +1720,7 @@ final class Viewing_Records {
                 'view_time_start' => get_field('view_time_start', $post_id),
                 'view_time_end' => get_field('view_time_end', $post_id),
                 'notes' => $notes,
-                'ticket_image' => get_field('ticket_image', $post_id),
+                'ticket_image' => $ticket_image_data,
                 'url' => get_permalink($post_id),
                 'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
             );
@@ -1921,8 +1940,10 @@ final class Viewing_Records {
         if (isset($params['notes'])) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
         }
+        // 处理票面图片：优先使用新上传的图片ID，如果没有新图片则保留或删除
         if (isset($params['ticket_image_id'])) {
             if (!empty($params['ticket_image_id'])) {
+                // 更新图片ID
                 update_field('ticket_image', intval($params['ticket_image_id']), $post_id);
             } else {
                 // 如果传递了空值，删除图片

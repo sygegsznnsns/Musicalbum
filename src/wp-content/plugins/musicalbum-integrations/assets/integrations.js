@@ -819,7 +819,7 @@
       
       reader.onload = function(e) {
         var preview = $(previewSelector);
-        preview.html('<img src="' + e.target.result + '" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #e5e7eb;" />');
+        preview.html('<img src="' + e.target.result + '" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #e5e7eb;" /><br><small style="color: #6b7280; margin-top: 0.5rem; display: block;">新图片（保存后将替换原图片）</small>');
       };
       
       reader.readAsDataURL(file);
@@ -838,11 +838,19 @@
         contentType: false,
         data: formData
       }).done(function(res) {
+        // 上传成功，保存新图片ID（会替换旧图片）
         $(imageIdSelector).val(res.id);
+        console.log('图片上传成功，ID:', res.id);
       }).fail(function(xhr) {
         console.error('图片上传失败:', xhr);
         alert('图片上传失败，请重试');
+        // 上传失败，清空预览和ID
+        $(previewSelector).empty();
+        $(imageIdSelector).val('');
       });
+    } else {
+      // 如果没有选择文件，但之前有图片，保留原图片ID
+      // 不做任何操作，保持当前状态
     }
   }
   
@@ -1534,12 +1542,25 @@
       method = 'PUT';
     }
 
-    // 如果有图片需要上传，先上传图片
-    var ticketImageInput = $form.closest('.musicalbum-modal-content').find('input[type="file"][name="ticket_image"]');
-    var ticketImageId = $form.closest('.musicalbum-modal-content').find('input[type="hidden"][name="ticket_image_id"]').val();
+    // 处理图片上传和替换
+    var ticketImageInput = $form.find('input[type="file"][name="ticket_image"]');
+    if (ticketImageInput.length === 0) {
+      ticketImageInput = $form.closest('.musicalbum-modal-content').find('input[type="file"][name="ticket_image"]');
+    }
+    var ticketImageId = $form.find('input[type="hidden"][name="ticket_image_id"]').val();
+    if (!ticketImageId) {
+      ticketImageId = $form.closest('.musicalbum-modal-content').find('input[type="hidden"][name="ticket_image_id"]').val();
+    }
     
-    if (ticketImageInput.length && ticketImageInput[0].files.length > 0) {
-      // 上传图片
+    // 检查是否有新选择的文件（优先检查文件输入框）
+    var hasNewFile = false;
+    if (ticketImageInput.length > 0 && ticketImageInput[0].files && ticketImageInput[0].files.length > 0) {
+      hasNewFile = true;
+      console.log('检测到新选择的图片文件:', ticketImageInput[0].files[0].name);
+    }
+    
+    if (hasNewFile) {
+      // 有新文件，先上传图片
       var formDataUpload = new FormData();
       formDataUpload.append('file', ticketImageInput[0].files[0]);
       
@@ -1553,6 +1574,7 @@
         contentType: false,
         data: formDataUpload
       }).done(function(imageRes) {
+        // 上传成功，使用新图片ID
         formData.ticket_image_id = imageRes.id;
         saveViewingData(url, method, formData, id);
       }).fail(function(xhr) {
@@ -1563,11 +1585,20 @@
         alert(msg);
       });
     } else if (ticketImageId) {
-      // 使用已有的图片ID
+      // 没有新文件，但已有图片ID，保留原图片
+      console.log('保留原图片，ID:', ticketImageId);
       formData.ticket_image_id = ticketImageId;
       saveViewingData(url, method, formData, id);
     } else {
-      // 没有图片，直接保存
+      // 没有新文件，也没有旧图片ID
+      if (id) {
+        // 编辑模式：如果没有图片ID，不传递ticket_image_id（保持原值不变）
+        // 如果需要删除图片，需要显式传递空字符串
+        console.log('编辑模式：没有新图片，也没有旧图片ID，保持原值');
+      } else {
+        // 新建模式：没有图片
+        console.log('新建模式：没有图片');
+      }
       saveViewingData(url, method, formData, id);
     }
   }
@@ -1640,13 +1671,32 @@
         
         // 显示票面图片
         if (item.ticket_image) {
-          var imageUrl = typeof item.ticket_image === 'object' ? item.ticket_image.url : item.ticket_image;
-          var imageId = typeof item.ticket_image === 'object' ? item.ticket_image.id : '';
-          $('#musicalbum-form-ticket-preview').html('<img src="' + imageUrl + '" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #e5e7eb;" />');
+          var imageUrl = '';
+          var imageId = '';
+          
+          if (typeof item.ticket_image === 'object') {
+            imageUrl = item.ticket_image.url || '';
+            imageId = item.ticket_image.id || item.ticket_image.ID || '';
+          } else if (typeof item.ticket_image === 'string' || typeof item.ticket_image === 'number') {
+            // 如果是ID，尝试获取URL
+            imageId = item.ticket_image;
+            // URL会在后端处理
+          }
+          
+          if (imageUrl) {
+            $('#musicalbum-form-ticket-preview').html('<img src="' + imageUrl + '" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #e5e7eb;" /><br><small style="color: #6b7280; margin-top: 0.5rem; display: block;">当前图片（选择新文件可替换）</small>');
+          } else {
+            $('#musicalbum-form-ticket-preview').html('<small style="color: #6b7280;">已有图片（ID: ' + imageId + '），选择新文件可替换</small>');
+          }
+          
           $('#musicalbum-form-ticket-image-id').val(imageId);
+          // 清空文件输入框，确保可以选择新文件
+          $('#musicalbum-form-ticket-image').val('');
         } else {
           $('#musicalbum-form-ticket-preview').empty();
           $('#musicalbum-form-ticket-image-id').val('');
+          // 清空文件输入框
+          $('#musicalbum-form-ticket-image').val('');
         }
         
         $('#musicalbum-form-title').text('编辑观演记录');
