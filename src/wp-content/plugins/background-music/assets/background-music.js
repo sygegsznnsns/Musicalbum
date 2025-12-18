@@ -22,6 +22,15 @@
         const presets = musicData.presets || {};
         let wasPlaying = false; // 记录切换前是否在播放
         
+        // 如果后台设置了音乐URL但audio.src为空，设置音频源
+        if (musicData.url && musicData.url !== '' && !audio.src) {
+            const sourceElement = audio.querySelector('source');
+            if (!sourceElement || !sourceElement.src) {
+                audio.src = musicData.url;
+                audio.load();
+            }
+        }
+        
         // 拖拽功能
         if (musicPlayer) {
             let isDragging = false;
@@ -206,7 +215,20 @@
         if (playPauseBtn) {
             playPauseBtn.addEventListener('click', function() {
                 // 检查是否有音频源（是否选择了音乐）
-                if (!audio.src || audio.src === window.location.href) {
+                // 注意：如果使用<source>标签，audio.src可能为空，需要检查audio.currentSrc或source元素
+                const sourceElement = audio.querySelector('source');
+                const hasAudioSource = audio.src || 
+                                      audio.currentSrc || 
+                                      (sourceElement && sourceElement.src) ||
+                                      (musicData.url && musicData.url !== '');
+                
+                // 如果audio.src为空但musicData.url存在，设置音频源
+                if (!audio.src && musicData.url && musicData.url !== '') {
+                    audio.src = musicData.url;
+                    audio.load();
+                }
+                
+                if (!hasAudioSource || (audio.src && audio.src === window.location.href)) {
                     if (musicInfo) {
                         musicInfo.textContent = '请先选择要播放的音乐';
                         musicInfo.style.display = 'block';
