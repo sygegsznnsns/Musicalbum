@@ -984,29 +984,35 @@
 .musicalbum-dashboard-container {
   max-width: 1200px;
   margin: 2rem auto;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .musicalbum-dashboard-header {
   text-align: center;
   margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .musicalbum-dashboard-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  color: #1f2937;
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: -0.02em;
 }
 
 .musicalbum-dashboard-subtitle {
-  font-size: 1.125rem;
-  color: #6b7280;
+  font-size: 1.25rem;
+  color: #64748b;
   margin: 0;
+  font-weight: 400;
 }
 
 .musicalbum-dashboard-nav {
@@ -1048,32 +1054,40 @@
 }
 
 .musicalbum-dashboard-card-icon {
-  font-size: 3rem !important;
-  margin-bottom: 1rem !important;
+  font-size: 3.5rem !important;
+  margin-bottom: 1.25rem !important;
   display: block !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+}
+
+.musicalbum-dashboard-card:hover .musicalbum-dashboard-card-icon {
+  transform: scale(1.1);
 }
 
 .musicalbum-dashboard-card h3 {
   font-size: 1.5rem !important;
-  font-weight: 600 !important;
-  margin: 0 0 0.5rem 0 !important;
-  color: #1f2937 !important;
+  font-weight: 700 !important;
+  margin: 0 0 0.75rem 0 !important;
+  color: #1e293b !important;
   text-decoration: none !important;
   border: none !important;
   padding: 0 !important;
+  letter-spacing: -0.01em;
 }
 
 .musicalbum-dashboard-card h3 a {
-  color: #1f2937 !important;
+  color: #1e293b !important;
   text-decoration: none !important;
   border: none !important;
 }
 
 .musicalbum-dashboard-card p {
-  font-size: 0.875rem !important;
-  color: #6b7280 !important;
+  font-size: 0.9375rem !important;
+  color: #64748b !important;
   margin: 0 !important;
   text-decoration: none !important;
+  line-height: 1.6;
 }
 
 .musicalbum-dashboard-card * {
@@ -1081,10 +1095,24 @@
 }
 
 .musicalbum-dashboard-section-title {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   margin: 0 0 1.5rem 0;
-  color: #1f2937;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.musicalbum-dashboard-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
 }
 
 .musicalbum-dashboard-overview {
@@ -1099,16 +1127,41 @@
 }
 
 .musicalbum-dashboard-stat-card {
-  padding: 1.5rem !important;
+  padding: 2rem 1.5rem !important;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   color: #fff !important;
   text-align: center !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
-  min-height: 120px !important;
+  min-height: 140px !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.musicalbum-dashboard-stat-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.musicalbum-dashboard-stat-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4) !important;
+}
+
+.musicalbum-dashboard-stat-card:hover::before {
+  opacity: 1;
 }
 
 .musicalbum-dashboard-stat-card:nth-child(2) {
@@ -1124,18 +1177,22 @@
 }
 
 .musicalbum-dashboard-stat-card .stat-value {
-  font-size: 2.5rem !important;
-  font-weight: 700 !important;
+  font-size: 3rem !important;
+  font-weight: 800 !important;
   margin-bottom: 0.5rem !important;
   color: #fff !important;
   display: block !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.02em;
 }
 
 .musicalbum-dashboard-stat-card .stat-label {
-  font-size: 0.875rem !important;
-  opacity: 0.9 !important;
+  font-size: 0.9375rem !important;
+  opacity: 0.95 !important;
   color: #fff !important;
   display: block !important;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .musicalbum-dashboard-recent {
@@ -1145,17 +1202,18 @@
 
 .musicalbum-dashboard-recent-list {
   background: #fff !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
   overflow: hidden !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
 
 .musicalbum-dashboard-recent-item {
-  padding: 1.25rem !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  transition: background 0.2s;
+  padding: 1.5rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  transition: all 0.2s ease;
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;
@@ -1166,38 +1224,44 @@
 }
 
 .musicalbum-dashboard-recent-item:hover {
-  background: #f9fafb !important;
+  background: #f8fafc !important;
+  padding-left: 1.75rem !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-title {
   display: block !important;
   font-size: 1.125rem !important;
   font-weight: 600 !important;
-  color: #1f2937 !important;
+  color: #1e293b !important;
   text-decoration: none !important;
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 0.75rem !important;
   width: 100% !important;
+  transition: color 0.2s ease;
 }
 
 .musicalbum-dashboard-recent-item .recent-title:hover {
-  color: #3b82f6 !important;
+  color: #667eea !important;
   text-decoration: none !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-meta {
   display: flex !important;
-  gap: 1rem !important;
+  gap: 1.25rem !important;
   flex-wrap: wrap !important;
   font-size: 0.875rem !important;
-  color: #6b7280 !important;
+  color: #64748b !important;
   width: 100% !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-meta span {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 0.25rem !important;
+  gap: 0.375rem !important;
   white-space: nowrap !important;
+  padding: 0.25rem 0.75rem;
+  background: #f1f5f9;
+  border-radius: 6px;
+  font-weight: 500;
 }
 
 .musicalbum-dashboard-actions {

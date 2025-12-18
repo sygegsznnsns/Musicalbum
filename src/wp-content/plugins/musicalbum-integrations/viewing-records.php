@@ -1179,16 +1179,6 @@ final class Viewing_Records {
                     <div class="musicalbum-dashboard-loading">加载中...</div>
                 </div>
             </div>
-            
-            <!-- 快速操作 -->
-            <div class="musicalbum-dashboard-actions">
-                <a href="<?php echo esc_url($manager_url); ?>" class="musicalbum-btn musicalbum-btn-primary">
-                    <span>+</span> 新增记录
-                </a>
-                <a href="<?php echo esc_url($statistics_url); ?>" class="musicalbum-btn musicalbum-btn-secondary">
-                    📊 查看统计
-                </a>
-            </div>
         </div>
         <?php
         return ob_get_clean();
