@@ -78,11 +78,15 @@
   var chartInstances = {
     category: null,
     cast: null,
-    price: null
+    price: null,
+    main: null
   };
+  
+  // 存储统计数据
+  var statisticsData = {};
 
   /**
-   * 加载统计数据并渲染图表
+   * 加载统计数据并渲染固定图表
    */
   function loadStatistics(callback) {
     var loadingEl = $('#musicalbum-statistics-loading');
@@ -95,18 +99,17 @@
     }).done(function(data) {
       loadingEl.hide();
       
+      // 保存统计数据
+      statisticsData = data;
+      
       // 销毁旧图表
       if (chartInstances.category) chartInstances.category.destroy();
       if (chartInstances.cast) chartInstances.cast.destroy();
       if (chartInstances.price) chartInstances.price.destroy();
       
-      // 渲染剧目类别分布饼图
+      // 渲染固定的三个图表
       renderCategoryChart(data.category || {});
-      
-      // 渲染演员出场频率柱状图
       renderCastChart(data.cast || {});
-      
-      // 渲染票价区间折线图
       renderPriceChart(data.price || {});
       
       if (callback) callback();
@@ -115,6 +118,218 @@
       if (callback) callback();
     });
   }
+  
+  /**
+   * 生成图表（根据用户选择的数据类型和图表类型）
+   */
+  function generateChart(dataType, chartType) {
+    if (!statisticsData || Object.keys(statisticsData).length === 0) {
+      loadStatistics(function() {
+        generateChart(dataType, chartType);
+      });
+      return;
+    }
+    
+    // 获取对应的数据
+    var data = statisticsData[dataType] || {};
+    
+    if (Object.keys(data).length === 0) {
+      alert('所选数据类型暂无数据');
+      return;
+    }
+    
+    // 销毁旧图表
+    if (chartInstances.main) {
+      chartInstances.main.destroy();
+      chartInstances.main = null;
+    }
+    
+    // 获取图表标题
+    var titles = {
+      'category': '剧目类别',
+      'theater': '剧院',
+      'cast': '演员出场频率',
+      'price': '票价区间'
+    };
+    var chartTitle = titles[dataType] || '数据统计';
+    
+    // 更新标题
+    $('#musicalbum-chart-title').text(chartTitle);
+    
+    // 渲染图表
+    renderDynamicChart(data, chartType, dataType);
+  }
+  
+  /**
+   * 动态渲染图表
+   */
+  function renderDynamicChart(data, chartType, dataType) {
+    var ctx = document.getElementById('musicalbum-chart-main');
+    if (!ctx) return;
+
+    var labels = Object.keys(data);
+    var values = Object.values(data);
+    
+    // 对于票价数据，需要排序
+    if (dataType === 'price') {
+      var sorted = labels.map(function(label, index) {
+        return {
+          label: label,
+          value: values[index],
+          sortKey: parseFloat(label.split('-')[0]) || 0
+        };
+      }).sort(function(a, b) {
+        return a.sortKey - b.sortKey;
+      });
+      labels = sorted.map(function(item) { return item.label; });
+      values = sorted.map(function(item) { return item.value; });
+    }
+    
+    // 根据图表类型配置
+    var chartConfig = {
+      type: chartType,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: getDatasetLabel(dataType),
+          data: values,
+          backgroundColor: generateColors(chartType, labels.length),
+          borderColor: chartType === 'line' ? 'rgba(16, 185, 129, 1)' : '#fff',
+          borderWidth: chartType === 'line' ? 2 : 2,
+          fill: chartType === 'line',
+          tension: chartType === 'line' ? 0.4 : 0,
+          pointRadius: chartType === 'line' ? 4 : 0,
+          pointHoverRadius: chartType === 'line' ? 6 : 0
+        }]
+      },
+      options: getChartOptions(chartType, dataType)
+    };
+    
+    chartInstances.main = new Chart(ctx, chartConfig);
+  }
+  
+  /**
+   * 获取数据集标签
+   */
+  function getDatasetLabel(dataType) {
+    var labels = {
+      'category': '场次',
+      'theater': '场次',
+      'cast': '出场次数',
+      'price': '场次数量'
+    };
+    return labels[dataType] || '数量';
+  }
+  
+  /**
+   * 获取图表配置选项
+   */
+  function getChartOptions(chartType, dataType) {
+    var baseOptions = {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: chartType === 'pie' || chartType === 'doughnut' ? 'bottom' : 'top',
+          labels: {
+            padding: 15,
+            font: {
+              size: 12
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              var label = context.label || '';
+              var value = context.parsed ? (context.parsed.y || context.parsed) : context.raw || 0;
+              
+              if (chartType === 'pie' || chartType === 'doughnut') {
+                var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                var percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                return label + ': ' + value + ' (' + percentage + '%)';
+              } else {
+                return label + ': ' + value;
+              }
+            }
+          }
+        }
+      }
+    };
+    
+    // 添加坐标轴配置（非饼图/环形图）
+    if (chartType !== 'pie' && chartType !== 'doughnut') {
+      baseOptions.scales = {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        },
+        x: {
+          ticks: {
+            maxRotation: dataType === 'cast' || dataType === 'theater' ? 45 : 0,
+            minRotation: dataType === 'cast' || dataType === 'theater' ? 45 : 0
+          }
+        }
+      };
+    }
+    
+    return baseOptions;
+  }
+  
+  /**
+   * 生成颜色（根据图表类型）
+   */
+  function generateColors(chartType, count) {
+    if (chartType === 'pie' || chartType === 'doughnut') {
+      return generatePieColors(count);
+    } else if (chartType === 'bar') {
+      return 'rgba(59, 130, 246, 0.6)';
+    } else if (chartType === 'line') {
+      return 'rgba(16, 185, 129, 0.1)';
+    }
+    return generatePieColors(count);
+  }
+  
+  /**
+   * 生成饼图颜色
+   */
+  function generatePieColors(count) {
+    var colors = [
+      'rgba(59, 130, 246, 0.8)',   // 蓝色
+      'rgba(16, 185, 129, 0.8)',   // 绿色
+      'rgba(245, 158, 11, 0.8)',    // 黄色
+      'rgba(239, 68, 68, 0.8)',     // 红色
+      'rgba(139, 92, 246, 0.8)',   // 紫色
+      'rgba(236, 72, 153, 0.8)',   // 粉色
+      'rgba(20, 184, 166, 0.8)',   // 青色
+      'rgba(251, 146, 60, 0.8)',   // 橙色
+      'rgba(99, 102, 241, 0.8)',   // 靛蓝
+      'rgba(168, 85, 247, 0.8)'    // 紫罗兰
+    ];
+    
+    var result = [];
+    for (var i = 0; i < count; i++) {
+      result.push(colors[i % colors.length]);
+    }
+    return result;
+  }
+  
+  
+  // 生成图表按钮事件
+  $(document).on('click', '#musicalbum-generate-chart-btn', function(e) {
+    e.preventDefault();
+    var dataType = $('#musicalbum-data-type').val();
+    var chartType = $('#musicalbum-chart-type').val();
+    
+    if (!dataType || !chartType) {
+      alert('请选择数据类型和图表类型');
+      return;
+    }
+    
+    generateChart(dataType, chartType);
+  });
 
   /**
    * 渲染剧目类别分布饼图
@@ -127,7 +342,7 @@
     var values = Object.values(data);
     
     // 生成颜色
-    var colors = generateColors(labels.length);
+    var colors = generatePieColors(labels.length);
 
     chartInstances.category = new Chart(ctx, {
       type: 'pie',
@@ -319,27 +534,10 @@
   }
 
   /**
-   * 生成颜色数组
+   * 生成颜色数组（旧版本，用于兼容旧的图表渲染函数）
    */
-  function generateColors(count) {
-    var colors = [
-      'rgba(59, 130, 246, 0.8)',   // 蓝色
-      'rgba(16, 185, 129, 0.8)',   // 绿色
-      'rgba(245, 158, 11, 0.8)',   // 黄色
-      'rgba(239, 68, 68, 0.8)',    // 红色
-      'rgba(139, 92, 246, 0.8)',   // 紫色
-      'rgba(236, 72, 153, 0.8)',   // 粉色
-      'rgba(20, 184, 166, 0.8)',   // 青色
-      'rgba(251, 146, 60, 0.8)',   // 橙色
-      'rgba(99, 102, 241, 0.8)',   // 靛蓝
-      'rgba(168, 85, 247, 0.8)'    // 紫罗兰
-    ];
-    
-    var result = [];
-    for (var i = 0; i < count; i++) {
-      result.push(colors[i % colors.length]);
-    }
-    return result;
+  function generateColorsOld(count) {
+    return generatePieColors(count);
   }
 
   /**
@@ -426,11 +624,13 @@
       '<div class="musicalbum-export-section"><strong>导出数据</strong></div>' +
       '<a href="#" data-type="data" data-format="csv">导出为 CSV</a>' +
       '<a href="#" data-type="data" data-format="json">导出为 JSON</a>' +
-      '<div class="musicalbum-export-section"><strong>导出图表</strong></div>' +
+      '<div class="musicalbum-export-section"><strong>导出固定图表</strong></div>' +
       '<a href="#" data-type="chart" data-chart="category">导出类别分布图</a>' +
       '<a href="#" data-type="chart" data-chart="cast">导出演员频率图</a>' +
       '<a href="#" data-type="chart" data-chart="price">导出票价分布图</a>' +
-      '<a href="#" data-type="chart" data-chart="all">导出所有图表</a>' +
+      '<a href="#" data-type="chart" data-chart="all">导出所有固定图表</a>' +
+      '<div class="musicalbum-export-section"><strong>导出自定义图表</strong></div>' +
+      '<a href="#" data-type="chart" data-chart="current">导出当前自定义图表</a>' +
       '</div>');
     
     var btnOffset = btn.offset();
@@ -466,7 +666,11 @@
         }
       } else if (type === 'chart') {
         // 导出图表
-        exportChart(chart);
+        if (chart === 'current') {
+          exportChart('current');
+        } else {
+          exportChart(chart);
+        }
       }
       
       menu.remove();
@@ -493,8 +697,35 @@
       return;
     }
     
+    // 导出当前显示的自定义图表
+    if (chartType === 'current' && chartInstances.main) {
+      var dataType = $('#musicalbum-data-type').val() || 'category';
+      var chartTypeName = $('#musicalbum-chart-type').val() || 'pie';
+      var titles = {
+        'category': '剧目类别',
+        'theater': '剧院',
+        'cast': '演员出场频率',
+        'price': '票价区间'
+      };
+      var chartTitle = titles[dataType] || '数据统计';
+      var fileName = chartTitle + '_' + chartTypeName + '_' + new Date().getTime() + '.png';
+      
+      try {
+        var url = chartInstances.main.toBase64Image();
+        var link = document.createElement('a');
+        link.download = fileName;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        alert('导出失败：' + e.message);
+      }
+      return;
+    }
+    
+    // 导出固定图表
     if (chartType === 'all') {
-      // 导出所有图表
       var charts = ['category', 'cast', 'price'];
       var chartNames = {
         'category': '剧目类别分布',
@@ -507,8 +738,8 @@
           exportSingleChart(chartName, chartNames[chartName]);
         }, index * 500); // 延迟导出，避免浏览器阻止多个下载
       });
-    } else {
-      // 导出单个图表
+    } else if (chartType === 'category' || chartType === 'cast' || chartType === 'price') {
+      // 导出单个固定图表
       var chartNames = {
         'category': '剧目类别分布',
         'cast': '演员出场频率',

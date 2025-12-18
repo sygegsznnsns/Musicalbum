@@ -991,7 +991,9 @@ final class Viewing_Records {
                     </button>
                 </div>
             </div>
-            <div class="musicalbum-charts-grid">
+            
+            <!-- 固定图表显示区域 -->
+            <div class="musicalbum-charts-grid" id="musicalbum-fixed-charts">
                 <div class="musicalbum-chart-wrapper">
                     <h3>剧目类别分布</h3>
                     <canvas id="musicalbum-chart-category"></canvas>
@@ -1005,6 +1007,43 @@ final class Viewing_Records {
                     <canvas id="musicalbum-chart-price"></canvas>
                 </div>
             </div>
+            
+            <!-- 自定义图表区域 -->
+            <div class="musicalbum-custom-charts-section">
+                <h2 class="musicalbum-custom-charts-title">自定义图表</h2>
+                
+                <!-- 图表配置面板 -->
+                <div class="musicalbum-chart-config-panel">
+                    <div class="musicalbum-chart-config-item">
+                        <label for="musicalbum-data-type">数据类型：</label>
+                        <select id="musicalbum-data-type" class="musicalbum-select">
+                            <option value="category">剧目类别</option>
+                            <option value="theater">剧院</option>
+                            <option value="cast">演员出场频率</option>
+                            <option value="price">票价区间</option>
+                        </select>
+                    </div>
+                    <div class="musicalbum-chart-config-item">
+                        <label for="musicalbum-chart-type">图表类型：</label>
+                        <select id="musicalbum-chart-type" class="musicalbum-select">
+                            <option value="pie">饼图</option>
+                            <option value="bar">柱状图</option>
+                            <option value="line">折线图</option>
+                            <option value="doughnut">环形图</option>
+                        </select>
+                    </div>
+                    <button type="button" class="musicalbum-btn musicalbum-btn-primary" id="musicalbum-generate-chart-btn">生成图表</button>
+                </div>
+                
+                <!-- 自定义图表显示区域 -->
+                <div class="musicalbum-charts-grid" id="musicalbum-custom-charts-container">
+                    <div class="musicalbum-chart-wrapper" id="musicalbum-chart-wrapper">
+                        <h3 id="musicalbum-chart-title">请选择数据类型和图表类型</h3>
+                        <canvas id="musicalbum-chart-main"></canvas>
+                    </div>
+                </div>
+            </div>
+            
             <div class="musicalbum-statistics-loading" id="musicalbum-statistics-loading">正在加载数据...</div>
         </div>
         <?php
@@ -1037,6 +1076,7 @@ final class Viewing_Records {
         $category_data = array(); // 剧目类别分布
         $cast_data = array(); // 演员出场频率
         $price_data = array(); // 票价数据
+        $theater_data = array(); // 剧院分布
 
         while ($query->have_posts()) {
             $query->the_post();
@@ -1044,6 +1084,7 @@ final class Viewing_Records {
             $title = get_the_title();
             $cast = get_field('cast', $post_id);
             $price = get_field('price', $post_id);
+            $theater = get_field('theater', $post_id);
 
             // 统计剧目类别：优先使用category字段，如果没有则从标题中提取
             $category = get_field('category', $post_id);
@@ -1062,6 +1103,12 @@ final class Viewing_Records {
                 }
             }
 
+            // 统计剧院分布
+            if ($theater && trim($theater) !== '') {
+                $theater_clean = trim($theater);
+                $theater_data[$theater_clean] = isset($theater_data[$theater_clean]) ? $theater_data[$theater_clean] + 1 : 1;
+            }
+
             // 收集票价数据
             if ($price) {
                 $price_num = floatval(preg_replace('/[^0-9.]/', '', $price));
@@ -1078,11 +1125,16 @@ final class Viewing_Records {
         // 对演员出场频率排序，取前10名
         arsort($cast_data);
         $cast_data = array_slice($cast_data, 0, 10, true);
+        
+        // 对剧院分布排序，取前10名
+        arsort($theater_data);
+        $theater_data = array_slice($theater_data, 0, 10, true);
 
         return rest_ensure_response(array(
             'category' => $category_data,
             'cast' => $cast_data,
-            'price' => $price_ranges
+            'price' => $price_ranges,
+            'theater' => $theater_data
         ));
     }
 

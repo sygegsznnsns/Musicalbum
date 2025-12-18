@@ -104,11 +104,83 @@
   to { transform: rotate(360deg); }
 }
 
+/* 图表配置面板样式 */
+.musicalbum-chart-config-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.musicalbum-chart-config-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.musicalbum-chart-config-item label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.musicalbum-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 140px;
+}
+
+.musicalbum-select:hover {
+  border-color: #9ca3af;
+}
+
+.musicalbum-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.musicalbum-btn-primary {
+  background: #3b82f6;
+  color: #fff;
+  padding: 0.5rem 1.5rem;
+  font-weight: 500;
+}
+
+.musicalbum-btn-primary:hover {
+  background: #2563eb;
+}
+
 .musicalbum-charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 2rem;
   margin-bottom: 2rem;
+}
+
+/* 自定义图表区域 */
+.musicalbum-custom-charts-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e5e7eb;
+}
+
+.musicalbum-custom-charts-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
 }
 
 .musicalbum-chart-wrapper {
