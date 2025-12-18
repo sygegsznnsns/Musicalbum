@@ -93,6 +93,7 @@ final class Viewing_Records {
         add_shortcode('viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
+        add_shortcode('viewing_dashboard', array(__CLASS__, 'shortcode_dashboard'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
@@ -101,6 +102,7 @@ final class Viewing_Records {
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
         add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
+        add_shortcode('musicalbum_dashboard', array(__CLASS__, 'shortcode_dashboard'));
     }
 
     /**
@@ -125,12 +127,14 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'viewing_form') ||
             has_shortcode($post->post_content, 'viewing_list') ||
             has_shortcode($post->post_content, 'viewing_manager') ||
+            has_shortcode($post->post_content, 'viewing_dashboard') ||
             has_shortcode($post->post_content, 'musicalbum_hello') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
             has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
             has_shortcode($post->post_content, 'musicalbum_statistics') ||
             has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
-            has_shortcode($post->post_content, 'musicalbum_viewing_manager')
+            has_shortcode($post->post_content, 'musicalbum_viewing_manager') ||
+            has_shortcode($post->post_content, 'musicalbum_dashboard')
         )) {
             $load_assets = true;
         }
@@ -166,6 +170,7 @@ final class Viewing_Records {
                 'statistics' => esc_url_raw(rest_url('viewing/v1/statistics')),
                 'statisticsDetails' => esc_url_raw(rest_url('viewing/v1/statistics/details')),
                 'statisticsExport' => esc_url_raw(rest_url('viewing/v1/statistics/export')),
+                'dashboard' => esc_url_raw(rest_url('viewing/v1/dashboard')),
                 'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
                 'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
                 'nonce' => wp_create_nonce('wp_rest')
@@ -546,6 +551,11 @@ final class Viewing_Records {
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics')
+        ));
+        register_rest_route('viewing/v1', '/dashboard', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_dashboard')
         ));
         register_rest_route('viewing/v1', '/statistics/details', array(
             'methods' => 'GET',
@@ -1152,6 +1162,90 @@ final class Viewing_Records {
             'cast' => $cast_data,
             'price' => $price_ranges,
             'theater' => $theater_data
+        ));
+    }
+
+    /**
+     * 仪表板数据 REST API 端点
+     * 返回概览统计数据（总记录数、本月观演、总花费、最爱类别等）
+     */
+    public static function rest_dashboard($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $args = array(
+            'post_type' => array('viewing_record', 'musicalbum_viewing'),
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        );
+        
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
+        
+        $query = new WP_Query($args);
+        
+        $total_count = $query->post_count;
+        $this_month_count = 0;
+        $total_spent = 0;
+        $category_data = array();
+        $recent_viewings = array();
+        $current_month = date('Y-m');
+        
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $view_date = get_field('view_date', $post_id);
+            $price = get_field('price', $post_id);
+            $category = get_field('category', $post_id);
+            
+            // 统计本月观演
+            if ($view_date && strpos($view_date, $current_month) === 0) {
+                $this_month_count++;
+            }
+            
+            // 统计总花费
+            if ($price) {
+                $price_num = floatval(preg_replace('/[^0-9.]/', '', $price));
+                if ($price_num > 0) {
+                    $total_spent += $price_num;
+                }
+            }
+            
+            // 统计类别
+            if ($category) {
+                $category_data[$category] = isset($category_data[$category]) ? $category_data[$category] + 1 : 1;
+            }
+            
+            // 收集最近5条记录
+            if (count($recent_viewings) < 5) {
+                $recent_viewings[] = array(
+                    'id' => $post_id,
+                    'title' => get_the_title(),
+                    'date' => $view_date ?: get_the_date('Y-m-d'),
+                    'category' => $category ?: '未分类',
+                    'theater' => get_field('theater', $post_id) ?: '',
+                    'url' => get_permalink()
+                );
+            }
+        }
+        wp_reset_postdata();
+        
+        // 找出最爱类别
+        $favorite_category = '暂无';
+        if (!empty($category_data)) {
+            arsort($category_data);
+            $favorite_category = array_key_first($category_data);
+        }
+        
+        return rest_ensure_response(array(
+            'total_count' => $total_count,
+            'this_month' => $this_month_count,
+            'total_spent' => round($total_spent, 2),
+            'favorite_category' => $favorite_category,
+            'recent_viewings' => $recent_viewings
         ));
     }
 

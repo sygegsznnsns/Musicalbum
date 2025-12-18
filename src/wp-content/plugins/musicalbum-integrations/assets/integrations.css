@@ -980,6 +980,215 @@
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+/* 仪表板样式 */
+.musicalbum-dashboard-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+}
+
+.musicalbum-dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.musicalbum-dashboard-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.musicalbum-dashboard-subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.musicalbum-dashboard-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.musicalbum-dashboard-card {
+  display: block;
+  padding: 2rem;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.musicalbum-dashboard-card:hover {
+  border-color: #3b82f6;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+}
+
+.musicalbum-dashboard-card-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.musicalbum-dashboard-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+}
+
+.musicalbum-dashboard-card p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.musicalbum-dashboard-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #1f2937;
+}
+
+.musicalbum-dashboard-overview {
+  margin-bottom: 3rem;
+}
+
+.musicalbum-dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.musicalbum-dashboard-stat-card {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: #fff;
+  text-align: center;
+}
+
+.musicalbum-dashboard-stat-card:nth-child(2) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.musicalbum-dashboard-stat-card:nth-child(3) {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.musicalbum-dashboard-stat-card:nth-child(4) {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.musicalbum-dashboard-stat-card .stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.musicalbum-dashboard-stat-card .stat-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.musicalbum-dashboard-recent {
+  margin-bottom: 3rem;
+}
+
+.musicalbum-dashboard-recent-list {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.musicalbum-dashboard-recent-item {
+  padding: 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.2s;
+}
+
+.musicalbum-dashboard-recent-item:last-child {
+  border-bottom: none;
+}
+
+.musicalbum-dashboard-recent-item:hover {
+  background: #f9fafb;
+}
+
+.musicalbum-dashboard-recent-item .recent-title {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.musicalbum-dashboard-recent-item .recent-title:hover {
+  color: #3b82f6;
+}
+
+.musicalbum-dashboard-recent-item .recent-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.musicalbum-dashboard-recent-item .recent-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.musicalbum-dashboard-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.musicalbum-dashboard-loading,
+.musicalbum-dashboard-empty,
+.musicalbum-dashboard-error {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.musicalbum-dashboard-error {
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .musicalbum-dashboard-container {
+    padding: 1rem;
+  }
+  
+  .musicalbum-dashboard-title {
+    font-size: 2rem;
+  }
+  
+  .musicalbum-dashboard-nav {
+    grid-template-columns: 1fr;
+  }
+  
+  .musicalbum-dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
   .musicalbum-manager-container {
     padding: 1rem;
   }
