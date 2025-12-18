@@ -2451,8 +2451,14 @@ final class Viewing_Records {
         
         // 构建详情HTML
         $details_html = '<div class="viewing-record-details" style="margin-top: 2rem; padding: 1.5rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">';
-        $details_html .= '<div style="margin-bottom: 1.5rem;">';
+        $details_html .= '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">';
         $details_html .= '<h2 style="margin: 0; font-size: 1.5rem; color: #111827;">观演记录详情</h2>';
+        
+        // 添加编辑按钮（如果有权限）
+        if ($can_edit) {
+            $details_html .= '<button type="button" class="musicalbum-btn musicalbum-btn-primary musicalbum-btn-edit" data-id="' . esc_attr($post_id) . '" style="padding: 0.5rem 1rem; font-size: 0.875rem;">编辑记录</button>';
+        }
+        
         $details_html .= '</div>';
         $details_html .= '<div class="viewing-record-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">';
         
@@ -2528,8 +2534,110 @@ final class Viewing_Records {
         
         $details_html .= '</div>'; // 结束 viewing-record-details
         
+        // 如果有编辑权限，确保模态框存在（如果页面中没有观演管理模块的模态框）
+        if ($can_edit) {
+            // 检查页面中是否已经有模态框（来自观演管理模块）
+            if (!has_shortcode(get_post()->post_content, 'viewing_manager') && 
+                !has_shortcode(get_post()->post_content, 'musicalbum_viewing_manager')) {
+                // 如果没有模态框，添加一个简化版的编辑表单模态框
+                $details_html .= self::get_edit_modal_html();
+            }
+        }
+        
         // 将详情添加到内容后面
         return $content . $details_html;
+    }
+    
+    /**
+     * 获取编辑表单模态框的HTML（用于详情页）
+     */
+    private static function get_edit_modal_html() {
+        ob_start();
+        ?>
+        <div id="musicalbum-form-modal" class="musicalbum-modal" style="display: none;">
+            <div class="musicalbum-modal-content musicalbum-form-modal-content">
+                <span class="musicalbum-modal-close">&times;</span>
+                <h3 class="musicalbum-modal-title" id="musicalbum-form-title">编辑观演记录</h3>
+                <div class="musicalbum-modal-body">
+                    <div class="musicalbum-form-tabs">
+                        <button type="button" class="musicalbum-tab-btn active" data-tab="manual">手动录入</button>
+                    </div>
+                    <div id="musicalbum-tab-manual" class="musicalbum-tab-content active">
+                        <form id="musicalbum-manual-form" class="musicalbum-viewing-form">
+                            <input type="hidden" id="musicalbum-edit-id" name="id" value="">
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-title-input">标题 <span class="required">*</span></label>
+                                <input type="text" id="musicalbum-form-title-input" name="title" required>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-category">剧目类别</label>
+                                <select id="musicalbum-form-category" name="category">
+                                    <option value="">请选择</option>
+                                    <option value="音乐剧">音乐剧</option>
+                                    <option value="话剧">话剧</option>
+                                    <option value="歌剧">歌剧</option>
+                                    <option value="舞剧">舞剧</option>
+                                    <option value="音乐会">音乐会</option>
+                                    <option value="戏曲">戏曲</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-theater">剧院</label>
+                                <input type="text" id="musicalbum-form-theater" name="theater">
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-cast">卡司</label>
+                                <input type="text" id="musicalbum-form-cast" name="cast" placeholder="多个演员用逗号分隔">
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-price">票价</label>
+                                <input type="text" id="musicalbum-form-price" name="price" placeholder="例如：280 或 280元">
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-date">观演日期</label>
+                                <div class="musicalbum-calendar-input-wrapper">
+                                    <input type="text" id="musicalbum-form-date" name="view_date" class="musicalbum-calendar-date-input" placeholder="YYYY-MM-DD或点击选择" autocomplete="off">
+                                    <input type="date" id="musicalbum-form-date-picker" class="musicalbum-calendar-date-picker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
+                                    <button type="button" class="musicalbum-calendar-icon-btn" title="选择日期">📅</button>
+                                </div>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label>观演时间</label>
+                                <div style="display:flex;gap:1rem;align-items:flex-end;">
+                                    <div style="flex:1;">
+                                        <label for="musicalbum-form-time-start" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">开始时间</label>
+                                        <input type="time" id="musicalbum-form-time-start" name="view_time_start" placeholder="例如：19:30">
+                                    </div>
+                                    <div style="flex:1;">
+                                        <label for="musicalbum-form-time-end" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">结束时间</label>
+                                        <input type="time" id="musicalbum-form-time-end" name="view_time_end" placeholder="例如：22:00">
+                                    </div>
+                                </div>
+                                <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-notes">备注</label>
+                                <textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-ticket-image">票面图片</label>
+                                <input type="file" id="musicalbum-form-ticket-image" name="ticket_image" accept="image/*">
+                                <div id="musicalbum-form-ticket-preview" style="margin-top: 0.5rem;"></div>
+                                <input type="hidden" id="musicalbum-form-ticket-image-id" name="ticket_image_id" value="">
+                                <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片</p>
+                            </div>
+                            <div class="musicalbum-form-actions">
+                                <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-form-cancel">取消</button>
+                                <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
     }
     
 }

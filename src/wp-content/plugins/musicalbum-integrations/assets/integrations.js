@@ -549,6 +549,24 @@
     initViewingManager();
   }
   
+  // 详情页编辑按钮点击事件（使用事件委托，支持动态添加的按钮）
+  $(document).on('click', '.viewing-record-details .musicalbum-btn-edit', function() {
+    var id = $(this).data('id');
+    if (id && typeof editViewing === 'function') {
+      editViewing(id);
+      
+      // 确保日期输入框初始化（详情页的模态框可能是动态添加的）
+      setTimeout(function() {
+        if (typeof initDateInput === 'function') {
+          initDateInput('#musicalbum-form-date', '#musicalbum-form-date-picker');
+        }
+        if (typeof initTimeValidation === 'function') {
+          initTimeValidation('#musicalbum-form-time-start', '#musicalbum-form-time-end');
+        }
+      }, 100);
+    }
+  });
+  
   // 确保模态框点击外部也能关闭
   $(document).on('click', '#musicalbum-form-modal', function(e) {
     if ($(e.target).is('#musicalbum-form-modal')) {
@@ -1743,12 +1761,20 @@
         resetForm();
       }
       
-      // 刷新列表和日历
-      if (typeof loadListView === 'function') {
-        loadListView();
-      }
-      if (window.viewingCalendar) {
-        window.viewingCalendar.refetchEvents();
+      // 如果在详情页，刷新页面；否则刷新列表和日历
+      if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
+        // 延迟一下再刷新，确保数据已保存
+        setTimeout(function() {
+          location.reload();
+        }, 500);
+      } else {
+        // 刷新列表和日历
+        if (typeof loadListView === 'function') {
+          loadListView();
+        }
+        if (window.viewingCalendar) {
+          window.viewingCalendar.refetchEvents();
+        }
       }
     }).fail(function(xhr) {
       var msg = '保存失败';
