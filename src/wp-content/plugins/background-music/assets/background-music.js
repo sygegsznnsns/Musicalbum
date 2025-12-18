@@ -371,7 +371,7 @@
             // 检查是否是因为选择了"无音乐"（音频源为空）
             if (!audio.src || audio.src === '' || audio.src === window.location.href) {
                 if (musicInfo) {
-                    musicInfo.textContent = '选择无音乐';
+                    musicInfo.textContent = '已选择：无音乐';
                     musicInfo.style.display = 'block';
                     musicInfo.style.opacity = '1';
                     setTimeout(function() {
