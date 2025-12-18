@@ -29,6 +29,9 @@ final class Viewing_Records {
         add_action('acf/init', array(__CLASS__, 'register_acf_fields'));
         add_action('admin_menu', array(__CLASS__, 'add_admin_menu'));
         
+        // 在单篇文章页面显示观演记录详情
+        add_filter('the_content', array(__CLASS__, 'display_viewing_record_details'));
+        
         // 注册激活和停用钩子
         register_activation_hook(__FILE__, array(__CLASS__, 'activate'));
         
@@ -2071,6 +2074,114 @@ final class Viewing_Records {
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * 在单篇文章页面显示观演记录详情
+     */
+    public static function display_viewing_record_details($content) {
+        // 只在单篇文章页面且是 viewing_record 或 musicalbum_viewing 类型时显示
+        if (!is_singular() || !in_array(get_post_type(), array('viewing_record', 'musicalbum_viewing'))) {
+            return $content;
+        }
+        
+        $post_id = get_the_ID();
+        
+        // 获取所有字段
+        $category = get_field('category', $post_id);
+        $theater = get_field('theater', $post_id);
+        $cast = get_field('cast', $post_id);
+        $price = get_field('price', $post_id);
+        $view_date = get_field('view_date', $post_id);
+        $view_time_start = get_field('view_time_start', $post_id);
+        $view_time_end = get_field('view_time_end', $post_id);
+        $notes = get_field('notes', $post_id);
+        $ticket_image = get_field('ticket_image', $post_id);
+        
+        // 如果没有字段数据，直接返回原内容
+        if (!$category && !$theater && !$cast && !$price && !$view_date && !$notes && !$ticket_image) {
+            return $content;
+        }
+        
+        // 构建详情HTML
+        $details_html = '<div class="viewing-record-details" style="margin-top: 2rem; padding: 1.5rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">';
+        $details_html .= '<h2 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem; color: #111827;">观演记录详情</h2>';
+        $details_html .= '<div class="viewing-record-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">';
+        
+        if ($category) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">类别</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($category) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($theater) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">剧院</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($theater) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($cast) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">卡司</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($cast) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($price) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">票价</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($price) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($view_date) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">观演日期</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($view_date) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($view_time_start || $view_time_end) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">观演时间</strong>';
+            $time_str = '';
+            if ($view_time_start && $view_time_end) {
+                $time_str = esc_html($view_time_start) . ' - ' . esc_html($view_time_end);
+            } elseif ($view_time_start) {
+                $time_str = esc_html($view_time_start) . ' 开始';
+            } elseif ($view_time_end) {
+                $time_str = esc_html($view_time_end) . ' 结束';
+            }
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . $time_str . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        $details_html .= '</div>'; // 结束 viewing-record-meta
+        
+        // 票面图片
+        if ($ticket_image) {
+            $image_url = is_array($ticket_image) ? $ticket_image['url'] : $ticket_image;
+            $image_alt = is_array($ticket_image) && isset($ticket_image['alt']) ? $ticket_image['alt'] : '票面图片';
+            $details_html .= '<div class="viewing-ticket-image" style="margin-bottom: 1.5rem;">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-size: 0.875rem;">票面图片</strong>';
+            $details_html .= '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($image_alt) . '" style="max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #e5e7eb;" />';
+            $details_html .= '</div>';
+        }
+        
+        // 备注
+        if ($notes) {
+            $details_html .= '<div class="viewing-notes" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-size: 0.875rem;">备注</strong>';
+            $details_html .= '<div style="color: #111827; line-height: 1.6; white-space: pre-wrap;">' . wp_kses_post(nl2br(esc_html($notes))) . '</div>';
+            $details_html .= '</div>';
+        }
+        
+        $details_html .= '</div>'; // 结束 viewing-record-details
+        
+        // 将详情添加到内容后面
+        return $content . $details_html;
     }
 }
 
