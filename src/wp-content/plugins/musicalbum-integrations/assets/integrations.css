@@ -1237,11 +1237,22 @@
   margin-bottom: 0.75rem !important;
   width: 100% !important;
   transition: color 0.2s ease;
+  border: none !important;
+  outline: none !important;
+}
+
+.musicalbum-dashboard-recent-item .recent-title:link,
+.musicalbum-dashboard-recent-item .recent-title:visited,
+.musicalbum-dashboard-recent-item .recent-title:active {
+  color: #1e293b !important;
+  text-decoration: none !important;
+  border: none !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-title:hover {
   color: #667eea !important;
   text-decoration: none !important;
+  border: none !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-meta {

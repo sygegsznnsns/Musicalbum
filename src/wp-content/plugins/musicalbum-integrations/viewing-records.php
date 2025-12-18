@@ -1179,6 +1179,20 @@ final class Viewing_Records {
                     <div class="musicalbum-dashboard-loading">加载中...</div>
                 </div>
             </div>
+            <style>
+                .musicalbum-dashboard-recent-item .recent-title,
+                .musicalbum-dashboard-recent-item .recent-title:link,
+                .musicalbum-dashboard-recent-item .recent-title:visited,
+                .musicalbum-dashboard-recent-item .recent-title:active {
+                    color: #1e293b !important;
+                    text-decoration: none !important;
+                    border: none !important;
+                }
+                .musicalbum-dashboard-recent-item .recent-title:hover {
+                    color: #667eea !important;
+                    text-decoration: none !important;
+                }
+            </style>
         </div>
         <?php
         return ob_get_clean();

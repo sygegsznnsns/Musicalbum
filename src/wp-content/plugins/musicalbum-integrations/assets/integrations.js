@@ -2225,7 +2225,7 @@
         var html = '';
         data.recent_viewings.forEach(function(item) {
           html += '<div class="musicalbum-dashboard-recent-item">';
-          html += '<a href="' + escapeHtml(item.url) + '" class="recent-title">' + escapeHtml(item.title) + '</a>';
+          html += '<a href="' + escapeHtml(item.url) + '" class="recent-title" style="color: #1e293b !important; text-decoration: none !important; border: none !important;">' + escapeHtml(item.title) + '</a>';
           html += '<div class="recent-meta">';
           html += '<span class="recent-date">' + escapeHtml(item.date) + '</span>';
           if (item.category) {
