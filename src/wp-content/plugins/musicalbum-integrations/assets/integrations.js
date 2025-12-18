@@ -545,10 +545,39 @@
   // ==================== 观演记录管理模块 ====================
   
   // 初始化管理界面
-  if ($('.musicalbum-manager-container').length > 0) {
-    initViewingManager();
-  }
-  
+  // 全局事件委托：关闭模态框（支持动态添加的模态框，包括详情页）
+  $(document).on('click', '.musicalbum-modal-close, #musicalbum-form-cancel, #musicalbum-ocr-cancel', function() {
+    $('#musicalbum-form-modal').hide();
+    if (typeof resetForm === 'function') {
+      resetForm();
+    }
+  });
+
+  // 全局事件委托：点击模态框外部关闭
+  $(document).on('click', '#musicalbum-form-modal', function(e) {
+    if ($(e.target).is('#musicalbum-form-modal')) {
+      $(this).hide();
+      if (typeof resetForm === 'function') {
+        resetForm();
+      }
+    }
+  });
+
+  // 全局事件委托：手动录入表单提交（支持动态添加的表单，包括详情页）
+  $(document).on('submit', '#musicalbum-manual-form', function(e) {
+    e.preventDefault();
+    if (typeof saveViewing === 'function') {
+      saveViewing($(this));
+    }
+  });
+
+  // 全局事件委托：图片上传功能
+  $(document).on('change', '#musicalbum-form-ticket-image', function() {
+    if (typeof handleImageUpload === 'function') {
+      handleImageUpload(this, '#musicalbum-form-ticket-preview', '#musicalbum-form-ticket-image-id');
+    }
+  });
+
   // 详情页编辑按钮点击事件（使用事件委托，支持动态添加的按钮）
   $(document).on('click', '.viewing-record-details .musicalbum-btn-edit', function() {
     var id = $(this).data('id');
@@ -566,23 +595,10 @@
       }, 100);
     }
   });
-  
-  // 确保模态框点击外部也能关闭
-  $(document).on('click', '#musicalbum-form-modal', function(e) {
-    if ($(e.target).is('#musicalbum-form-modal')) {
-      $(this).hide();
-      if (typeof resetForm === 'function') {
-        resetForm();
-      }
-    }
-  });
-  
-  // 使用事件委托确保图片上传功能正常工作
-  $(document).on('change', '#musicalbum-form-ticket-image', function() {
-    if (typeof handleImageUpload === 'function') {
-      handleImageUpload(this, '#musicalbum-form-ticket-preview', '#musicalbum-form-ticket-image-id');
-    }
-  });
+
+  if ($('.musicalbum-manager-container').length > 0) {
+    initViewingManager();
+  }
 
   function initViewingManager() {
     // 视图切换
@@ -616,25 +632,8 @@
       $('#musicalbum-form-modal').show();
     });
 
-    // 关闭模态框
-    $('.musicalbum-modal-close, #musicalbum-form-cancel, #musicalbum-ocr-cancel').on('click', function() {
-      $('#musicalbum-form-modal').hide();
-      resetForm();
-    });
-
-    // 点击外部关闭
-    $(document).on('click', '#musicalbum-form-modal', function(e) {
-      if ($(e.target).is('#musicalbum-form-modal')) {
-        $(this).hide();
-        resetForm();
-      }
-    });
-
-    // 手动录入表单提交
-    $('#musicalbum-manual-form').on('submit', function(e) {
-      e.preventDefault();
-      saveViewing($(this));
-    });
+    // 注意：关闭模态框和表单提交的事件委托已在全局定义（initViewingManager函数外部）
+    // 这里不再重复定义，避免重复绑定
 
     // OCR识别
     $('#musicalbum-ocr-manager-button').on('click', function() {
