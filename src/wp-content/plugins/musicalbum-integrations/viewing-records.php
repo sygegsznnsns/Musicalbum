@@ -138,6 +138,7 @@ final class Viewing_Records {
                 'statisticsDetails' => esc_url_raw(rest_url('viewing/v1/statistics/details')),
                 'statisticsExport' => esc_url_raw(rest_url('viewing/v1/statistics/export')),
                 'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
+                'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -555,6 +556,13 @@ final class Viewing_Records {
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_delete'),
             'args' => array('id' => array('type' => 'integer'))
+        ));
+        
+        // 图片上传端点
+        register_rest_route('viewing/v1', '/upload-image', array(
+            'methods' => 'POST',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_upload_image')
         ));
     }
 
@@ -1432,6 +1440,13 @@ final class Viewing_Records {
                                     <label for="musicalbum-form-notes">备注</label>
                                     <textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>
                                 </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-ticket-image">票面图片</label>
+                                    <input type="file" id="musicalbum-form-ticket-image" name="ticket_image" accept="image/*">
+                                    <div id="musicalbum-form-ticket-preview" style="margin-top: 0.5rem;"></div>
+                                    <input type="hidden" id="musicalbum-form-ticket-image-id" name="ticket_image_id" value="">
+                                    <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片</p>
+                                </div>
                                 <div class="musicalbum-form-actions">
                                     <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-form-cancel">取消</button>
                                     <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
@@ -1501,6 +1516,13 @@ final class Viewing_Records {
                                 <div class="musicalbum-form-group">
                                     <label for="musicalbum-ocr-notes">备注</label>
                                     <textarea id="musicalbum-ocr-notes" name="notes" rows="4"></textarea>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-ticket-image">票面图片</label>
+                                    <input type="file" id="musicalbum-ocr-ticket-image" name="ticket_image" accept="image/*">
+                                    <div id="musicalbum-ocr-ticket-preview" style="margin-top: 0.5rem;"></div>
+                                    <input type="hidden" id="musicalbum-ocr-ticket-image-id" name="ticket_image_id" value="">
+                                    <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片（OCR识别的图片会自动保存）</p>
                                 </div>
                                 <div class="musicalbum-form-actions">
                                     <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-ocr-cancel">取消</button>
@@ -1711,6 +1733,24 @@ final class Viewing_Records {
             return new WP_Error('forbidden', '无权查看此记录', array('status' => 403));
         }
 
+        $ticket_image = get_field('ticket_image', $post_id);
+        $ticket_image_data = null;
+        if ($ticket_image) {
+            if (is_array($ticket_image)) {
+                $ticket_image_data = array(
+                    'id' => isset($ticket_image['ID']) ? $ticket_image['ID'] : (isset($ticket_image['id']) ? $ticket_image['id'] : ''),
+                    'url' => isset($ticket_image['url']) ? $ticket_image['url'] : ''
+                );
+            } else {
+                // 如果是附件ID
+                $image_url = wp_get_attachment_image_url($ticket_image, 'full');
+                $ticket_image_data = array(
+                    'id' => $ticket_image,
+                    'url' => $image_url ? $image_url : ''
+                );
+            }
+        }
+        
         $result = array(
             'id' => $post_id,
             'title' => get_the_title($post_id),
@@ -1722,7 +1762,7 @@ final class Viewing_Records {
             'view_time_start' => get_field('view_time_start', $post_id),
             'view_time_end' => get_field('view_time_end', $post_id),
             'notes' => get_field('notes', $post_id),
-            'ticket_image' => get_field('ticket_image', $post_id),
+            'ticket_image' => $ticket_image_data,
             'url' => get_permalink($post_id),
             'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
         );
@@ -1781,6 +1821,9 @@ final class Viewing_Records {
         }
         if (isset($params['notes'])) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
+        }
+        if (isset($params['ticket_image_id']) && !empty($params['ticket_image_id'])) {
+            update_field('ticket_image', intval($params['ticket_image_id']), $post_id);
         }
 
         return rest_ensure_response(array(
@@ -1845,6 +1888,14 @@ final class Viewing_Records {
         if (isset($params['notes'])) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
         }
+        if (isset($params['ticket_image_id'])) {
+            if (!empty($params['ticket_image_id'])) {
+                update_field('ticket_image', intval($params['ticket_image_id']), $post_id);
+            } else {
+                // 如果传递了空值，删除图片
+                update_field('ticket_image', '', $post_id);
+            }
+        }
 
         return rest_ensure_response(array(
             'id' => $post_id,
@@ -1882,6 +1933,71 @@ final class Viewing_Records {
         return rest_ensure_response(array(
             'message' => '记录删除成功'
         ));
+    }
+    
+    /**
+     * 上传图片 REST API
+     */
+    public static function rest_upload_image($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+        
+        // 检查文件上传
+        if (empty($_FILES['file'])) {
+            return new WP_Error('no_file', '未选择文件', array('status' => 400));
+        }
+        
+        // 使用 WordPress 媒体库上传
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        
+        $file = $_FILES['file'];
+        
+        // 验证文件类型
+        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp');
+        $file_type = wp_check_filetype($file['name']);
+        if (!in_array($file['type'], $allowed_types) && !in_array($file_type['type'], $allowed_types)) {
+            return new WP_Error('invalid_file_type', '不支持的文件类型，请上传图片文件', array('status' => 400));
+        }
+        
+        // 上传文件
+        $upload = wp_handle_upload($file, array('test_form' => false));
+        
+        if (isset($upload['error'])) {
+            return new WP_Error('upload_error', $upload['error'], array('status' => 500));
+        }
+        
+        // 创建附件
+        $attachment = array(
+            'post_mime_type' => $upload['type'],
+            'post_title' => sanitize_file_name(pathinfo($file['name'], PATHINFO_FILENAME)),
+            'post_content' => '',
+            'post_status' => 'inherit',
+            'post_author' => $user_id
+        );
+        
+        $attach_id = wp_insert_attachment($attachment, $upload['file']);
+        
+        if (is_wp_error($attach_id)) {
+            return $attach_id;
+        }
+        
+        // 生成附件元数据
+        $attach_data = wp_generate_attachment_metadata($attach_id, $upload['file']);
+        wp_update_attachment_metadata($attach_id, $attach_data);
+        
+        // 返回图片信息
+        $image_url = wp_get_attachment_image_url($attach_id, 'full');
+        $image_data = array(
+            'id' => $attach_id,
+            'url' => $image_url,
+            'thumbnail' => wp_get_attachment_image_url($attach_id, 'thumbnail')
+        );
+        
+        return rest_ensure_response($image_data);
     }
 
     /**

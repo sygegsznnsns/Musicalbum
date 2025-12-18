@@ -764,6 +764,57 @@
     
     // 初始化表单中的日期输入框（手动录入和OCR识别）
     initFormDateInputs();
+    
+    // 初始化图片上传预览
+    initImageUpload();
+  }
+  
+  // 初始化图片上传和预览
+  function initImageUpload() {
+    // 手动录入表单的图片上传
+    $('#musicalbum-form-ticket-image').on('change', function() {
+      handleImageUpload(this, '#musicalbum-form-ticket-preview', '#musicalbum-form-ticket-image-id');
+    });
+    
+    // OCR识别表单的图片上传
+    $('#musicalbum-ocr-ticket-image').on('change', function() {
+      handleImageUpload(this, '#musicalbum-ocr-ticket-preview', '#musicalbum-ocr-ticket-image-id');
+    });
+  }
+  
+  // 处理图片上传和预览
+  function handleImageUpload(input, previewSelector, imageIdSelector) {
+    if (input.files && input.files[0]) {
+      var file = input.files[0];
+      var reader = new FileReader();
+      
+      reader.onload = function(e) {
+        var preview = $(previewSelector);
+        preview.html('<img src="' + e.target.result + '" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #e5e7eb;" />');
+      };
+      
+      reader.readAsDataURL(file);
+      
+      // 上传图片到服务器
+      var formData = new FormData();
+      formData.append('file', file);
+      
+      $.ajax({
+        url: ViewingRecords.rest.uploadImage,
+        method: 'POST',
+        headers: {
+          'X-WP-Nonce': ViewingRecords.rest.nonce
+        },
+        processData: false,
+        contentType: false,
+        data: formData
+      }).done(function(res) {
+        $(imageIdSelector).val(res.id);
+      }).fail(function(xhr) {
+        console.error('图片上传失败:', xhr);
+        alert('图片上传失败，请重试');
+      });
+    }
   }
   
   // 初始化表单日期输入框（支持手动输入和选择）
@@ -1419,7 +1470,7 @@
     var formData = {};
     $form.find('input, select, textarea').each(function() {
       var $el = $(this);
-      if ($el.attr('name') && $el.attr('name') !== 'id') {
+      if ($el.attr('name') && $el.attr('name') !== 'id' && $el.attr('type') !== 'file') {
         formData[$el.attr('name')] = $el.val();
       }
     });
@@ -1454,6 +1505,45 @@
       method = 'PUT';
     }
 
+    // 如果有图片需要上传，先上传图片
+    var ticketImageInput = $form.closest('.musicalbum-modal-content').find('input[type="file"][name="ticket_image"]');
+    var ticketImageId = $form.closest('.musicalbum-modal-content').find('input[type="hidden"][name="ticket_image_id"]').val();
+    
+    if (ticketImageInput.length && ticketImageInput[0].files.length > 0) {
+      // 上传图片
+      var formDataUpload = new FormData();
+      formDataUpload.append('file', ticketImageInput[0].files[0]);
+      
+      $.ajax({
+        url: ViewingRecords.rest.uploadImage,
+        method: 'POST',
+        headers: {
+          'X-WP-Nonce': ViewingRecords.rest.nonce
+        },
+        processData: false,
+        contentType: false,
+        data: formDataUpload
+      }).done(function(imageRes) {
+        formData.ticket_image_id = imageRes.id;
+        saveViewingData(url, method, formData, id);
+      }).fail(function(xhr) {
+        var msg = '图片上传失败';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+          msg = xhr.responseJSON.message;
+        }
+        alert(msg);
+      });
+    } else if (ticketImageId) {
+      // 使用已有的图片ID
+      formData.ticket_image_id = ticketImageId;
+      saveViewingData(url, method, formData, id);
+    } else {
+      // 没有图片，直接保存
+      saveViewingData(url, method, formData, id);
+    }
+  }
+  
+  function saveViewingData(url, method, formData, id) {
     $.ajax({
       url: url,
       method: method,
@@ -1467,8 +1557,8 @@
       $('#musicalbum-form-modal').hide();
       resetForm();
       loadListView();
-      if (window.musicalbumCalendar) {
-        window.musicalbumCalendar.refetchEvents();
+      if (window.viewingCalendar) {
+        window.viewingCalendar.refetchEvents();
       }
     }).fail(function(xhr) {
       var msg = '保存失败';
@@ -1511,6 +1601,17 @@
         $('#musicalbum-form-time-end').val(item.view_time_end || '');
         $('#musicalbum-form-notes').val(item.notes || '');
         
+        // 显示票面图片
+        if (item.ticket_image) {
+          var imageUrl = typeof item.ticket_image === 'object' ? item.ticket_image.url : item.ticket_image;
+          var imageId = typeof item.ticket_image === 'object' ? item.ticket_image.id : '';
+          $('#musicalbum-form-ticket-preview').html('<img src="' + imageUrl + '" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #e5e7eb;" />');
+          $('#musicalbum-form-ticket-image-id').val(imageId);
+        } else {
+          $('#musicalbum-form-ticket-preview').empty();
+          $('#musicalbum-form-ticket-image-id').val('');
+        }
+        
         $('#musicalbum-form-title').text('编辑观演记录');
         $('.musicalbum-tab-btn[data-tab="manual"]').click();
         $('#musicalbum-form-modal').show();
@@ -1542,14 +1643,17 @@
     // 重置日期和时间输入框
     $('#musicalbum-form-date, #musicalbum-ocr-date').val('');
     $('#musicalbum-form-date-picker, #musicalbum-ocr-date-picker').val('');
-    $('#musicalbum-form-time-start, #musicalbum-ocr-time-start').val('');
-    $('#musicalbum-form-time-end, #musicalbum-ocr-time-end').val('');
-    $('#musicalbum-edit-id').val('');
-    $('#musicalbum-manual-form')[0].reset();
-    $('#musicalbum-ocr-form')[0].reset();
-    $('#musicalbum-ocr-form').hide();
-    $('#musicalbum-ocr-preview').empty();
-    $('.musicalbum-tab-btn[data-tab="manual"]').click();
+        $('#musicalbum-form-time-start, #musicalbum-ocr-time-start').val('');
+        $('#musicalbum-form-time-end, #musicalbum-ocr-time-end').val('');
+        $('#musicalbum-edit-id').val('');
+        $('#musicalbum-manual-form')[0].reset();
+        $('#musicalbum-ocr-form')[0].reset();
+        $('#musicalbum-ocr-form').hide();
+        $('#musicalbum-ocr-preview').empty();
+        // 清空图片预览和ID
+        $('#musicalbum-form-ticket-preview, #musicalbum-ocr-ticket-preview').empty();
+        $('#musicalbum-form-ticket-image-id, #musicalbum-ocr-ticket-image-id').val('');
+        $('.musicalbum-tab-btn[data-tab="manual"]').click();
   }
 
   // HTML转义
