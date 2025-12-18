@@ -86,7 +86,13 @@
                         musicPlayer.classList.add('dragging');
                     }, longPressDelay);
                 } else {
-                    // 正常状态下，如果点击的是按钮、滑块或选择框，不启动拖拽
+                    // 正常状态下，如果点击的是隐藏按钮，允许点击事件处理切换
+                    if (e.target.closest('#music-toggle-hide')) {
+                        // 不启动拖拽，让点击事件处理切换
+                        return;
+                    }
+                    
+                    // 正常状态下，如果点击的是其他按钮、滑块或选择框，不启动拖拽
                     if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
                         return;
                     }
@@ -158,6 +164,12 @@
                 } else if (musicPlayer.classList.contains('hidden') && !isLongPress) {
                     // 隐藏状态下，如果不是长按（即单击），切换显示
                     togglePlayerVisibility();
+                } else if (!musicPlayer.classList.contains('hidden')) {
+                    // 正常状态下，如果点击的是隐藏按钮，切换隐藏
+                    const clickTarget = e.target;
+                    if (clickTarget.closest('#music-toggle-hide') || clickTarget === toggleHideBtn) {
+                        togglePlayerVisibility();
+                    }
                 }
                 
                 isLongPress = false;
@@ -532,8 +544,16 @@
             }
         }
         
-        // 隐藏按钮点击事件（现在由mouseup/touchend统一处理，这里可以移除或保留作为备用）
-        // 注意：现在单击/长按逻辑在mousedown/mouseup中处理
+        // 隐藏按钮点击事件（作为备用，主要逻辑在mouseup/touchend中处理）
+        if (toggleHideBtn) {
+            toggleHideBtn.addEventListener('click', function(e) {
+                // 只在正常状态下处理，隐藏状态下由mouseup/touchend处理
+                if (!musicPlayer.classList.contains('hidden')) {
+                    e.stopPropagation();
+                    togglePlayerVisibility();
+                }
+            });
+        }
         
         // 恢复隐藏状态
         const isHidden = localStorage.getItem('backgroundMusicHidden');
