@@ -84,25 +84,28 @@
             
             // 鼠标移动事件（使用requestAnimationFrame优化）
             document.addEventListener('mousemove', function(e) {
-                if (isDragging) {
-                    e.preventDefault();
-                    
-                    // 取消之前的动画帧请求
-                    if (rafId !== null) {
-                        cancelAnimationFrame(rafId);
-                    }
-                    
-                    // 使用requestAnimationFrame确保流畅
-                    rafId = requestAnimationFrame(function() {
-                        currentX = e.clientX - initialX;
-                        currentY = e.clientY - initialY;
-                        
-                        xOffset = currentX;
-                        yOffset = currentY;
-                        
-                        setTranslate(currentX, currentY, musicPlayer);
-                    });
+                // 只有在拖拽状态下才处理移动
+                if (!isDragging) {
+                    return;
                 }
+                
+                e.preventDefault();
+                
+                // 取消之前的动画帧请求
+                if (rafId !== null) {
+                    cancelAnimationFrame(rafId);
+                }
+                
+                // 使用requestAnimationFrame确保流畅
+                rafId = requestAnimationFrame(function() {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    setTranslate(currentX, currentY, musicPlayer);
+                });
             });
             
             // 鼠标释放事件
@@ -119,15 +122,8 @@
             // 触摸事件支持（移动设备）
             musicPlayer.addEventListener('touchstart', function(e) {
                 // 如果点击的是按钮、滑块或选择框，不启动拖拽
-                if (!musicPlayer.classList.contains('hidden')) {
-                    if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
-                        return;
-                    }
-                } else {
-                    // 隐藏状态下，如果点击的是隐藏按钮，不拖拽
-                    if (e.target.closest('#music-toggle-hide')) {
-                        return;
-                    }
+                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
+                    return;
                 }
                 
                 const touch = e.touches[0];

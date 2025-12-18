@@ -27,7 +27,7 @@
     -ms-user-select: none;
 }
 
-#background-music-player:hover:not(.dragging) {
+#background-music-player:hover:not(.dragging):not(.hidden) {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16), 
                 0 4px 12px rgba(0, 0, 0, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 1);
@@ -439,11 +439,11 @@
 }
 
 /* 隐藏状态下播放器的悬停效果 */
-#background-music-player.hidden:hover {
-    transform: scale(1.1) translateY(-2px) !important;
+#background-music-player.hidden:hover:not(.dragging) {
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5),
                 0 4px 12px rgba(0, 0, 0, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    /* 注意：不改变 transform，避免与拖拽位置冲突 */
 }
 
 /* 隐藏音频元素（只用于播放，不显示默认控件） */
