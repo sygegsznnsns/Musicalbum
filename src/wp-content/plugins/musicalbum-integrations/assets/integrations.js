@@ -550,35 +550,7 @@
     initViewingManager();
   }
   
-  // 初始化详情页编辑功能 - 复用现有的编辑功能
-  $(document).on('click', '.viewing-record-details .musicalbum-btn-edit', function() {
-    var id = $(this).data('id');
-    if (id && typeof editViewing === 'function') {
-      editViewing(id);
-      
-      // 确保图片上传事件已绑定（详情页的模态框可能是动态添加的）
-      setTimeout(function() {
-        $('#musicalbum-form-ticket-image').off('change').on('change', function() {
-          if (typeof handleImageUpload === 'function') {
-            handleImageUpload(this, '#musicalbum-form-ticket-preview', '#musicalbum-form-ticket-image-id');
-          }
-        });
-      }, 100);
-    }
-  });
-  
-  // 确保详情页的关闭按钮也能工作（如果模态框是动态添加的）
-  $(document).on('click', '#musicalbum-form-modal .musicalbum-modal-close, #musicalbum-form-cancel', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    $('#musicalbum-form-modal').hide();
-    if (typeof resetForm === 'function') {
-      resetForm();
-    }
-    return false;
-  });
-  
-  // 确保详情页点击外部也能关闭
+  // 确保模态框点击外部也能关闭
   $(document).on('click', '#musicalbum-form-modal', function(e) {
     if ($(e.target).is('#musicalbum-form-modal')) {
       $(this).hide();
@@ -588,7 +560,7 @@
     }
   });
   
-  // 使用事件委托确保详情页的图片上传也能工作
+  // 使用事件委托确保图片上传功能正常工作
   $(document).on('change', '#musicalbum-form-ticket-image', function() {
     if (typeof handleImageUpload === 'function') {
       handleImageUpload(this, '#musicalbum-form-ticket-preview', '#musicalbum-form-ticket-image-id');
@@ -1652,7 +1624,7 @@
     }
 
     // 处理图片上传和替换
-    // 先尝试从表单内查找，再尝试从模态框内查找（详情页的模态框可能是动态添加的）
+    // 先尝试从表单内查找，再尝试从模态框内查找
     var ticketImageInput = $form.find('input[type="file"][name="ticket_image"]');
     if (ticketImageInput.length === 0) {
       ticketImageInput = $('#musicalbum-form-modal').find('input[type="file"][name="ticket_image"]');
@@ -1797,14 +1769,12 @@
         resetForm();
       }
       
-      // 如果在详情页，延迟刷新页面，给用户时间查看日志
+      // 如果在详情页，刷新页面；否则刷新列表
       if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
-        console.log('将在3秒后刷新页面，请查看上方的日志信息');
-        // 延迟3秒再刷新，确保用户有时间查看日志
+        // 延迟一下再刷新，确保数据已保存
         setTimeout(function() {
-          console.log('正在刷新页面...');
           location.reload();
-        }, 3000);
+        }, 500);
       } else {
         if (typeof loadListView === 'function') {
           loadListView();
@@ -1939,7 +1909,6 @@
         $('.musicalbum-tab-btn[data-tab="manual"]').click();
         $('#musicalbum-form-modal').show();
         
-        // 确保编辑ID已设置（详情页可能需要在显示后再次确认）
         console.log('编辑记录加载完成，编辑ID:', $('#musicalbum-edit-id').val());
       }
     }).fail(function() {
