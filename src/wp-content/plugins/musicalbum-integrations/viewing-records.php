@@ -115,6 +115,38 @@ final class Viewing_Records {
      * 脚本通过 wp_localize_script 注入 REST 端点与 nonce
      */
     public static function enqueue_assets() {
+        // 只在需要的地方加载资源（短码页面、观演管理页面、单篇文章页面）
+        $load_assets = false;
+        
+        // 检查是否有短码
+        global $post;
+        if ($post && (
+            has_shortcode($post->post_content, 'viewing_hello') ||
+            has_shortcode($post->post_content, 'viewing_form') ||
+            has_shortcode($post->post_content, 'viewing_list') ||
+            has_shortcode($post->post_content, 'viewing_statistics') ||
+            has_shortcode($post->post_content, 'viewing_manager') ||
+            has_shortcode($post->post_content, 'musicalbum_hello') ||
+            has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
+            has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
+            has_shortcode($post->post_content, 'musicalbum_statistics') ||
+            has_shortcode($post->post_content, 'musicalbum_viewing_manager')
+        )) {
+            $load_assets = true;
+        }
+        
+        // 检查是否是观演记录单篇文章页面
+        if (is_singular() && in_array(get_post_type(), array('viewing_record', 'musicalbum_viewing'))) {
+            $load_assets = true;
+            // 在详情页也需要加载表单模态框，复用观演管理模块的模态框
+            // 如果页面中没有模态框，需要添加一个简化版
+            add_action('wp_footer', array(__CLASS__, 'maybe_add_detail_edit_modal'));
+        }
+        
+        if (!$load_assets) {
+            return;
+        }
+        
         wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
         wp_enqueue_style('viewing-records');
         
@@ -1371,7 +1403,8 @@ final class Viewing_Records {
             </div>
 
             <!-- 录入表单模态框 -->
-            <div id="musicalbum-form-modal" class="musicalbum-modal">
+            <!-- 编辑表单模态框（在详情页也会使用） -->
+            <div id="musicalbum-form-modal" class="musicalbum-modal" style="display: none;">
                 <div class="musicalbum-modal-content musicalbum-form-modal-content">
                     <span class="musicalbum-modal-close">&times;</span>
                     <h3 class="musicalbum-modal-title" id="musicalbum-form-title">新增观演记录</h3>
@@ -2391,9 +2424,21 @@ final class Viewing_Records {
             return $content;
         }
         
+        // 检查是否有编辑权限（记录所有者或管理员）
+        $current_user_id = get_current_user_id();
+        $post_author_id = get_post_field('post_author', $post_id);
+        $can_edit = ($current_user_id && ($current_user_id == $post_author_id || current_user_can('manage_options')));
+        
         // 构建详情HTML
         $details_html = '<div class="viewing-record-details" style="margin-top: 2rem; padding: 1.5rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">';
-        $details_html .= '<h2 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem; color: #111827;">观演记录详情</h2>';
+        $details_html .= '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">';
+        $details_html .= '<h2 style="margin: 0; font-size: 1.5rem; color: #111827;">观演记录详情</h2>';
+        
+        // 添加编辑按钮（如果有权限）- 复用现有的编辑功能
+        if ($can_edit) {
+            $details_html .= '<button type="button" class="musicalbum-btn musicalbum-btn-primary musicalbum-btn-edit" data-id="' . esc_attr($post_id) . '" style="padding: 0.5rem 1rem; font-size: 0.875rem;">编辑记录</button>';
+        }
+        $details_html .= '</div>';
         $details_html .= '<div class="viewing-record-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">';
         
         if ($category) {
@@ -2470,6 +2515,146 @@ final class Viewing_Records {
         
         // 将详情添加到内容后面
         return $content . $details_html;
+    }
+    
+    /**
+     * 在详情页添加编辑表单模态框（如果不存在）
+     */
+    public static function maybe_add_detail_edit_modal() {
+        // 只在详情页且模态框不存在时添加
+        if (!is_singular() || !in_array(get_post_type(), array('viewing_record', 'musicalbum_viewing'))) {
+            return;
+        }
+        
+        // 如果模态框已存在（来自观演管理模块），不需要重复添加
+        if (has_shortcode(get_post()->post_content, 'viewing_manager') || 
+            has_shortcode(get_post()->post_content, 'musicalbum_viewing_manager')) {
+            return;
+        }
+        
+        // 检查是否有编辑权限
+        $current_user_id = get_current_user_id();
+        $post_id = get_the_ID();
+        $post_author_id = get_post_field('post_author', $post_id);
+        $can_edit = ($current_user_id && ($current_user_id == $post_author_id || current_user_can('manage_options')));
+        
+        if (!$can_edit) {
+            return;
+        }
+        
+        // 输出简化版的编辑表单模态框（复用观演管理模块的HTML结构）
+        // 这里只输出模态框，表单内容通过JavaScript动态加载
+        echo '<div id="musicalbum-form-modal" class="musicalbum-modal" style="display: none;">';
+        echo '<div class="musicalbum-modal-content musicalbum-form-modal-content">';
+        echo '<span class="musicalbum-modal-close">&times;</span>';
+        echo '<h3 class="musicalbum-modal-title" id="musicalbum-form-title">编辑观演记录</h3>';
+        echo '<div class="musicalbum-modal-body">';
+        echo '<div class="musicalbum-form-tabs">';
+        echo '<button type="button" class="musicalbum-tab-btn active" data-tab="manual">手动录入</button>';
+        echo '</div>';
+        echo '<div id="musicalbum-tab-manual" class="musicalbum-tab-content active">';
+        echo '<form id="musicalbum-manual-form" class="musicalbum-viewing-form">';
+        echo '<input type="hidden" id="musicalbum-edit-id" name="id" value="">';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-title-input">标题 <span class="required">*</span></label>';
+        echo '<input type="text" id="musicalbum-form-title-input" name="title" required>';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-category">剧目类别</label>';
+        echo '<select id="musicalbum-form-category" name="category">';
+        echo '<option value="">请选择</option>';
+        echo '<option value="音乐剧">音乐剧</option>';
+        echo '<option value="话剧">话剧</option>';
+        echo '<option value="歌剧">歌剧</option>';
+        echo '<option value="舞剧">舞剧</option>';
+        echo '<option value="音乐会">音乐会</option>';
+        echo '<option value="戏曲">戏曲</option>';
+        echo '<option value="其他">其他</option>';
+        echo '</select>';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-theater">剧院</label>';
+        echo '<input type="text" id="musicalbum-form-theater" name="theater">';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-cast">卡司</label>';
+        echo '<input type="text" id="musicalbum-form-cast" name="cast" placeholder="多个演员用逗号分隔">';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-price">票价</label>';
+        echo '<input type="text" id="musicalbum-form-price" name="price" placeholder="例如：280 或 280元">';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-date">观演日期</label>';
+        echo '<div class="musicalbum-calendar-input-wrapper">';
+        echo '<input type="text" id="musicalbum-form-date" name="view_date" class="musicalbum-calendar-date-input" placeholder="YYYY-MM-DD或点击选择" autocomplete="off">';
+        echo '<input type="date" id="musicalbum-form-date-picker" class="musicalbum-calendar-date-picker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">';
+        echo '<button type="button" class="musicalbum-calendar-icon-btn" title="选择日期">📅</button>';
+        echo '</div>';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label>观演时间</label>';
+        echo '<div style="display:flex;gap:1rem;align-items:flex-end;">';
+        echo '<div style="flex:1;">';
+        echo '<label for="musicalbum-form-time-start" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">开始时间</label>';
+        echo '<input type="time" id="musicalbum-form-time-start" name="view_time_start" placeholder="例如：19:30">';
+        echo '</div>';
+        echo '<div style="flex:1;">';
+        echo '<label for="musicalbum-form-time-end" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">结束时间</label>';
+        echo '<input type="time" id="musicalbum-form-time-end" name="view_time_end" placeholder="例如：22:00">';
+        echo '</div>';
+        echo '</div>';
+        echo '<p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-notes">备注</label>';
+        echo '<textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>';
+        echo '</div>';
+        echo '<div class="musicalbum-form-group">';
+        echo '<label for="musicalbum-form-ticket-image">票面图片</label>';
+        echo '<input type="file" id="musicalbum-form-ticket-image" name="ticket_image" accept="image/*">';
+        echo '<div id="musicalbum-form-ticket-preview" style="margin-top: 0.5rem;"></div>';
+        echo '<input type="hidden" id="musicalbum-form-ticket-image-id" name="ticket_image_id" value="">';
+        echo '<p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片</p>';
+        echo '</div>';
+        echo '<div class="musicalbum-form-actions">';
+        echo '<button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-form-cancel">取消</button>';
+        echo '<button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>';
+        echo '</div>';
+        echo '</form>';
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
+        
+        // 初始化表单功能
+        echo '<script>';
+        echo 'jQuery(document).ready(function($) {';
+        echo '  // 关闭模态框';
+        echo '  $(".musicalbum-modal-close, #musicalbum-form-cancel").on("click", function() {';
+        echo '    $("#musicalbum-form-modal").hide();';
+        echo '  });';
+        echo '  // 点击外部关闭';
+        echo '  $("#musicalbum-form-modal").on("click", function(e) {';
+        echo '    if ($(e.target).is("#musicalbum-form-modal")) {';
+        echo '      $(this).hide();';
+        echo '    }';
+        echo '  });';
+        echo '  // 表单提交';
+        echo '  $("#musicalbum-manual-form").on("submit", function(e) {';
+        echo '    e.preventDefault();';
+        echo '    saveViewing($(this));';
+        echo '  });';
+        echo '  // 图片上传';
+        echo '  $("#musicalbum-form-ticket-image").on("change", function() {';
+        echo '    handleImageUpload(this, "#musicalbum-form-ticket-preview", "#musicalbum-form-ticket-image-id");';
+        echo '  });';
+        echo '  // 初始化日期输入框';
+        echo '  initDateInput("#musicalbum-form-date", "#musicalbum-form-date-picker");';
+        echo '  // 初始化时间验证';
+        echo '  initTimeValidation("#musicalbum-form-time-start", "#musicalbum-form-time-end");';
+        echo '});';
+        echo '</script>';
     }
 }
 

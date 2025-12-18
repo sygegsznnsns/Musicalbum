@@ -549,6 +549,14 @@
   if ($('.musicalbum-manager-container').length > 0) {
     initViewingManager();
   }
+  
+  // 初始化详情页编辑功能 - 复用现有的编辑功能
+  $(document).on('click', '.viewing-record-details .musicalbum-btn-edit', function() {
+    var id = $(this).data('id');
+    if (id) {
+      editViewing(id);
+    }
+  });
 
   function initViewingManager() {
     // 视图切换
@@ -1556,9 +1564,17 @@
       alert(id ? '记录更新成功' : '记录创建成功');
       $('#musicalbum-form-modal').hide();
       resetForm();
-      loadListView();
-      if (window.viewingCalendar) {
-        window.viewingCalendar.refetchEvents();
+      
+      // 如果在详情页，刷新页面；否则刷新列表
+      if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
+        location.reload();
+      } else {
+        if (typeof loadListView === 'function') {
+          loadListView();
+        }
+        if (window.viewingCalendar) {
+          window.viewingCalendar.refetchEvents();
+        }
       }
     }).fail(function(xhr) {
       var msg = '保存失败';
@@ -1668,4 +1684,5 @@
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
   }
+  
 })(jQuery);
