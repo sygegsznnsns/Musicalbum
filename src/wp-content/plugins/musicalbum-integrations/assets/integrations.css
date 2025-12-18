@@ -1139,55 +1139,65 @@
 }
 
 .musicalbum-dashboard-recent {
-  margin-bottom: 3rem;
+  margin-bottom: 3rem !important;
+  width: 100% !important;
 }
 
 .musicalbum-dashboard-recent-list {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .musicalbum-dashboard-recent-item {
-  padding: 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem !important;
+  border-bottom: 1px solid #e5e7eb !important;
   transition: background 0.2s;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .musicalbum-dashboard-recent-item:last-child {
-  border-bottom: none;
+  border-bottom: none !important;
 }
 
 .musicalbum-dashboard-recent-item:hover {
-  background: #f9fafb;
+  background: #f9fafb !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-title {
-  display: block;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  text-decoration: none;
-  margin-bottom: 0.5rem;
+  display: block !important;
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  text-decoration: none !important;
+  margin-bottom: 0.5rem !important;
+  width: 100% !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-title:hover {
-  color: #3b82f6;
+  color: #3b82f6 !important;
+  text-decoration: none !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-meta {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.875rem;
-  color: #6b7280;
+  display: flex !important;
+  gap: 1rem !important;
+  flex-wrap: wrap !important;
+  font-size: 0.875rem !important;
+  color: #6b7280 !important;
+  width: 100% !important;
 }
 
 .musicalbum-dashboard-recent-item .recent-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  white-space: nowrap !important;
 }
 
 .musicalbum-dashboard-actions {
