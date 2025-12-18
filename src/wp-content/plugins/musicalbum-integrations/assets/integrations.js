@@ -883,6 +883,9 @@
   }
   
   // 初始化单个日期输入框
+  // 全局标志，防止多个输入框同时显示 alert
+  var globalDateAlertShowing = false;
+  
   function initDateInput(textInputSelector, datePickerSelector) {
     var $textInput = $(textInputSelector);
     var $datePicker = $(datePickerSelector);
@@ -927,48 +930,72 @@
     }
     
     // 文本输入框：支持直接输入日期
-    var isShowingAlert = false;
-    var lastValidatedValue = '';
+    // 先移除可能存在的旧事件监听器，避免重复绑定
+    $textInput.off('change.dateValidation blur.dateValidation');
     
-    $textInput.on('change', function() {
-      var dateStr = $(this).val();
+    var lastValidatedValue = '';
+    var validationTimer = null;
+    
+    $textInput.on('change.dateValidation', function() {
+      var $input = $(this);
+      var dateStr = $input.val();
       
       // 如果值没有变化，不重复验证
       if (dateStr === lastValidatedValue) {
         return;
       }
       
-      // 防止重复弹出 alert
-      if (isShowingAlert) {
-        return;
+      // 清除之前的定时器
+      if (validationTimer) {
+        clearTimeout(validationTimer);
+        validationTimer = null;
       }
       
-      var formattedDate = validateAndFormatDate(dateStr);
-      
-      if (formattedDate) {
-        $(this).val(formattedDate);
-        $datePicker.val(formattedDate);
-        lastValidatedValue = formattedDate;
-      } else if (dateStr) {
-        isShowingAlert = true;
-        alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
-        // 延迟重置标志，确保 alert 已关闭
-        setTimeout(function() {
-          isShowingAlert = false;
-        }, 100);
-        lastValidatedValue = dateStr; // 记录已验证的值，避免重复验证
-      } else {
-        lastValidatedValue = '';
-      }
+      // 使用防抖，延迟验证
+      validationTimer = setTimeout(function() {
+        // 使用全局标志防止重复弹出
+        if (globalDateAlertShowing) {
+          return;
+        }
+        
+        var formattedDate = validateAndFormatDate(dateStr);
+        
+        if (formattedDate) {
+          $input.val(formattedDate);
+          $datePicker.val(formattedDate);
+          lastValidatedValue = formattedDate;
+        } else if (dateStr) {
+          // 只有在没有正在显示 alert 时才显示
+          if (!globalDateAlertShowing) {
+            globalDateAlertShowing = true;
+            alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
+            // 延迟重置标志，确保 alert 已关闭
+            setTimeout(function() {
+              globalDateAlertShowing = false;
+            }, 1000);
+            lastValidatedValue = dateStr; // 记录已验证的值，避免重复验证
+          }
+        } else {
+          lastValidatedValue = '';
+        }
+      }, 300);
     });
     
     // blur 事件只用于格式化，不显示错误提示
-    $textInput.on('blur', function() {
-      var dateStr = $(this).val();
+    $textInput.on('blur.dateValidation', function() {
+      var $input = $(this);
+      var dateStr = $input.val();
+      
+      // 清除 change 事件的定时器
+      if (validationTimer) {
+        clearTimeout(validationTimer);
+        validationTimer = null;
+      }
+      
       var formattedDate = validateAndFormatDate(dateStr);
       
       if (formattedDate && dateStr !== formattedDate) {
-        $(this).val(formattedDate);
+        $input.val(formattedDate);
         $datePicker.val(formattedDate);
         lastValidatedValue = formattedDate;
       }
@@ -1348,49 +1375,73 @@
     }
     
     // 文本输入框：支持直接输入日期
-    var isShowingAlert = false;
-    var lastValidatedValue = '';
+    // 先移除可能存在的旧事件监听器，避免重复绑定
+    dateInput.off('change.dateValidation blur.dateValidation');
     
-    dateInput.on('change', function() {
-      var dateStr = $(this).val();
+    var lastValidatedValue = '';
+    var validationTimer = null;
+    
+    dateInput.on('change.dateValidation', function() {
+      var $input = $(this);
+      var dateStr = $input.val();
       
       // 如果值没有变化，不重复验证
       if (dateStr === lastValidatedValue) {
         return;
       }
       
-      // 防止重复弹出 alert
-      if (isShowingAlert) {
-        return;
+      // 清除之前的定时器
+      if (validationTimer) {
+        clearTimeout(validationTimer);
+        validationTimer = null;
       }
       
-      var formattedDate = validateAndFormatDate(dateStr);
-      
-      if (formattedDate) {
-        $(this).val(formattedDate);
-        datePicker.val(formattedDate);
-        calendar.gotoDate(formattedDate);
-        lastValidatedValue = formattedDate;
-      } else if (dateStr) {
-        isShowingAlert = true;
-        alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
-        // 延迟重置标志，确保 alert 已关闭
-        setTimeout(function() {
-          isShowingAlert = false;
-        }, 100);
-        lastValidatedValue = dateStr; // 记录已验证的值，避免重复验证
-      } else {
-        lastValidatedValue = '';
-      }
+      // 使用防抖，延迟验证
+      validationTimer = setTimeout(function() {
+        // 使用全局标志防止重复弹出
+        if (globalDateAlertShowing) {
+          return;
+        }
+        
+        var formattedDate = validateAndFormatDate(dateStr);
+        
+        if (formattedDate) {
+          $input.val(formattedDate);
+          datePicker.val(formattedDate);
+          calendar.gotoDate(formattedDate);
+          lastValidatedValue = formattedDate;
+        } else if (dateStr) {
+          // 只有在没有正在显示 alert 时才显示
+          if (!globalDateAlertShowing) {
+            globalDateAlertShowing = true;
+            alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
+            // 延迟重置标志，确保 alert 已关闭
+            setTimeout(function() {
+              globalDateAlertShowing = false;
+            }, 1000);
+            lastValidatedValue = dateStr; // 记录已验证的值，避免重复验证
+          }
+        } else {
+          lastValidatedValue = '';
+        }
+      }, 300);
     });
     
     // blur 事件只用于格式化，不显示错误提示
-    dateInput.on('blur', function() {
-      var dateStr = $(this).val();
+    dateInput.on('blur.dateValidation', function() {
+      var $input = $(this);
+      var dateStr = $input.val();
+      
+      // 清除 change 事件的定时器
+      if (validationTimer) {
+        clearTimeout(validationTimer);
+        validationTimer = null;
+      }
+      
       var formattedDate = validateAndFormatDate(dateStr);
       
       if (formattedDate && dateStr !== formattedDate) {
-        $(this).val(formattedDate);
+        $input.val(formattedDate);
         datePicker.val(formattedDate);
         calendar.gotoDate(formattedDate);
         lastValidatedValue = formattedDate;
