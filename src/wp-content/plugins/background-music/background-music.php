@@ -299,6 +299,18 @@ final class Background_Music {
             <button id="music-play-pause" aria-label="播放背景音乐">
                 <span class="music-icon">▶</span>
             </button>
+            <?php if (!empty($preset_musics) && count($preset_musics) > 1): ?>
+            <div id="music-select-control">
+                <select id="music-select" aria-label="选择背景音乐">
+                    <option value="">选择音乐</option>
+                    <?php foreach ($preset_musics as $id => $music): ?>
+                        <option value="<?php echo esc_attr($id); ?>" data-url="<?php echo esc_attr($music['url']); ?>" <?php echo ($selected_id === $id) ? 'selected' : ''; ?>>
+                            <?php echo esc_html($music['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
             <div id="music-volume-control">
                 <span id="music-volume-icon">🔊</span>
                 <input type="range" id="music-volume" min="0" max="1" step="0.01" value="0.5" aria-label="音量控制">
@@ -312,7 +324,9 @@ final class Background_Music {
         <script>
         window.backgroundMusicData = {
             url: <?php echo json_encode($music_url); ?>,
-            name: <?php echo json_encode($music_name); ?>
+            name: <?php echo json_encode($music_name); ?>,
+            presets: <?php echo json_encode($preset_musics); ?>,
+            currentId: <?php echo json_encode($selected_id); ?>
         };
         </script>
         <?php

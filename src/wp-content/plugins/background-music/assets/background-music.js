@@ -13,8 +13,14 @@
         const volumeIcon = document.getElementById('music-volume-icon');
         const musicInfo = document.getElementById('music-info');
         const musicPlayer = document.getElementById('background-music-player');
+        const musicSelect = document.getElementById('music-select');
         
         if (!audio) return;
+        
+        // 获取预设音乐数据
+        const musicData = window.backgroundMusicData || {};
+        const presets = musicData.presets || {};
+        let wasPlaying = false; // 记录切换前是否在播放
         
         // 拖拽功能
         if (musicPlayer) {
@@ -59,8 +65,8 @@
             
             // 鼠标按下事件
             musicPlayer.addEventListener('mousedown', function(e) {
-                // 如果点击的是按钮或滑块，不启动拖拽
-                if (e.target.closest('button') || e.target.closest('input[type="range"]')) {
+                // 如果点击的是按钮、滑块或选择框，不启动拖拽
+                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
                     return;
                 }
                 
@@ -109,7 +115,7 @@
             
             // 触摸事件支持（移动设备）
             musicPlayer.addEventListener('touchstart', function(e) {
-                if (e.target.closest('button') || e.target.closest('input[type="range"]')) {
+                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
                     return;
                 }
                 
@@ -230,6 +236,83 @@
                 audio.volume = volume;
                 localStorage.setItem('backgroundMusicVolume', volume);
                 updateVolumeIcon(volume);
+            });
+        }
+        
+        // 音乐切换功能
+        if (musicSelect && Object.keys(presets).length > 1) {
+            musicSelect.addEventListener('change', function() {
+                const selectedId = this.value;
+                if (!selectedId || !presets[selectedId]) {
+                    return;
+                }
+                
+                const selectedMusic = presets[selectedId];
+                const newUrl = selectedMusic.url;
+                
+                if (!newUrl) {
+                    if (musicInfo) {
+                        musicInfo.textContent = '音乐URL无效';
+                        musicInfo.style.display = 'block';
+                        musicInfo.style.opacity = '1';
+                        setTimeout(function() {
+                            musicInfo.style.opacity = '0';
+                            setTimeout(function() {
+                                musicInfo.style.display = 'none';
+                            }, 500);
+                        }, 2000);
+                    }
+                    return;
+                }
+                
+                // 记录当前播放状态和音量
+                wasPlaying = !audio.paused;
+                const currentVolume = audio.volume;
+                const currentTime = audio.currentTime;
+                
+                // 暂停当前音乐
+                audio.pause();
+                
+                // 更新音频源
+                audio.src = newUrl;
+                audio.load(); // 重新加载音频
+                
+                // 恢复音量和播放位置（如果可能）
+                audio.volume = currentVolume;
+                
+                // 如果之前正在播放，自动播放新音乐
+                if (wasPlaying) {
+                    audio.play().then(function() {
+                        updatePlayButton(true);
+                        if (musicInfo) {
+                            musicInfo.textContent = '已切换到：' + selectedMusic.name;
+                            musicInfo.style.display = 'block';
+                            musicInfo.style.opacity = '1';
+                            setTimeout(function() {
+                                musicInfo.style.opacity = '0';
+                                setTimeout(function() {
+                                    musicInfo.style.display = 'none';
+                                }, 500);
+                            }, 2000);
+                        }
+                    }).catch(function(error) {
+                        console.log('自动播放被阻止:', error);
+                        updatePlayButton(false);
+                        if (musicInfo) {
+                            musicInfo.textContent = '请点击播放按钮开始播放';
+                            musicInfo.style.display = 'block';
+                            musicInfo.style.opacity = '1';
+                            setTimeout(function() {
+                                musicInfo.style.opacity = '0';
+                                setTimeout(function() {
+                                    musicInfo.style.display = 'none';
+                                }, 500);
+                            }, 2000);
+                        }
+                    });
+                } else {
+                    updatePlayButton(false);
+                }
             });
         }
         
