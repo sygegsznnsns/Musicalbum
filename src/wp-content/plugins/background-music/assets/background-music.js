@@ -212,6 +212,22 @@
         // 播放/暂停按钮
         if (playPauseBtn) {
             playPauseBtn.addEventListener('click', function() {
+                // 检查是否有音频源（是否选择了音乐）
+                if (!audio.src || audio.src === window.location.href) {
+                    if (musicInfo) {
+                        musicInfo.textContent = '请先选择要播放的音乐';
+                        musicInfo.style.display = 'block';
+                        musicInfo.style.opacity = '1';
+                        setTimeout(function() {
+                            musicInfo.style.opacity = '0';
+                            setTimeout(function() {
+                                musicInfo.style.display = 'none';
+                            }, 500);
+                        }, 2000);
+                    }
+                    return;
+                }
+                
                 if (audio.paused) {
                     audio.play().then(function() {
                         updatePlayButton(true);
@@ -251,10 +267,12 @@
             musicSelect.addEventListener('change', function() {
                 const selectedId = this.value;
                 
-                // 如果选择的是空选项（"选择音乐"），停止播放
+                // 如果选择的是空选项（"选择音乐--无"），停止播放并清空音频源
                 if (!selectedId || !presets[selectedId]) {
                     audio.pause();
                     audio.currentTime = 0;
+                    audio.src = ''; // 清空音频源，表示没有选择音乐
+                    audio.load(); // 重新加载以清空音频
                     updatePlayButton(false);
                     if (musicInfo) {
                         musicInfo.textContent = '已停止播放音乐';
