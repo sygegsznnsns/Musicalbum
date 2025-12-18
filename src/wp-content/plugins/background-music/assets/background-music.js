@@ -275,7 +275,7 @@
                     audio.load(); // 重新加载以清空音频
                     updatePlayButton(false);
                     if (musicInfo) {
-                        musicInfo.textContent = '选择无音乐';
+                        musicInfo.textContent = '已选择：无音乐';
                         musicInfo.style.display = 'block';
                         musicInfo.style.opacity = '1';
                         setTimeout(function() {
