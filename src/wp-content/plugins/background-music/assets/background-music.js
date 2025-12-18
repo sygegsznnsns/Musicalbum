@@ -178,14 +178,21 @@
         function updatePlayButton(isPlaying) {
             if (!playPauseBtn) return;
             if (isPlaying) {
-                playPauseBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="2" width="3" height="12"/><rect x="9" y="2" width="3" height="12"/></svg>';
+                // 暂停图标：两条平行线
+                playPauseBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="2" width="3" height="12" rx="0.5"/><rect x="9" y="2" width="3" height="12" rx="0.5"/></svg>';
                 playPauseBtn.setAttribute('aria-label', '暂停背景音乐');
                 playPauseBtn.classList.add('playing');
             } else {
+                // 播放图标：三角形
                 playPauseBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5v11l9-5.5z"/></svg>';
                 playPauseBtn.setAttribute('aria-label', '播放背景音乐');
                 playPauseBtn.classList.remove('playing');
             }
+        }
+        
+        // 初始化按钮状态（根据音频当前状态）
+        if (playPauseBtn) {
+            updatePlayButton(!audio.paused);
         }
         
         // 更新音量图标

@@ -335,7 +335,7 @@ final class Background_Music {
         
         <div id="background-music-player">
             <button id="music-play-pause" aria-label="播放背景音乐">
-                <span class="music-icon">▶</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5v11l9-5.5z"/></svg>
             </button>
             <?php if (!empty($preset_musics) && count($preset_musics) > 1): ?>
             <div id="music-select-control">
