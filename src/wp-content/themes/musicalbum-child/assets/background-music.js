@@ -12,8 +12,126 @@
         const volumeSlider = document.getElementById('music-volume');
         const volumeIcon = document.getElementById('music-volume-icon');
         const musicInfo = document.getElementById('music-info');
+        const musicPlayer = document.getElementById('background-music-player');
         
         if (!audio) return;
+        
+        // 拖拽功能
+        if (musicPlayer) {
+            let isDragging = false;
+            let currentX = 0;
+            let currentY = 0;
+            let initialX = 0;
+            let initialY = 0;
+            let xOffset = 0;
+            let yOffset = 0;
+            
+            // 恢复保存的位置
+            const savedPosition = localStorage.getItem('backgroundMusicPosition');
+            if (savedPosition) {
+                try {
+                    const pos = JSON.parse(savedPosition);
+                    if (pos.x !== undefined && pos.y !== undefined) {
+                        xOffset = pos.x;
+                        yOffset = pos.y;
+                        setTranslate(xOffset, yOffset, musicPlayer);
+                    }
+                } catch (e) {
+                    console.warn('恢复位置失败:', e);
+                }
+            }
+            
+            // 设置位置
+            function setTranslate(xPos, yPos, el) {
+                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+            }
+            
+            // 保存位置
+            function savePosition() {
+                localStorage.setItem('backgroundMusicPosition', JSON.stringify({
+                    x: xOffset,
+                    y: yOffset
+                }));
+            }
+            
+            // 鼠标按下事件
+            musicPlayer.addEventListener('mousedown', function(e) {
+                // 如果点击的是按钮或滑块，不启动拖拽
+                if (e.target.closest('button') || e.target.closest('input[type="range"]')) {
+                    return;
+                }
+                
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                
+                if (e.target === musicPlayer || e.target.closest('#background-music-player')) {
+                    isDragging = true;
+                    musicPlayer.classList.add('dragging');
+                }
+            });
+            
+            // 鼠标移动事件
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    setTranslate(currentX, currentY, musicPlayer);
+                }
+            });
+            
+            // 鼠标释放事件
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    musicPlayer.classList.remove('dragging');
+                    savePosition();
+                }
+            });
+            
+            // 触摸事件支持（移动设备）
+            musicPlayer.addEventListener('touchstart', function(e) {
+                if (e.target.closest('button') || e.target.closest('input[type="range"]')) {
+                    return;
+                }
+                
+                const touch = e.touches[0];
+                initialX = touch.clientX - xOffset;
+                initialY = touch.clientY - yOffset;
+                
+                if (e.target === musicPlayer || e.target.closest('#background-music-player')) {
+                    isDragging = true;
+                    musicPlayer.classList.add('dragging');
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    currentX = touch.clientX - initialX;
+                    currentY = touch.clientY - initialY;
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    setTranslate(currentX, currentY, musicPlayer);
+                }
+            });
+            
+            document.addEventListener('touchend', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    musicPlayer.classList.remove('dragging');
+                    savePosition();
+                }
+            });
+        }
         
         // 从localStorage恢复音量设置
         const savedVolume = localStorage.getItem('backgroundMusicVolume');
