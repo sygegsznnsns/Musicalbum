@@ -1088,7 +1088,7 @@ final class Viewing_Records {
         
         // 解析短码属性，允许自定义子页面链接
         $atts = shortcode_atts(array(
-            'manager_url' => 'https://musicalbum.chenpan.icu/观演记录管理模块/',
+            'manager_url' => 'https://musicalbum.chenpan.icu/我的观演管理/',
             'statistics_url' => 'https://musicalbum.chenpan.icu/我的观演统计/'
         ), $atts);
         
