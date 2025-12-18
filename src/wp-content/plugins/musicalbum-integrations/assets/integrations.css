@@ -1022,21 +1022,29 @@
   background: #fff;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
-  text-decoration: none;
+  text-decoration: none !important;
   color: inherit;
   transition: all 0.3s;
   text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .musicalbum-dashboard-card:hover {
   border-color: #3b82f6;
   transform: translateY(-4px);
   box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  text-decoration: none !important;
+}
+
+.musicalbum-dashboard-card:visited {
+  color: inherit;
+  text-decoration: none !important;
 }
 
 .musicalbum-dashboard-card-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
+  display: block;
 }
 
 .musicalbum-dashboard-card h3 {
@@ -1044,12 +1052,19 @@
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   color: #1f2937;
+  text-decoration: none !important;
 }
 
 .musicalbum-dashboard-card p {
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
+  text-decoration: none !important;
+}
+
+.musicalbum-dashboard-card a {
+  text-decoration: none !important;
+  color: inherit;
 }
 
 .musicalbum-dashboard-section-title {

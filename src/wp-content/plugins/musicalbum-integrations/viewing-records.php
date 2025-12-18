@@ -1086,12 +1086,14 @@ final class Viewing_Records {
             return '<div class="musicalbum-statistics-error">请先登录以查看观影点滴</div>';
         }
         
-        // 获取子页面链接（如果已创建）
-        $manager_page = get_option('musicalbum_manager_page_id');
-        $statistics_page = get_option('musicalbum_statistics_page_id');
+        // 解析短码属性，允许自定义子页面链接
+        $atts = shortcode_atts(array(
+            'manager_url' => 'https://musicalbum.chenpan.icu/观演记录管理模块/',
+            'statistics_url' => 'https://musicalbum.chenpan.icu/我的观演统计/'
+        ), $atts);
         
-        $manager_url = $manager_page ? get_permalink($manager_page) : '#';
-        $statistics_url = $statistics_page ? get_permalink($statistics_page) : '#';
+        $manager_url = esc_url($atts['manager_url']);
+        $statistics_url = esc_url($atts['statistics_url']);
         
         ob_start();
         ?>
