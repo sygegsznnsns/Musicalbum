@@ -1010,10 +1010,10 @@
 }
 
 .musicalbum-dashboard-nav {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin-bottom: 3rem !important;
 }
 
 .musicalbum-dashboard-card {
@@ -1025,9 +1025,11 @@
   text-decoration: none !important;
   color: #1f2937 !important;
   transition: all 0.3s;
-  text-align: center;
+  text-align: center !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   position: relative;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .musicalbum-dashboard-card:hover {
@@ -1090,9 +1092,10 @@
 }
 
 .musicalbum-dashboard-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
 }
 
 .musicalbum-dashboard-stat-card {

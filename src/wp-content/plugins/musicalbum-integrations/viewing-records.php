@@ -148,13 +148,45 @@ final class Viewing_Records {
             return;
         }
         
-        wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
+        wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.2');
         wp_enqueue_style('viewing-records');
         
         // 获取主题颜色并注入动态 CSS
         $theme_colors = self::get_theme_colors();
         $dynamic_css = self::generate_theme_colored_css($theme_colors);
         wp_add_inline_style('viewing-records', $dynamic_css);
+        
+        // 为仪表板添加额外的内联样式，确保样式优先级
+        if (has_shortcode($post->post_content, 'musicalbum_dashboard') || has_shortcode($post->post_content, 'viewing_dashboard')) {
+            $dashboard_css = '
+                .musicalbum-dashboard-container .musicalbum-dashboard-card {
+                    display: block !important;
+                    padding: 2rem !important;
+                    background: #fff !important;
+                    border: 2px solid #e5e7eb !important;
+                    border-radius: 12px !important;
+                    text-decoration: none !important;
+                    color: #1f2937 !important;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+                }
+                .musicalbum-dashboard-container .musicalbum-dashboard-card:hover {
+                    border-color: #3b82f6 !important;
+                    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15) !important;
+                }
+                .musicalbum-dashboard-container .musicalbum-dashboard-card h3 {
+                    color: #1f2937 !important;
+                    text-decoration: none !important;
+                    border: none !important;
+                }
+                .musicalbum-dashboard-container .musicalbum-dashboard-stat-card {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: center !important;
+                    align-items: center !important;
+                }
+            ';
+            wp_add_inline_style('viewing-records', $dashboard_css);
+        }
         
         // 引入 Chart.js 库
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
@@ -1120,22 +1152,22 @@ final class Viewing_Records {
             <!-- 数据概览 -->
             <div class="musicalbum-dashboard-overview" id="musicalbum-dashboard-overview">
                 <h2 class="musicalbum-dashboard-section-title">数据概览</h2>
-                <div class="musicalbum-dashboard-stats-grid">
-                    <div class="musicalbum-dashboard-stat-card">
-                        <div class="stat-value" id="stat-total-count">-</div>
-                        <div class="stat-label">总记录数</div>
+                <div class="musicalbum-dashboard-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
+                        <div class="stat-value" id="stat-total-count" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
+                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">总记录数</div>
                     </div>
-                    <div class="musicalbum-dashboard-stat-card">
-                        <div class="stat-value" id="stat-this-month">-</div>
-                        <div class="stat-label">本月观演</div>
+                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
+                        <div class="stat-value" id="stat-this-month" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
+                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">本月观演</div>
                     </div>
-                    <div class="musicalbum-dashboard-stat-card">
-                        <div class="stat-value" id="stat-total-spent">-</div>
-                        <div class="stat-label">总花费</div>
+                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
+                        <div class="stat-value" id="stat-total-spent" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
+                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">总花费</div>
                     </div>
-                    <div class="musicalbum-dashboard-stat-card">
-                        <div class="stat-value" id="stat-favorite-category">-</div>
-                        <div class="stat-label">最爱类别</div>
+                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
+                        <div class="stat-value" id="stat-favorite-category" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
+                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">最爱类别</div>
                     </div>
                 </div>
             </div>
