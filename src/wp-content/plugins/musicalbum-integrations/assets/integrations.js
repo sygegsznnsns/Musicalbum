@@ -553,8 +553,29 @@
   // 初始化详情页编辑功能 - 复用现有的编辑功能
   $(document).on('click', '.viewing-record-details .musicalbum-btn-edit', function() {
     var id = $(this).data('id');
-    if (id) {
+    if (id && typeof editViewing === 'function') {
       editViewing(id);
+    }
+  });
+  
+  // 确保详情页的关闭按钮也能工作（如果模态框是动态添加的）
+  $(document).on('click', '#musicalbum-form-modal .musicalbum-modal-close, #musicalbum-form-cancel', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $('#musicalbum-form-modal').hide();
+    if (typeof resetForm === 'function') {
+      resetForm();
+    }
+    return false;
+  });
+  
+  // 确保详情页点击外部也能关闭
+  $(document).on('click', '#musicalbum-form-modal', function(e) {
+    if ($(e.target).is('#musicalbum-form-modal')) {
+      $(this).hide();
+      if (typeof resetForm === 'function') {
+        resetForm();
+      }
     }
   });
 
