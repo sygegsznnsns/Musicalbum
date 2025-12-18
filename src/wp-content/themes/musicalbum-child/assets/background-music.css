@@ -1,0 +1,154 @@
+/**
+ * 背景音乐播放器样式
+ */
+#background-music-player {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 9999;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+#background-music-player:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+#music-play-pause {
+    background: #4a90e2;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+#music-play-pause:hover {
+    background: #357abd;
+    transform: scale(1.1);
+}
+
+#music-play-pause:active {
+    transform: scale(0.95);
+}
+
+.music-icon {
+    display: inline-block;
+    line-height: 1;
+}
+
+#music-volume-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#music-volume-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+#music-volume {
+    width: 100px;
+    height: 4px;
+    border-radius: 2px;
+    background: #e0e0e0;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#music-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4a90e2;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#music-volume::-webkit-slider-thumb:hover {
+    background: #357abd;
+    transform: scale(1.2);
+}
+
+#music-volume::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4a90e2;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+#music-volume::-moz-range-thumb:hover {
+    background: #357abd;
+    transform: scale(1.2);
+}
+
+#music-info {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 10000;
+    transition: opacity 0.5s ease;
+    max-width: 250px;
+}
+
+/* 响应式设计 - 移动设备 */
+@media (max-width: 768px) {
+    #background-music-player {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px 15px;
+        gap: 10px;
+    }
+    
+    #music-play-pause {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+    
+    #music-volume {
+        width: 80px;
+    }
+    
+    #music-info {
+        bottom: 70px;
+        right: 10px;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
+
+/* 隐藏音频元素（只用于播放，不显示默认控件） */
+#background-music {
+    display: none;
+}
+
