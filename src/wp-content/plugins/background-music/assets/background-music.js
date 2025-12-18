@@ -82,23 +82,6 @@
             
             // 鼠标移动事件（直接更新位置，确保快速响应）
             document.addEventListener('mousemove', function(e) {
-                // 如果鼠标移动了，且还在长按定时器期间，取消长按定时器（说明是拖拽）
-                if (longPressTimer && !isDragging) {
-                    const moveDistance = Math.sqrt(
-                        Math.pow(e.movementX || 0, 2) + Math.pow(e.movementY || 0, 2)
-                    );
-                    if (moveDistance > 5) {
-                        // 移动距离超过5px，视为拖拽，取消长按定时器，直接启动拖拽
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                        isLongPress = true;
-                        initialX = e.clientX - xOffset;
-                        initialY = e.clientY - yOffset;
-                        isDragging = true;
-                        musicPlayer.classList.add('dragging');
-                    }
-                }
-                
                 // 只有在拖拽状态下才处理移动
                 if (!isDragging) {
                     return;

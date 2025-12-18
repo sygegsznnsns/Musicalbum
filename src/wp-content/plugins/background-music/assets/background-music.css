@@ -210,10 +210,9 @@
 }
 
 #music-volume {
-    display: none; /* 隐藏音量滑块 */
-    width: 110px;
-    height: 6px;
-    border-radius: 3px;
+    width: 80px;
+    height: 4px;
+    border-radius: 2px;
     background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 100%);
     outline: none;
     -webkit-appearance: none;
@@ -229,13 +228,13 @@
 #music-volume::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4),
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4),
                 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
@@ -250,14 +249,14 @@
 }
 
 #music-volume::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     cursor: pointer;
     border: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4),
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4),
                 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
