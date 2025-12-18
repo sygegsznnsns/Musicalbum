@@ -396,12 +396,12 @@
     border-radius: 50%;
     width: 56px;
     height: 56px;
-    cursor: pointer;
+    cursor: move;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
     z-index: 9999;
     box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4),
                 0 2px 8px rgba(0, 0, 0, 0.1),
@@ -409,22 +409,39 @@
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
-#music-show-button:hover {
+#music-show-button:hover:not(.dragging) {
     transform: scale(1.1) translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5),
                 0 4px 12px rgba(0, 0, 0, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-#music-show-button:active {
+#music-show-button:active:not(.dragging) {
     transform: scale(1.05) translateY(0);
+}
+
+#music-show-button.dragging {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.6),
+                0 4px 12px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    opacity: 0.95;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease !important;
+    will-change: transform;
 }
 
 #music-show-button svg {
     width: 20px;
     height: 20px;
+    fill: white;
+    pointer-events: none;
 }
 
 /* 响应式 - 展开按钮 */
