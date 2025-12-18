@@ -15,7 +15,6 @@
         const musicPlayer = document.getElementById('background-music-player');
         const musicSelect = document.getElementById('music-select');
         const toggleHideBtn = document.getElementById('music-toggle-hide');
-        const showButton = document.getElementById('music-show-button');
         
         if (!audio) return;
         
@@ -65,10 +64,6 @@
                 };
                 localStorage.setItem('backgroundMusicPosition', JSON.stringify(position));
                 
-                // 如果播放器是隐藏状态，同步更新展开按钮位置
-                if (musicPlayer && musicPlayer.classList.contains('hidden') && showButton) {
-                    showButton.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
-                }
             }
             
             // 鼠标按下事件
@@ -123,8 +118,16 @@
             
             // 触摸事件支持（移动设备）
             musicPlayer.addEventListener('touchstart', function(e) {
-                if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
-                    return;
+                // 如果点击的是按钮、滑块或选择框，不启动拖拽
+                if (!musicPlayer.classList.contains('hidden')) {
+                    if (e.target.closest('button') || e.target.closest('input[type="range"]') || e.target.closest('select')) {
+                        return;
+                    }
+                } else {
+                    // 隐藏状态下，如果点击的是隐藏按钮，不拖拽
+                    if (e.target.closest('#music-toggle-hide')) {
+                        return;
+                    }
                 }
                 
                 const touch = e.touches[0];
@@ -416,233 +419,47 @@
             }, 3000);
         }
         
-        // 隐藏/显示播放器功能
-        function hidePlayer() {
-            if (!musicPlayer || !showButton) return;
+        // 隐藏/显示播放器功能（在原位置缩小/展开）
+        function togglePlayerVisibility() {
+            if (!musicPlayer || !toggleHideBtn) return;
             
-            // 优先使用展开按钮保存的位置，如果没有则使用播放器位置
-            const savedShowButtonPosition = localStorage.getItem('backgroundMusicShowButtonPosition');
-            let pos = { x: 0, y: 0 };
+            const isHidden = musicPlayer.classList.contains('hidden');
+            const hideIcon = toggleHideBtn.querySelector('.hide-icon');
+            const showIcon = toggleHideBtn.querySelector('.show-icon');
             
-            if (savedShowButtonPosition) {
-                try {
-                    pos = JSON.parse(savedShowButtonPosition);
-                } catch (e) {
-                    console.warn('恢复展开按钮位置失败:', e);
-                }
-            }
-            
-            // 如果展开按钮没有保存的位置，使用播放器位置
-            if (pos.x === 0 && pos.y === 0) {
-                const savedPosition = localStorage.getItem('backgroundMusicPosition');
-                if (savedPosition) {
-                    try {
-                        pos = JSON.parse(savedPosition);
-                    } catch (e) {
-                        console.warn('恢复播放器位置失败:', e);
-                    }
-                }
-            }
-            
-            // 设置展开按钮位置
-            if (pos.x !== undefined && pos.y !== undefined) {
-                showButton.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+            if (isHidden) {
+                // 展开播放器
+                musicPlayer.classList.remove('hidden');
+                if (hideIcon) hideIcon.style.display = 'block';
+                if (showIcon) showIcon.style.display = 'none';
+                localStorage.setItem('backgroundMusicHidden', 'false');
             } else {
-                showButton.style.transform = 'translate(0, 0)';
+                // 隐藏播放器（缩小成圆形按钮）
+                musicPlayer.classList.add('hidden');
+                if (hideIcon) hideIcon.style.display = 'none';
+                if (showIcon) showIcon.style.display = 'block';
+                localStorage.setItem('backgroundMusicHidden', 'true');
             }
-            
-            musicPlayer.classList.add('hidden');
-            showButton.style.display = 'flex';
-            localStorage.setItem('backgroundMusicHidden', 'true');
-        }
-        
-        function showPlayer() {
-            if (!musicPlayer || !showButton) return;
-            musicPlayer.classList.remove('hidden');
-            showButton.style.display = 'none';
-            localStorage.setItem('backgroundMusicHidden', 'false');
         }
         
         // 隐藏按钮点击事件
         if (toggleHideBtn) {
             toggleHideBtn.addEventListener('click', function(e) {
                 e.stopPropagation(); // 防止触发拖拽
-                hidePlayer();
-            });
-        }
-        
-        // 展开按钮拖拽功能
-        if (showButton) {
-            let isShowButtonDragging = false;
-            let showButtonCurrentX = 0;
-            let showButtonCurrentY = 0;
-            let showButtonInitialX = 0;
-            let showButtonInitialY = 0;
-            let showButtonXOffset = 0;
-            let showButtonYOffset = 0;
-            let showButtonRafId = null;
-            let showButtonClickTime = 0;
-            let showButtonStartX = 0;
-            let showButtonStartY = 0;
-            
-            // 恢复展开按钮位置
-            const savedShowButtonPosition = localStorage.getItem('backgroundMusicShowButtonPosition');
-            if (savedShowButtonPosition) {
-                try {
-                    const pos = JSON.parse(savedShowButtonPosition);
-                    if (pos.x !== undefined && pos.y !== undefined) {
-                        showButtonXOffset = pos.x;
-                        showButtonYOffset = pos.y;
-                        showButton.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-                    }
-                } catch (e) {
-                    console.warn('恢复展开按钮位置失败:', e);
-                }
-            }
-            
-            // 设置展开按钮位置
-            function setShowButtonTranslate(xPos, yPos, el) {
-                el.style.transition = 'none';
-                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
-            }
-            
-            // 保存展开按钮位置
-            function saveShowButtonPosition() {
-                localStorage.setItem('backgroundMusicShowButtonPosition', JSON.stringify({
-                    x: showButtonXOffset,
-                    y: showButtonYOffset
-                }));
-            }
-            
-            // 展开按钮鼠标按下事件
-            showButton.addEventListener('mousedown', function(e) {
-                showButtonClickTime = Date.now();
-                showButtonStartX = e.clientX;
-                showButtonStartY = e.clientY;
-                showButtonInitialX = e.clientX - showButtonXOffset;
-                showButtonInitialY = e.clientY - showButtonYOffset;
-                
-                if (e.target === showButton || e.target.closest('#music-show-button')) {
-                    isShowButtonDragging = true;
-                    showButton.classList.add('dragging');
-                }
-            });
-            
-            // 展开按钮鼠标移动事件
-            document.addEventListener('mousemove', function(e) {
-                if (isShowButtonDragging) {
-                    e.preventDefault();
-                    
-                    if (showButtonRafId !== null) {
-                        cancelAnimationFrame(showButtonRafId);
-                    }
-                    
-                    showButtonRafId = requestAnimationFrame(function() {
-                        showButtonCurrentX = e.clientX - showButtonInitialX;
-                        showButtonCurrentY = e.clientY - showButtonInitialY;
-                        
-                        showButtonXOffset = showButtonCurrentX;
-                        showButtonYOffset = showButtonCurrentY;
-                        
-                        setShowButtonTranslate(showButtonCurrentX, showButtonCurrentY, showButton);
-                    });
-                }
-            });
-            
-            // 展开按钮鼠标释放事件
-            document.addEventListener('mouseup', function(e) {
-                if (isShowButtonDragging) {
-                    isShowButtonDragging = false;
-                    showButton.classList.remove('dragging');
-                    showButton.style.transition = '';
-                    
-                    // 判断是点击还是拖拽（移动距离小于5px且时间小于200ms认为是点击）
-                    const endX = e.clientX;
-                    const endY = e.clientY;
-                    const moveDistance = Math.sqrt(
-                        Math.pow(showButtonStartX - endX, 2) +
-                        Math.pow(showButtonStartY - endY, 2)
-                    );
-                    const clickDuration = Date.now() - showButtonClickTime;
-                    
-                    if (moveDistance < 5 && clickDuration < 200) {
-                        // 点击事件
-                        showPlayer();
-                    } else {
-                        // 拖拽事件，保存位置
-                        saveShowButtonPosition();
-                    }
-                }
-            });
-            
-            // 展开按钮触摸事件支持
-            showButton.addEventListener('touchstart', function(e) {
-                const touch = e.touches[0];
-                showButtonClickTime = Date.now();
-                showButtonStartX = touch.clientX;
-                showButtonStartY = touch.clientY;
-                showButtonInitialX = touch.clientX - showButtonXOffset;
-                showButtonInitialY = touch.clientY - showButtonYOffset;
-                
-                if (e.target === showButton || e.target.closest('#music-show-button')) {
-                    isShowButtonDragging = true;
-                    showButton.classList.add('dragging');
-                    e.preventDefault();
-                }
-            });
-            
-            document.addEventListener('touchmove', function(e) {
-                if (isShowButtonDragging) {
-                    e.preventDefault();
-                    
-                    if (showButtonRafId !== null) {
-                        cancelAnimationFrame(showButtonRafId);
-                    }
-                    
-                    const touch = e.touches[0];
-                    
-                    showButtonRafId = requestAnimationFrame(function() {
-                        showButtonCurrentX = touch.clientX - showButtonInitialX;
-                        showButtonCurrentY = touch.clientY - showButtonInitialY;
-                        
-                        showButtonXOffset = showButtonCurrentX;
-                        showButtonYOffset = showButtonCurrentY;
-                        
-                        setShowButtonTranslate(showButtonCurrentX, showButtonCurrentY, showButton);
-                    });
-                }
-            });
-            
-            document.addEventListener('touchend', function(e) {
-                if (isShowButtonDragging) {
-                    isShowButtonDragging = false;
-                    showButton.classList.remove('dragging');
-                    showButton.style.transition = '';
-                    
-                    // 判断是点击还是拖拽
-                    const endX = e.changedTouches ? e.changedTouches[0].clientX : showButtonStartX;
-                    const endY = e.changedTouches ? e.changedTouches[0].clientY : showButtonStartY;
-                    const moveDistance = Math.sqrt(
-                        Math.pow(showButtonStartX - endX, 2) +
-                        Math.pow(showButtonStartY - endY, 2)
-                    );
-                    const clickDuration = Date.now() - showButtonClickTime;
-                    
-                    if (moveDistance < 5 && clickDuration < 200) {
-                        showPlayer();
-                    } else {
-                        saveShowButtonPosition();
-                    }
-                }
+                togglePlayerVisibility();
             });
         }
         
         // 恢复隐藏状态
         const isHidden = localStorage.getItem('backgroundMusicHidden');
-        if (isHidden === 'true' && musicPlayer && showButton) {
+        if (isHidden === 'true' && musicPlayer && toggleHideBtn) {
             // 延迟执行，确保样式已加载
             setTimeout(function() {
-                hidePlayer();
+                const hideIcon = toggleHideBtn.querySelector('.hide-icon');
+                const showIcon = toggleHideBtn.querySelector('.show-icon');
+                musicPlayer.classList.add('hidden');
+                if (hideIcon) hideIcon.style.display = 'none';
+                if (showIcon) showIcon.style.display = 'block';
             }, 100);
         }
     });
