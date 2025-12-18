@@ -25,6 +25,7 @@
             let initialY = 0;
             let xOffset = 0;
             let yOffset = 0;
+            let rafId = null;
             
             // 恢复保存的位置
             const savedPosition = localStorage.getItem('backgroundMusicPosition');
@@ -41,8 +42,10 @@
                 }
             }
             
-            // 设置位置
+            // 设置位置（使用requestAnimationFrame优化性能）
             function setTranslate(xPos, yPos, el) {
+                // 拖拽时禁用transition，确保实时跟随
+                el.style.transition = 'none';
                 el.style.transform = `translate(${xPos}px, ${yPos}px)`;
             }
             
@@ -70,17 +73,26 @@
                 }
             });
             
-            // 鼠标移动事件
+            // 鼠标移动事件（使用requestAnimationFrame优化）
             document.addEventListener('mousemove', function(e) {
                 if (isDragging) {
                     e.preventDefault();
-                    currentX = e.clientX - initialX;
-                    currentY = e.clientY - initialY;
                     
-                    xOffset = currentX;
-                    yOffset = currentY;
+                    // 取消之前的动画帧请求
+                    if (rafId !== null) {
+                        cancelAnimationFrame(rafId);
+                    }
                     
-                    setTranslate(currentX, currentY, musicPlayer);
+                    // 使用requestAnimationFrame确保流畅
+                    rafId = requestAnimationFrame(function() {
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+                        
+                        xOffset = currentX;
+                        yOffset = currentY;
+                        
+                        setTranslate(currentX, currentY, musicPlayer);
+                    });
                 }
             });
             
@@ -89,6 +101,8 @@
                 if (isDragging) {
                     isDragging = false;
                     musicPlayer.classList.remove('dragging');
+                    // 恢复transition
+                    musicPlayer.style.transition = '';
                     savePosition();
                 }
             });
@@ -113,14 +127,24 @@
             document.addEventListener('touchmove', function(e) {
                 if (isDragging) {
                     e.preventDefault();
+                    
+                    // 取消之前的动画帧请求
+                    if (rafId !== null) {
+                        cancelAnimationFrame(rafId);
+                    }
+                    
                     const touch = e.touches[0];
-                    currentX = touch.clientX - initialX;
-                    currentY = touch.clientY - initialY;
                     
-                    xOffset = currentX;
-                    yOffset = currentY;
-                    
-                    setTranslate(currentX, currentY, musicPlayer);
+                    // 使用requestAnimationFrame确保流畅
+                    rafId = requestAnimationFrame(function() {
+                        currentX = touch.clientX - initialX;
+                        currentY = touch.clientY - initialY;
+                        
+                        xOffset = currentX;
+                        yOffset = currentY;
+                        
+                        setTranslate(currentX, currentY, musicPlayer);
+                    });
                 }
             });
             
@@ -128,6 +152,8 @@
                 if (isDragging) {
                     isDragging = false;
                     musicPlayer.classList.remove('dragging');
+                    // 恢复transition
+                    musicPlayer.style.transition = '';
                     savePosition();
                 }
             });

@@ -40,9 +40,10 @@
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2), 
                 0 6px 16px rgba(0, 0, 0, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 1);
-    transform: scale(1.05);
     opacity: 0.95;
-    transition: box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease !important;
+    /* 拖拽时禁用transform的transition，确保实时跟随 */
+    will-change: transform;
 }
 
 #background-music-player button,
