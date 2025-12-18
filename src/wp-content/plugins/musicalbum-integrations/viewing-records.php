@@ -3,7 +3,7 @@
 Plugin Name: Viewing Records
 Description: 观演记录管理插件，支持记录管理、数据统计和OCR识别功能。
 Version: 0.1.0
-Author: chen pan
+Author: chen ziang
 */
 
 defined('ABSPATH') || exit;
@@ -28,9 +28,56 @@ final class Viewing_Records {
         add_action('rest_api_init', array(__CLASS__, 'register_rest_routes'));
         add_action('acf/init', array(__CLASS__, 'register_acf_fields'));
         add_action('admin_menu', array(__CLASS__, 'add_admin_menu'));
+        
+        // 在单篇文章页面显示观演记录详情
+        add_filter('the_content', array(__CLASS__, 'display_viewing_record_details'));
+        
+        // 注册激活和停用钩子
+        register_activation_hook(__FILE__, array(__CLASS__, 'activate'));
+        
         // 示例：与第三方插件交互（替换为实际钩子）
         // add_filter('some_plugin_output', [__CLASS__, 'filter_some_plugin_output'], 10, 1);
     }
+    
+    /**
+     * 插件激活时的处理
+     */
+    public static function activate() {
+        // 检查是否需要数据迁移
+        $migration_done = get_option('viewing_records_migration_done', false);
+        if (!$migration_done) {
+            // 在后台异步执行迁移，避免激活时超时
+            add_action('admin_init', array(__CLASS__, 'maybe_migrate_data'));
+        }
+    }
+    
+    /**
+     * 检查并执行数据迁移
+     */
+    public static function maybe_migrate_data() {
+        $migration_done = get_option('viewing_records_migration_done', false);
+        if ($migration_done) {
+            return;
+        }
+        
+        // 检查是否有旧数据需要迁移
+        $old_posts = get_posts(array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => 1,
+            'post_status' => 'any'
+        ));
+        
+        $has_old_options = get_option('musicalbum_baidu_api_key', false);
+        
+        if (!empty($old_posts) || $has_old_options) {
+            // 有旧数据，执行迁移（使用简化版本，不返回结果）
+            self::migrate_data_simple();
+        } else {
+            // 没有旧数据，标记为已完成
+            update_option('viewing_records_migration_done', true);
+        }
+    }
+    
 
     /**
      * 注册短码：
@@ -68,8 +115,43 @@ final class Viewing_Records {
      * 脚本通过 wp_localize_script 注入 REST 端点与 nonce
      */
     public static function enqueue_assets() {
+        // 只在需要的地方加载资源（短码页面、观演管理页面、单篇文章页面）
+        $load_assets = false;
+        
+        // 检查是否有短码
+        global $post;
+        if ($post && (
+            has_shortcode($post->post_content, 'viewing_hello') ||
+            has_shortcode($post->post_content, 'viewing_form') ||
+            has_shortcode($post->post_content, 'viewing_list') ||
+            has_shortcode($post->post_content, 'viewing_statistics') ||
+            has_shortcode($post->post_content, 'viewing_manager') ||
+            has_shortcode($post->post_content, 'musicalbum_hello') ||
+            has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
+            has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
+            has_shortcode($post->post_content, 'musicalbum_statistics') ||
+            has_shortcode($post->post_content, 'musicalbum_viewing_manager')
+        )) {
+            $load_assets = true;
+        }
+        
+        // 检查是否是观演记录单篇文章页面
+        if (is_singular() && in_array(get_post_type(), array('viewing_record', 'musicalbum_viewing'))) {
+            $load_assets = true;
+        }
+        
+        if (!$load_assets) {
+            return;
+        }
+        
         wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
         wp_enqueue_style('viewing-records');
+        
+        // 获取主题颜色并注入动态 CSS
+        $theme_colors = self::get_theme_colors();
+        $dynamic_css = self::generate_theme_colored_css($theme_colors);
+        wp_add_inline_style('viewing-records', $dynamic_css);
+        
         // 引入 Chart.js 库
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
         // 引入 FullCalendar 库（用于日历视图）
@@ -85,10 +167,177 @@ final class Viewing_Records {
                 'statisticsDetails' => esc_url_raw(rest_url('viewing/v1/statistics/details')),
                 'statisticsExport' => esc_url_raw(rest_url('viewing/v1/statistics/export')),
                 'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
+                'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
         wp_enqueue_script('viewing-records');
+    }
+    
+    /**
+     * 获取主题颜色
+     */
+    private static function get_theme_colors() {
+        // 优先使用 CSS 变量（Astra 主题支持）
+        $primary_color = 'var(--ast-global-color-0, var(--wp--preset--color--primary, #3b82f6))';
+        $secondary_color = 'var(--ast-global-color-1, var(--wp--preset--color--secondary, #10b981))';
+        $accent_color = 'var(--ast-global-color-2, var(--wp--preset--color--accent, #8b5cf6))';
+        
+        // 尝试从主题设置获取颜色（Astra 主题）
+        $astra_primary = get_theme_mod('astra-color-palette-primary', '');
+        $astra_secondary = get_theme_mod('astra-color-palette-secondary', '');
+        $astra_accent = get_theme_mod('astra-color-palette-accent', '');
+        
+        // 如果获取到具体颜色值，使用具体值；否则使用 CSS 变量
+        if (!empty($astra_primary) && strpos($astra_primary, '#') === 0) {
+            $primary_color = $astra_primary;
+        }
+        if (!empty($astra_secondary) && strpos($astra_secondary, '#') === 0) {
+            $secondary_color = $astra_secondary;
+        }
+        if (!empty($astra_accent) && strpos($astra_accent, '#') === 0) {
+            $accent_color = $astra_accent;
+        }
+        
+        // 计算悬停颜色
+        // 如果是 CSS 变量，使用 filter: brightness() 或保持原样
+        // 如果是具体颜色值，计算加深后的颜色
+        $primary_hover = (strpos($primary_color, 'var(') !== false) 
+            ? $primary_color 
+            : self::darken_color($primary_color, 10);
+        $secondary_hover = (strpos($secondary_color, 'var(') !== false) 
+            ? $secondary_color 
+            : self::darken_color($secondary_color, 10);
+        $accent_hover = (strpos($accent_color, 'var(') !== false) 
+            ? $accent_color 
+            : self::darken_color($accent_color, 10);
+        
+        return array(
+            'primary' => $primary_color,
+            'primary_hover' => $primary_hover,
+            'secondary' => $secondary_color,
+            'secondary_hover' => $secondary_hover,
+            'accent' => $accent_color,
+            'accent_hover' => $accent_hover,
+        );
+    }
+    
+    /**
+     * 生成使用主题颜色的动态 CSS
+     */
+    private static function generate_theme_colored_css($colors) {
+        // 对于 CSS 变量，悬停时使用 filter: brightness()
+        $primary_hover_style = (strpos($colors['primary'], 'var(') !== false) 
+            ? 'filter: brightness(0.9);' 
+            : 'background: ' . esc_attr($colors['primary_hover']) . ' !important;';
+        $secondary_hover_style = (strpos($colors['secondary'], 'var(') !== false) 
+            ? 'filter: brightness(0.9);' 
+            : 'background: ' . esc_attr($colors['secondary_hover']) . ' !important;';
+        $accent_hover_style = (strpos($colors['accent'], 'var(') !== false) 
+            ? 'filter: brightness(0.9);' 
+            : 'background: ' . esc_attr($colors['accent_hover']) . ' !important;';
+        
+        $css = '
+        /* 主题颜色覆盖 - 使用主题颜色变量 */
+        .musicalbum-btn {
+            background: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-btn:hover {
+            ' . $primary_hover_style . '
+        }
+        .musicalbum-btn-refresh {
+            background: ' . esc_attr($colors['secondary']) . ' !important;
+        }
+        .musicalbum-btn-refresh:hover {
+            ' . $secondary_hover_style . '
+        }
+        .musicalbum-btn-export {
+            background: ' . esc_attr($colors['accent']) . ' !important;
+        }
+        .musicalbum-btn-export:hover {
+            ' . $accent_hover_style . '
+        }
+        .musicalbum-btn-primary {
+            background: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-btn-primary:hover {
+            ' . $primary_hover_style . '
+        }
+        .musicalbum-details-item:hover {
+            border-color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-details-item h4 a {
+            color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-details-item h4 a:hover {
+            ' . ((strpos($colors['primary'], 'var(') !== false) ? 'filter: brightness(0.85);' : 'color: ' . esc_attr($colors['primary_hover']) . ' !important;') . '
+        }
+        .musicalbum-tab-btn.active {
+            color: ' . esc_attr($colors['primary']) . ' !important;
+            border-bottom-color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        .musicalbum-form-group input:focus,
+        .musicalbum-form-group select:focus,
+        .musicalbum-form-group textarea:focus {
+            border-color: ' . esc_attr($colors['primary']) . ' !important;
+            box-shadow: 0 0 0 3px ' . esc_attr(self::hex_to_rgba($colors['primary'], 0.1)) . ' !important;
+        }
+        .musicalbum-view-btn.active {
+            background: ' . esc_attr($colors['primary']) . ' !important;
+            color: #fff !important;
+        }
+        .musicalbum-calendar-nav-label {
+            color: ' . esc_attr($colors['primary']) . ' !important;
+        }
+        ';
+        
+        return $css;
+    }
+    
+    /**
+     * 将十六进制颜色转换为 rgba（用于 box-shadow）
+     */
+    private static function hex_to_rgba($hex, $alpha = 1) {
+        // 如果是 CSS 变量，返回默认值
+        if (strpos($hex, 'var(') !== false) {
+            return 'rgba(59, 130, 246, ' . $alpha . ')';
+        }
+        
+        $hex = ltrim($hex, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        return 'rgba(' . $r . ', ' . $g . ', ' . $b . ', ' . $alpha . ')';
+    }
+    
+    /**
+     * 加深颜色（用于悬停效果）
+     */
+    private static function darken_color($color, $percent) {
+        // 如果是 CSS 变量，直接返回
+        if (strpos($color, 'var(') !== false) {
+            // 对于 CSS 变量，使用 filter: brightness() 或返回原色
+            return $color;
+        }
+        
+        // 移除 # 号
+        $color = ltrim($color, '#');
+        
+        // 转换为 RGB
+        $r = hexdec(substr($color, 0, 2));
+        $g = hexdec(substr($color, 2, 2));
+        $b = hexdec(substr($color, 4, 2));
+        
+        // 加深
+        $r = max(0, min(255, $r - ($r * $percent / 100)));
+        $g = max(0, min(255, $g - ($g * $percent / 100)));
+        $b = max(0, min(255, $b - ($b * $percent / 100)));
+        
+        // 转换回十六进制
+        return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($g), 2, '0', STR_PAD_LEFT) . 
+                   str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -102,16 +351,26 @@ final class Viewing_Records {
      * 注册自定义文章类型：viewing_record（观演记录）
      */
     public static function register_viewing_post_type() {
+        // 注册新的文章类型
         register_post_type('viewing_record', array(
             'labels' => array(
                 'name' => '观演记录',
-                'singular_name' => '观演记录'
+                'singular_name' => '观演记录',
+                'add_new' => '添加新记录',
+                'add_new_item' => '添加新观演记录',
+                'edit_item' => '编辑观演记录',
+                'new_item' => '新观演记录',
+                'view_item' => '查看观演记录',
+                'search_items' => '搜索观演记录',
+                'not_found' => '未找到观演记录',
+                'not_found_in_trash' => '回收站中未找到观演记录'
             ),
             'public' => true,
             'has_archive' => true,
             'show_in_rest' => true,
             'supports' => array('title'),
-            'menu_position' => 20
+            'menu_position' => 20,
+            'menu_icon' => 'dashicons-calendar-alt'
         ));
     }
 
@@ -180,7 +439,7 @@ final class Viewing_Records {
                     'return_format' => 'H:i'
                 ),
                 array(
-                    'key' => 'field_malbum_time_end',
+                    'key' => 'field_viewing_time_end',
                     'label' => '观演结束时间',
                     'name' => 'view_time_end',
                     'type' => 'time_picker',
@@ -207,6 +466,13 @@ final class Viewing_Records {
                         'param' => 'post_type',
                         'operator' => '==',
                         'value' => 'viewing_record'
+                    )
+                ),
+                array(
+                    array(
+                        'param' => 'post_type',
+                        'operator' => '==',
+                        'value' => 'musicalbum_viewing'
                     )
                 )
             ),
@@ -241,7 +507,7 @@ final class Viewing_Records {
     public static function shortcode_profile_viewings($atts = array(), $content = '') {
         if (!is_user_logged_in()) { return ''; }
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => 20,
             'orderby' => 'date',
             'order' => 'DESC'
@@ -320,6 +586,13 @@ final class Viewing_Records {
             'callback' => array(__CLASS__, 'rest_viewings_delete'),
             'args' => array('id' => array('type' => 'integer'))
         ));
+        
+        // 图片上传端点
+        register_rest_route('viewing/v1', '/upload-image', array(
+            'methods' => 'POST',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_upload_image')
+        ));
     }
 
     /**
@@ -339,11 +612,12 @@ final class Viewing_Records {
         
         $result = apply_filters('viewing_ocr_process', null, $data);
         if (!is_array($result)) {
-            $provider = get_option('viewing_ocr_provider');
-            $baidu_api_key = get_option('viewing_baidu_api_key');
-            $baidu_secret_key = get_option('viewing_baidu_secret_key');
-            $aliyun_api_key = get_option('viewing_aliyun_api_key');
-            $aliyun_endpoint = get_option('viewing_aliyun_endpoint');
+            // 向后兼容：同时读取新旧选项名称
+            $provider = get_option('viewing_ocr_provider') ?: get_option('musicalbum_ocr_provider');
+            $baidu_api_key = get_option('viewing_baidu_api_key') ?: get_option('musicalbum_baidu_api_key');
+            $baidu_secret_key = get_option('viewing_baidu_secret_key') ?: get_option('musicalbum_baidu_secret_key');
+            $aliyun_api_key = get_option('viewing_aliyun_api_key') ?: get_option('musicalbum_aliyun_api_key');
+            $aliyun_endpoint = get_option('viewing_aliyun_endpoint') ?: get_option('musicalbum_aliyun_endpoint');
             
             // 检查API配置
             $has_baidu = !empty($baidu_api_key) && !empty($baidu_secret_key);
@@ -399,8 +673,9 @@ final class Viewing_Records {
      * 返回结构化字段（标题、剧院、卡司、票价、日期）
      */
     private static function default_baidu_ocr($bytes) {
-        $api_key = get_option('viewing_baidu_api_key');
-        $secret_key = get_option('viewing_baidu_secret_key');
+        // 向后兼容：同时读取新旧选项名称
+        $api_key = get_option('viewing_baidu_api_key') ?: get_option('musicalbum_baidu_api_key');
+        $secret_key = get_option('viewing_baidu_secret_key') ?: get_option('musicalbum_baidu_secret_key');
         if (!$api_key || !$secret_key) { 
             return array('_debug_message' => '百度OCR API密钥未配置');
         }
@@ -465,9 +740,10 @@ final class Viewing_Records {
      * 默认阿里云 OCR：根据模式发送二进制或 JSON
      */
     private static function default_aliyun_ocr($bytes) {
-        $api_key = get_option('viewing_aliyun_api_key');
-        $endpoint = get_option('viewing_aliyun_endpoint');
-        $mode = get_option('viewing_aliyun_mode');
+        // 向后兼容：同时读取新旧选项名称
+        $api_key = get_option('viewing_aliyun_api_key') ?: get_option('musicalbum_aliyun_api_key');
+        $endpoint = get_option('viewing_aliyun_endpoint') ?: get_option('musicalbum_aliyun_endpoint');
+        $mode = get_option('viewing_aliyun_mode') ?: get_option('musicalbum_aliyun_mode');
         if (!$api_key || !$endpoint) { 
             return array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
         }
@@ -658,7 +934,7 @@ final class Viewing_Records {
      * iCalendar 导出接口：返回所有观演记录的日历条目
      */
     public static function rest_ics($request) {
-        $args = array('post_type' => 'viewing_record', 'posts_per_page' => -1, 'post_status' => 'publish');
+        $args = array('post_type' => array('viewing_record', 'musicalbum_viewing'), 'posts_per_page' => -1, 'post_status' => 'publish');
         $q = new WP_Query($args);
         $lines = array(
             'BEGIN:VCALENDAR',
@@ -747,7 +1023,7 @@ final class Viewing_Records {
 
         // 查询观演记录：管理员查看所有，普通用户只看自己的
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => -1,
             'post_status' => 'publish'
         );
@@ -912,7 +1188,7 @@ final class Viewing_Records {
         $per_page = absint($request->get_param('per_page')) ?: 20;
 
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => $per_page,
             'paged' => $page,
             'post_status' => 'publish',
@@ -1035,7 +1311,7 @@ final class Viewing_Records {
         $format = $request->get_param('format') ?: 'csv'; // csv, json
 
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => -1,
             'post_status' => 'publish',
             'orderby' => 'date',
@@ -1124,7 +1400,8 @@ final class Viewing_Records {
             </div>
 
             <!-- 录入表单模态框 -->
-            <div id="musicalbum-form-modal" class="musicalbum-modal">
+            <!-- 编辑表单模态框 -->
+            <div id="musicalbum-form-modal" class="musicalbum-modal" style="display: none;">
                 <div class="musicalbum-modal-content musicalbum-form-modal-content">
                     <span class="musicalbum-modal-close">&times;</span>
                     <h3 class="musicalbum-modal-title" id="musicalbum-form-title">新增观演记录</h3>
@@ -1193,6 +1470,13 @@ final class Viewing_Records {
                                     <label for="musicalbum-form-notes">备注</label>
                                     <textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>
                                 </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-form-ticket-image">票面图片</label>
+                                    <input type="file" id="musicalbum-form-ticket-image" name="ticket_image" accept="image/*">
+                                    <div id="musicalbum-form-ticket-preview" style="margin-top: 0.5rem;"></div>
+                                    <input type="hidden" id="musicalbum-form-ticket-image-id" name="ticket_image_id" value="">
+                                    <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片</p>
+                                </div>
                                 <div class="musicalbum-form-actions">
                                     <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-form-cancel">取消</button>
                                     <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
@@ -1259,6 +1543,17 @@ final class Viewing_Records {
                                     </div>
                                     <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>
                                 </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-notes">备注</label>
+                                    <textarea id="musicalbum-ocr-notes" name="notes" rows="4"></textarea>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-ocr-ticket-image">票面图片</label>
+                                    <input type="file" id="musicalbum-ocr-ticket-image" name="ticket_image" accept="image/*">
+                                    <div id="musicalbum-ocr-ticket-preview" style="margin-top: 0.5rem;"></div>
+                                    <input type="hidden" id="musicalbum-ocr-ticket-image-id" name="ticket_image_id" value="">
+                                    <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片（OCR识别的图片会自动保存）</p>
+                                </div>
                                 <div class="musicalbum-form-actions">
                                     <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-ocr-cancel">取消</button>
                                     <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
@@ -1314,7 +1609,7 @@ final class Viewing_Records {
         }
 
         $args = array(
-            'post_type' => 'viewing_record',
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => -1,
             'post_status' => 'publish'
             // 不在这里使用orderby，因为要按view_date（观演日期）排序，而不是post_date（记录创建日期）
@@ -1392,6 +1687,25 @@ final class Viewing_Records {
                 }
             }
             
+            // 处理票面图片数据
+            $ticket_image_field = get_field('ticket_image', $post_id);
+            $ticket_image_data = null;
+            if ($ticket_image_field) {
+                if (is_array($ticket_image_field)) {
+                    $ticket_image_data = array(
+                        'id' => isset($ticket_image_field['ID']) ? $ticket_image_field['ID'] : (isset($ticket_image_field['id']) ? $ticket_image_field['id'] : ''),
+                        'url' => isset($ticket_image_field['url']) ? $ticket_image_field['url'] : ''
+                    );
+                } else {
+                    // 如果是附件ID
+                    $image_url = wp_get_attachment_image_url($ticket_image_field, 'full');
+                    $ticket_image_data = array(
+                        'id' => $ticket_image_field,
+                        'url' => $image_url ? $image_url : ''
+                    );
+                }
+            }
+            
             $results[] = array(
                 'id' => $post_id,
                 'title' => $title,
@@ -1403,7 +1717,7 @@ final class Viewing_Records {
                 'view_time_start' => get_field('view_time_start', $post_id),
                 'view_time_end' => get_field('view_time_end', $post_id),
                 'notes' => $notes,
-                'ticket_image' => get_field('ticket_image', $post_id),
+                'ticket_image' => $ticket_image_data,
                 'url' => get_permalink($post_id),
                 'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
             );
@@ -1459,7 +1773,7 @@ final class Viewing_Records {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'viewing_record') {
+        if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1468,6 +1782,24 @@ final class Viewing_Records {
             return new WP_Error('forbidden', '无权查看此记录', array('status' => 403));
         }
 
+        $ticket_image = get_field('ticket_image', $post_id);
+        $ticket_image_data = null;
+        if ($ticket_image) {
+            if (is_array($ticket_image)) {
+                $ticket_image_data = array(
+                    'id' => isset($ticket_image['ID']) ? $ticket_image['ID'] : (isset($ticket_image['id']) ? $ticket_image['id'] : ''),
+                    'url' => isset($ticket_image['url']) ? $ticket_image['url'] : ''
+                );
+            } else {
+                // 如果是附件ID
+                $image_url = wp_get_attachment_image_url($ticket_image, 'full');
+                $ticket_image_data = array(
+                    'id' => $ticket_image,
+                    'url' => $image_url ? $image_url : ''
+                );
+            }
+        }
+        
         $result = array(
             'id' => $post_id,
             'title' => get_the_title($post_id),
@@ -1479,7 +1811,7 @@ final class Viewing_Records {
             'view_time_start' => get_field('view_time_start', $post_id),
             'view_time_end' => get_field('view_time_end', $post_id),
             'notes' => get_field('notes', $post_id),
-            'ticket_image' => get_field('ticket_image', $post_id),
+            'ticket_image' => $ticket_image_data,
             'url' => get_permalink($post_id),
             'author' => get_the_author_meta('display_name', get_post_field('post_author', $post_id))
         );
@@ -1539,6 +1871,9 @@ final class Viewing_Records {
         if (isset($params['notes'])) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
         }
+        if (isset($params['ticket_image_id']) && !empty($params['ticket_image_id'])) {
+            update_field('ticket_image', intval($params['ticket_image_id']), $post_id);
+        }
 
         return rest_ensure_response(array(
             'id' => $post_id,
@@ -1558,7 +1893,7 @@ final class Viewing_Records {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'viewing_record') {
+        if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1569,43 +1904,55 @@ final class Viewing_Records {
 
         $params = $request->get_json_params();
 
-        // 更新标题
-        if (isset($params['title'])) {
+        // 更新标题（即使为空也更新）
+        if (array_key_exists('title', $params)) {
+            $title = sanitize_text_field($params['title']);
             wp_update_post(array(
                 'ID' => $post_id,
-                'post_title' => sanitize_text_field($params['title'])
+                'post_title' => $title
             ));
         }
 
-        // 更新ACF字段
-        if (isset($params['category'])) {
+        // 更新ACF字段（使用 array_key_exists 确保即使值为空也能更新）
+        if (array_key_exists('category', $params)) {
             update_field('category', sanitize_text_field($params['category']), $post_id);
         }
-        if (isset($params['theater'])) {
+        if (array_key_exists('theater', $params)) {
             update_field('theater', sanitize_text_field($params['theater']), $post_id);
         }
-        if (isset($params['cast'])) {
+        if (array_key_exists('cast', $params)) {
             update_field('cast', sanitize_text_field($params['cast']), $post_id);
         }
-        if (isset($params['price'])) {
+        if (array_key_exists('price', $params)) {
             update_field('price', sanitize_text_field($params['price']), $post_id);
         }
-        if (isset($params['view_date'])) {
+        if (array_key_exists('view_date', $params)) {
             update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
         }
-        if (isset($params['view_time_start'])) {
+        if (array_key_exists('view_time_start', $params)) {
             update_field('view_time_start', sanitize_text_field($params['view_time_start']), $post_id);
         }
-        if (isset($params['view_time_end'])) {
+        if (array_key_exists('view_time_end', $params)) {
             update_field('view_time_end', sanitize_text_field($params['view_time_end']), $post_id);
         }
-        if (isset($params['notes'])) {
+        if (array_key_exists('notes', $params)) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
+        }
+        // 处理票面图片：优先使用新上传的图片ID，如果没有新图片则保留或删除
+        if (isset($params['ticket_image_id'])) {
+            if (!empty($params['ticket_image_id'])) {
+                // 更新图片ID
+                update_field('ticket_image', intval($params['ticket_image_id']), $post_id);
+            } else {
+                // 如果传递了空值，删除图片
+                update_field('ticket_image', '', $post_id);
+            }
         }
 
         return rest_ensure_response(array(
             'id' => $post_id,
-            'message' => '记录更新成功'
+            'message' => '记录更新成功',
+            'updated' => true
         ));
     }
 
@@ -1621,7 +1968,7 @@ final class Viewing_Records {
         $post_id = intval($request->get_param('id'));
         $post = get_post($post_id);
 
-        if (!$post || $post->post_type !== 'viewing_record') {
+        if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
@@ -1640,9 +1987,74 @@ final class Viewing_Records {
             'message' => '记录删除成功'
         ));
     }
+    
+    /**
+     * 上传图片 REST API
+     */
+    public static function rest_upload_image($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+        
+        // 检查文件上传
+        if (empty($_FILES['file'])) {
+            return new WP_Error('no_file', '未选择文件', array('status' => 400));
+        }
+        
+        // 使用 WordPress 媒体库上传
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        
+        $file = $_FILES['file'];
+        
+        // 验证文件类型
+        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp');
+        $file_type = wp_check_filetype($file['name']);
+        if (!in_array($file['type'], $allowed_types) && !in_array($file_type['type'], $allowed_types)) {
+            return new WP_Error('invalid_file_type', '不支持的文件类型，请上传图片文件', array('status' => 400));
+        }
+        
+        // 上传文件
+        $upload = wp_handle_upload($file, array('test_form' => false));
+        
+        if (isset($upload['error'])) {
+            return new WP_Error('upload_error', $upload['error'], array('status' => 500));
+        }
+        
+        // 创建附件
+        $attachment = array(
+            'post_mime_type' => $upload['type'],
+            'post_title' => sanitize_file_name(pathinfo($file['name'], PATHINFO_FILENAME)),
+            'post_content' => '',
+            'post_status' => 'inherit',
+            'post_author' => $user_id
+        );
+        
+        $attach_id = wp_insert_attachment($attachment, $upload['file']);
+        
+        if (is_wp_error($attach_id)) {
+            return $attach_id;
+        }
+        
+        // 生成附件元数据
+        $attach_data = wp_generate_attachment_metadata($attach_id, $upload['file']);
+        wp_update_attachment_metadata($attach_id, $attach_data);
+        
+        // 返回图片信息
+        $image_url = wp_get_attachment_image_url($attach_id, 'full');
+        $image_data = array(
+            'id' => $attach_id,
+            'url' => $image_url,
+            'thumbnail' => wp_get_attachment_image_url($attach_id, 'thumbnail')
+        );
+        
+        return rest_ensure_response($image_data);
+    }
 
     /**
-     * 添加管理菜单：OCR API配置
+     * 添加管理菜单：OCR API配置和数据迁移
      */
     public static function add_admin_menu() {
         add_submenu_page(
@@ -1653,6 +2065,260 @@ final class Viewing_Records {
             'viewing-ocr-config',
             array(__CLASS__, 'render_ocr_config_page')
         );
+        
+        add_submenu_page(
+            'options-general.php',
+            '数据迁移',
+            '观演记录 - 数据迁移',
+            'manage_options',
+            'viewing-data-migration',
+            array(__CLASS__, 'render_migration_page')
+        );
+    }
+    
+    /**
+     * 执行数据迁移（简化版本，用于自动迁移，不返回结果）
+     */
+    public static function migrate_data_simple() {
+        global $wpdb;
+        
+        // 1. 迁移自定义文章类型：musicalbum_viewing -> viewing_record
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
+            'viewing_record',
+            'musicalbum_viewing'
+        ));
+        
+        // 2. 迁移选项名称
+        $options_to_migrate = array(
+            'musicalbum_ocr_provider' => 'viewing_ocr_provider',
+            'musicalbum_baidu_api_key' => 'viewing_baidu_api_key',
+            'musicalbum_baidu_secret_key' => 'viewing_baidu_secret_key',
+            'musicalbum_aliyun_api_key' => 'viewing_aliyun_api_key',
+            'musicalbum_aliyun_endpoint' => 'viewing_aliyun_endpoint',
+            'musicalbum_aliyun_mode' => 'viewing_aliyun_mode'
+        );
+        
+        foreach ($options_to_migrate as $old_key => $new_key) {
+            $old_value = get_option($old_key, null);
+            if ($old_value !== null) {
+                // 如果新选项不存在，则迁移
+                if (get_option($new_key, null) === null) {
+                    update_option($new_key, $old_value);
+                }
+                // 迁移完成后，删除旧选项
+                delete_option($old_key);
+            }
+        }
+        
+        // 3. 标记迁移完成
+        update_option('viewing_records_migration_done', true);
+    }
+    
+    /**
+     * 执行数据迁移（完整版本，用于管理页面，返回详细结果）
+     */
+    public static function migrate_data() {
+        global $wpdb;
+        
+        $results = array(
+            'posts_migrated' => 0,
+            'options_migrated' => 0,
+            'errors' => array()
+        );
+        
+        // 1. 迁移自定义文章类型：musicalbum_viewing -> viewing_record
+        $posts_migrated = $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
+            'viewing_record',
+            'musicalbum_viewing'
+        ));
+        
+        if ($posts_migrated === false) {
+            $results['errors'][] = '迁移文章类型时出错：' . $wpdb->last_error;
+        } else {
+            $results['posts_migrated'] = $posts_migrated;
+        }
+        
+        // 2. 迁移选项名称
+        $options_to_migrate = array(
+            'musicalbum_ocr_provider' => 'viewing_ocr_provider',
+            'musicalbum_baidu_api_key' => 'viewing_baidu_api_key',
+            'musicalbum_baidu_secret_key' => 'viewing_baidu_secret_key',
+            'musicalbum_aliyun_api_key' => 'viewing_aliyun_api_key',
+            'musicalbum_aliyun_endpoint' => 'viewing_aliyun_endpoint',
+            'musicalbum_aliyun_mode' => 'viewing_aliyun_mode'
+        );
+        
+        foreach ($options_to_migrate as $old_key => $new_key) {
+            $old_value = get_option($old_key, null);
+            if ($old_value !== null) {
+                // 如果新选项不存在，则迁移；如果存在但为空，也迁移
+                $new_value = get_option($new_key, null);
+                if ($new_value === null || $new_value === '') {
+                    update_option($new_key, $old_value);
+                    $results['options_migrated']++;
+                }
+                // 迁移完成后，删除旧选项（无论是否成功迁移到新选项）
+                delete_option($old_key);
+            }
+        }
+        
+        // 3. 迁移 post_meta 中的 ACF 字段引用（如果有的话）
+        // 注意：ACF 字段通常通过字段名（name）存储，而不是 key，所以可能不需要迁移
+        
+        return $results;
+    }
+    
+    /**
+     * 渲染数据迁移页面
+     */
+    public static function render_migration_page() {
+        $migration_done = false;
+        $migration_results = null;
+        
+        // 处理迁移请求
+        if (isset($_POST['viewing_migrate_data']) && check_admin_referer('viewing_migrate_data')) {
+            $migration_results = self::migrate_data();
+            $migration_done = true;
+            update_option('viewing_records_migration_done', true);
+        }
+        
+        // 检查是否有旧数据
+        $old_posts_count = 0;
+        $old_posts = get_posts(array(
+            'post_type' => 'musicalbum_viewing',
+            'posts_per_page' => -1,
+            'post_status' => 'any'
+        ));
+        if ($old_posts) {
+            $old_posts_count = count($old_posts);
+        }
+        
+        $old_options = array();
+        $old_option_keys = array(
+            'musicalbum_ocr_provider',
+            'musicalbum_baidu_api_key',
+            'musicalbum_baidu_secret_key',
+            'musicalbum_aliyun_api_key',
+            'musicalbum_aliyun_endpoint',
+            'musicalbum_aliyun_mode'
+        );
+        foreach ($old_option_keys as $key) {
+            $value = get_option($key, null);
+            if ($value !== null) {
+                $old_options[$key] = $value;
+            }
+        }
+        
+        ?>
+        <div class="wrap">
+            <h1>数据迁移</h1>
+            
+            <?php if ($migration_done && $migration_results): ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><strong>✓ 数据迁移完成！</strong></p>
+                    <ul>
+                        <li>迁移了 <strong><?php echo esc_html($migration_results['posts_migrated']); ?></strong> 条观演记录</li>
+                        <li>迁移了 <strong><?php echo esc_html($migration_results['options_migrated']); ?></strong> 个配置选项</li>
+                    </ul>
+                    <?php if (!empty($migration_results['errors'])): ?>
+                        <p><strong>错误：</strong></p>
+                        <ul>
+                            <?php foreach ($migration_results['errors'] as $error): ?>
+                                <li><?php echo esc_html($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            
+            <div class="card">
+                <h2>迁移说明</h2>
+                <p>此工具将帮助您将旧的数据迁移到新的命名规范：</p>
+                <ul>
+                    <li><strong>自定义文章类型：</strong>将 <code>musicalbum_viewing</code> 迁移为 <code>viewing_record</code></li>
+                    <li><strong>配置选项：</strong>将 <code>musicalbum_*</code> 选项迁移为 <code>viewing_*</code> 选项</li>
+                </ul>
+                <p><strong>注意：</strong>迁移操作会直接修改数据库，建议在执行前备份数据库。</p>
+            </div>
+            
+            <div class="card">
+                <h2>待迁移数据统计</h2>
+                <table class="widefat">
+                    <thead>
+                        <tr>
+                            <th>数据类型</th>
+                            <th>数量</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>旧观演记录 (musicalbum_viewing)</td>
+                            <td><?php echo esc_html($old_posts_count); ?></td>
+                            <td><?php echo $old_posts_count > 0 ? '<span style="color:orange;">待迁移</span>' : '<span style="color:green;">无数据</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td>旧配置选项 (musicalbum_*)</td>
+                            <td><?php echo esc_html(count($old_options)); ?></td>
+                            <td><?php echo count($old_options) > 0 ? '<span style="color:orange;">待迁移</span>' : '<span style="color:green;">无数据</span>'; ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <?php if ($old_posts_count > 0 || count($old_options) > 0): ?>
+                <div class="card">
+                    <h2>执行迁移</h2>
+                    <p>检测到有待迁移的数据。点击下方按钮开始迁移：</p>
+                    <form method="post" action="">
+                        <?php wp_nonce_field('viewing_migrate_data'); ?>
+                        <p>
+                            <button type="submit" name="viewing_migrate_data" class="button button-primary" 
+                                    onclick="return confirm('确定要执行数据迁移吗？此操作将修改数据库，建议先备份。');">
+                                开始迁移数据
+                            </button>
+                        </p>
+                    </form>
+                </div>
+            <?php else: ?>
+                <div class="notice notice-info">
+                    <p>✓ 没有需要迁移的数据，所有数据已使用新的命名规范。</p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($old_options)): ?>
+                <div class="card">
+                    <h2>旧配置选项详情</h2>
+                    <table class="widefat">
+                        <thead>
+                            <tr>
+                                <th>选项名称</th>
+                                <th>值（部分显示）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($old_options as $key => $value): ?>
+                                <tr>
+                                    <td><code><?php echo esc_html($key); ?></code></td>
+                                    <td>
+                                        <?php 
+                                        if (is_string($value) && strlen($value) > 50) {
+                                            echo esc_html(substr($value, 0, 50)) . '...';
+                                        } else {
+                                            echo esc_html($value);
+                                        }
+                                        ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 
     /**
@@ -1664,15 +2330,20 @@ final class Viewing_Records {
             $api_key = sanitize_text_field($_POST['baidu_api_key']);
             $secret_key = sanitize_text_field($_POST['baidu_secret_key']);
             
+            // 保存到新选项名称
             update_option('viewing_baidu_api_key', $api_key);
             update_option('viewing_baidu_secret_key', $secret_key);
+            
+            // 同时更新旧选项名称（向后兼容）
+            update_option('musicalbum_baidu_api_key', $api_key);
+            update_option('musicalbum_baidu_secret_key', $secret_key);
             
             echo '<div class="notice notice-success is-dismissible"><p>✓ OCR API配置已保存！</p></div>';
         }
         
-        // 获取当前配置
-        $current_api_key = get_option('viewing_baidu_api_key', '');
-        $current_secret_key = get_option('viewing_baidu_secret_key', '');
+        // 获取当前配置（向后兼容：优先读取新选项，如果不存在则读取旧选项）
+        $current_api_key = get_option('viewing_baidu_api_key', '') ?: get_option('musicalbum_baidu_api_key', '');
+        $current_secret_key = get_option('viewing_baidu_secret_key', '') ?: get_option('musicalbum_baidu_secret_key', '');
         
         ?>
         <div class="wrap">
@@ -1745,6 +2416,230 @@ final class Viewing_Records {
         </div>
         <?php
     }
+    
+    /**
+     * 在单篇文章页面显示观演记录详情
+     */
+    public static function display_viewing_record_details($content) {
+        // 只在单篇文章页面且是 viewing_record 或 musicalbum_viewing 类型时显示
+        if (!is_singular() || !in_array(get_post_type(), array('viewing_record', 'musicalbum_viewing'))) {
+            return $content;
+        }
+        
+        $post_id = get_the_ID();
+        
+        // 获取所有字段
+        $category = get_field('category', $post_id);
+        $theater = get_field('theater', $post_id);
+        $cast = get_field('cast', $post_id);
+        $price = get_field('price', $post_id);
+        $view_date = get_field('view_date', $post_id);
+        $view_time_start = get_field('view_time_start', $post_id);
+        $view_time_end = get_field('view_time_end', $post_id);
+        $notes = get_field('notes', $post_id);
+        $ticket_image = get_field('ticket_image', $post_id);
+        
+        // 如果没有字段数据，直接返回原内容
+        if (!$category && !$theater && !$cast && !$price && !$view_date && !$notes && !$ticket_image) {
+            return $content;
+        }
+        
+        // 检查是否有编辑权限（记录所有者或管理员）
+        $current_user_id = get_current_user_id();
+        $post_author_id = get_post_field('post_author', $post_id);
+        $can_edit = ($current_user_id && ($current_user_id == $post_author_id || current_user_can('manage_options')));
+        
+        // 构建详情HTML
+        $details_html = '<div class="viewing-record-details" style="margin-top: 2rem; padding: 1.5rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">';
+        $details_html .= '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">';
+        $details_html .= '<h2 style="margin: 0; font-size: 1.5rem; color: #111827;">观演记录详情</h2>';
+        
+        // 添加编辑按钮（如果有权限）
+        if ($can_edit) {
+            $details_html .= '<button type="button" class="musicalbum-btn musicalbum-btn-primary musicalbum-btn-edit" data-id="' . esc_attr($post_id) . '" style="padding: 0.5rem 1rem; font-size: 0.875rem;">编辑记录</button>';
+        }
+        
+        $details_html .= '</div>';
+        $details_html .= '<div class="viewing-record-meta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">';
+        
+        if ($category) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">类别</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($category) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($theater) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">剧院</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($theater) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($cast) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">卡司</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($cast) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($price) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">票价</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($price) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($view_date) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">观演日期</strong>';
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . esc_html($view_date) . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        if ($view_time_start || $view_time_end) {
+            $details_html .= '<div class="viewing-meta-item">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.25rem; color: #6b7280; font-size: 0.875rem;">观演时间</strong>';
+            $time_str = '';
+            if ($view_time_start && $view_time_end) {
+                $time_str = esc_html($view_time_start) . ' - ' . esc_html($view_time_end);
+            } elseif ($view_time_start) {
+                $time_str = esc_html($view_time_start) . ' 开始';
+            } elseif ($view_time_end) {
+                $time_str = esc_html($view_time_end) . ' 结束';
+            }
+            $details_html .= '<span style="color: #111827; font-size: 1rem;">' . $time_str . '</span>';
+            $details_html .= '</div>';
+        }
+        
+        $details_html .= '</div>'; // 结束 viewing-record-meta
+        
+        // 票面图片
+        if ($ticket_image) {
+            $image_url = is_array($ticket_image) ? $ticket_image['url'] : $ticket_image;
+            $image_alt = is_array($ticket_image) && isset($ticket_image['alt']) ? $ticket_image['alt'] : '票面图片';
+            $details_html .= '<div class="viewing-ticket-image" style="margin-bottom: 1.5rem;">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-size: 0.875rem;">票面图片</strong>';
+            $details_html .= '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($image_alt) . '" style="max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #e5e7eb;" />';
+            $details_html .= '</div>';
+        }
+        
+        // 备注
+        if ($notes) {
+            $details_html .= '<div class="viewing-notes" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">';
+            $details_html .= '<strong style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-size: 0.875rem;">备注</strong>';
+            $details_html .= '<div style="color: #111827; line-height: 1.6; white-space: pre-wrap;">' . wp_kses_post(nl2br(esc_html($notes))) . '</div>';
+            $details_html .= '</div>';
+        }
+        
+        $details_html .= '</div>'; // 结束 viewing-record-details
+        
+        // 如果有编辑权限，确保模态框存在（如果页面中没有观演管理模块的模态框）
+        if ($can_edit) {
+            // 检查页面中是否已经有模态框（来自观演管理模块）
+            if (!has_shortcode(get_post()->post_content, 'viewing_manager') && 
+                !has_shortcode(get_post()->post_content, 'musicalbum_viewing_manager')) {
+                // 如果没有模态框，添加一个简化版的编辑表单模态框
+                $details_html .= self::get_edit_modal_html();
+            }
+        }
+        
+        // 将详情添加到内容后面
+        return $content . $details_html;
+    }
+    
+    /**
+     * 获取编辑表单模态框的HTML（用于详情页）
+     */
+    private static function get_edit_modal_html() {
+        ob_start();
+        ?>
+        <div id="musicalbum-form-modal" class="musicalbum-modal" style="display: none;">
+            <div class="musicalbum-modal-content musicalbum-form-modal-content">
+                <span class="musicalbum-modal-close">&times;</span>
+                <h3 class="musicalbum-modal-title" id="musicalbum-form-title">编辑观演记录</h3>
+                <div class="musicalbum-modal-body">
+                    <div class="musicalbum-form-tabs">
+                        <button type="button" class="musicalbum-tab-btn active" data-tab="manual">手动录入</button>
+                    </div>
+                    <div id="musicalbum-tab-manual" class="musicalbum-tab-content active">
+                        <form id="musicalbum-manual-form" class="musicalbum-viewing-form">
+                            <input type="hidden" id="musicalbum-edit-id" name="id" value="">
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-title-input">标题 <span class="required">*</span></label>
+                                <input type="text" id="musicalbum-form-title-input" name="title" required>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-category">剧目类别</label>
+                                <select id="musicalbum-form-category" name="category">
+                                    <option value="">请选择</option>
+                                    <option value="音乐剧">音乐剧</option>
+                                    <option value="话剧">话剧</option>
+                                    <option value="歌剧">歌剧</option>
+                                    <option value="舞剧">舞剧</option>
+                                    <option value="音乐会">音乐会</option>
+                                    <option value="戏曲">戏曲</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-theater">剧院</label>
+                                <input type="text" id="musicalbum-form-theater" name="theater">
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-cast">卡司</label>
+                                <input type="text" id="musicalbum-form-cast" name="cast" placeholder="多个演员用逗号分隔">
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-price">票价</label>
+                                <input type="text" id="musicalbum-form-price" name="price" placeholder="例如：280 或 280元">
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-date">观演日期</label>
+                                <div class="musicalbum-calendar-input-wrapper">
+                                    <input type="text" id="musicalbum-form-date" name="view_date" class="musicalbum-calendar-date-input" placeholder="YYYY-MM-DD或点击选择" autocomplete="off">
+                                    <input type="date" id="musicalbum-form-date-picker" class="musicalbum-calendar-date-picker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
+                                    <button type="button" class="musicalbum-calendar-icon-btn" title="选择日期">📅</button>
+                                </div>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label>观演时间</label>
+                                <div style="display:flex;gap:1rem;align-items:flex-end;">
+                                    <div style="flex:1;">
+                                        <label for="musicalbum-form-time-start" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">开始时间</label>
+                                        <input type="time" id="musicalbum-form-time-start" name="view_time_start" placeholder="例如：19:30">
+                                    </div>
+                                    <div style="flex:1;">
+                                        <label for="musicalbum-form-time-end" style="display:block;margin-bottom:0.25rem;font-size:0.875rem;color:#374151;">结束时间</label>
+                                        <input type="time" id="musicalbum-form-time-end" name="view_time_end" placeholder="例如：22:00">
+                                    </div>
+                                </div>
+                                <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，填写观演的开始和结束时间</p>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-notes">备注</label>
+                                <textarea id="musicalbum-form-notes" name="notes" rows="4"></textarea>
+                            </div>
+                            <div class="musicalbum-form-group">
+                                <label for="musicalbum-form-ticket-image">票面图片</label>
+                                <input type="file" id="musicalbum-form-ticket-image" name="ticket_image" accept="image/*">
+                                <div id="musicalbum-form-ticket-preview" style="margin-top: 0.5rem;"></div>
+                                <input type="hidden" id="musicalbum-form-ticket-image-id" name="ticket_image_id" value="">
+                                <p class="description" style="margin-top:0.25rem;font-size:0.8125rem;color:#6b7280;">可选，上传票面图片</p>
+                            </div>
+                            <div class="musicalbum-form-actions">
+                                <button type="button" class="musicalbum-btn musicalbum-btn-cancel" id="musicalbum-form-cancel">取消</button>
+                                <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    
 }
 
 // 启动插件
