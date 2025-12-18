@@ -1541,22 +1541,46 @@
     var formData = {};
     // 收集表单数据（包括详情页的模态框）
     var $formToSearch = $form;
-    if ($form.length === 0 || $form.find('input[name="title"]').length === 0) {
-      // 如果表单选择器找不到元素，尝试从模态框内查找
+    
+    // 如果表单为空或找不到标题输入框，尝试从模态框内查找
+    if ($form.length === 0 || $form.find('input[name="title"], #musicalbum-form-title-input').length === 0) {
+      console.log('表单选择器找不到元素，尝试从模态框查找');
       $formToSearch = $('#musicalbum-form-modal').find('form');
       if ($formToSearch.length === 0) {
         $formToSearch = $form.closest('.musicalbum-modal-content').find('form');
       }
+      console.log('找到的表单:', $formToSearch.length > 0 ? '是' : '否');
+    }
+    
+    if ($formToSearch.length === 0) {
+      console.error('无法找到表单元素！');
+      alert('无法找到表单，请刷新页面后重试');
+      return;
     }
     
     $formToSearch.find('input, select, textarea').each(function() {
       var $el = $(this);
       var name = $el.attr('name');
-      if (name && name !== 'id' && $el.attr('type') !== 'file') {
-        formData[name] = $el.val();
-        console.log('收集字段:', name, '=', formData[name]);
+      var type = $el.attr('type') || '';
+      
+      if (!name) return;
+      
+      // 跳过id字段和文件输入框
+      if (name === 'id' || type === 'file') {
+        return;
       }
+      
+      // 收集所有其他字段（包括隐藏字段如 ticket_image_id）
+      var value = $el.val();
+      formData[name] = value;
+      console.log('收集字段:', name, '=', value, '类型:', type || 'text');
     });
+    
+    // 确保收集到编辑ID（从隐藏字段）
+    var editId = $formToSearch.find('input[name="id"]').val();
+    if (editId) {
+      console.log('从表单中找到编辑ID:', editId);
+    }
     
     console.log('收集到的表单数据:', formData);
 
@@ -1704,6 +1728,14 @@
       data: JSON.stringify(formData)
     }).done(function(res) {
       console.log('保存成功，响应:', res);
+      
+      // 检查响应是否包含错误
+      if (res && res.code && res.code !== 'success') {
+        console.error('保存返回错误:', res);
+        alert(res.message || '保存失败：' + res.code);
+        return;
+      }
+      
       alert(id ? '记录更新成功' : '记录创建成功');
       $('#musicalbum-form-modal').hide();
       if (typeof resetForm === 'function') {
@@ -1712,7 +1744,10 @@
       
       // 如果在详情页，刷新页面；否则刷新列表
       if (window.location.pathname.match(/\/viewing_record\/|\/musicalbum_viewing\//)) {
-        location.reload();
+        // 延迟一下再刷新，确保数据已保存
+        setTimeout(function() {
+          location.reload();
+        }, 500);
       } else {
         if (typeof loadListView === 'function') {
           loadListView();
@@ -1723,11 +1758,19 @@
       }
     }).fail(function(xhr) {
       console.error('保存失败:', xhr);
+      console.error('状态码:', xhr.status);
+      console.error('响应:', xhr.responseJSON || xhr.responseText);
+      
       var msg = '保存失败';
-      if (xhr.responseJSON && xhr.responseJSON.message) {
-        msg = xhr.responseJSON.message;
+      if (xhr.responseJSON) {
+        if (xhr.responseJSON.message) {
+          msg = xhr.responseJSON.message;
+        } else if (xhr.responseJSON.code) {
+          msg = '错误：' + xhr.responseJSON.code;
+        }
       } else if (xhr.responseText) {
         console.error('响应文本:', xhr.responseText);
+        msg = '保存失败，请检查网络连接或刷新页面重试';
       }
       alert(msg);
     });
@@ -1798,6 +1841,9 @@
         $('#musicalbum-form-title').text('编辑观演记录');
         $('.musicalbum-tab-btn[data-tab="manual"]').click();
         $('#musicalbum-form-modal').show();
+        
+        // 确保编辑ID已设置（详情页可能需要在显示后再次确认）
+        console.log('编辑记录加载完成，编辑ID:', $('#musicalbum-edit-id').val());
       }
     }).fail(function() {
       alert('加载记录失败，请稍后重试');

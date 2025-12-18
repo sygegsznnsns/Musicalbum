@@ -1906,38 +1906,42 @@ final class Viewing_Records {
         }
 
         $params = $request->get_json_params();
+        
+        // 记录接收到的参数（用于调试）
+        error_log('Viewing Records Update Request: Post ID ' . $post_id . ', Params: ' . print_r($params, true));
 
-        // 更新标题
+        // 更新标题（即使为空也更新）
         if (isset($params['title'])) {
+            $title = sanitize_text_field($params['title']);
             wp_update_post(array(
                 'ID' => $post_id,
-                'post_title' => sanitize_text_field($params['title'])
+                'post_title' => $title
             ));
         }
 
-        // 更新ACF字段
-        if (isset($params['category'])) {
+        // 更新ACF字段（使用 array_key_exists 确保即使值为空也能更新）
+        if (array_key_exists('category', $params)) {
             update_field('category', sanitize_text_field($params['category']), $post_id);
         }
-        if (isset($params['theater'])) {
+        if (array_key_exists('theater', $params)) {
             update_field('theater', sanitize_text_field($params['theater']), $post_id);
         }
-        if (isset($params['cast'])) {
+        if (array_key_exists('cast', $params)) {
             update_field('cast', sanitize_text_field($params['cast']), $post_id);
         }
-        if (isset($params['price'])) {
+        if (array_key_exists('price', $params)) {
             update_field('price', sanitize_text_field($params['price']), $post_id);
         }
-        if (isset($params['view_date'])) {
+        if (array_key_exists('view_date', $params)) {
             update_field('view_date', sanitize_text_field($params['view_date']), $post_id);
         }
-        if (isset($params['view_time_start'])) {
+        if (array_key_exists('view_time_start', $params)) {
             update_field('view_time_start', sanitize_text_field($params['view_time_start']), $post_id);
         }
-        if (isset($params['view_time_end'])) {
+        if (array_key_exists('view_time_end', $params)) {
             update_field('view_time_end', sanitize_text_field($params['view_time_end']), $post_id);
         }
-        if (isset($params['notes'])) {
+        if (array_key_exists('notes', $params)) {
             update_field('notes', sanitize_textarea_field($params['notes']), $post_id);
         }
         // 处理票面图片：优先使用新上传的图片ID，如果没有新图片则保留或删除
@@ -1950,10 +1954,19 @@ final class Viewing_Records {
                 update_field('ticket_image', '', $post_id);
             }
         }
+        
+        // 记录更新日志（用于调试）
+        error_log('Viewing Records Update: Post ID ' . $post_id . ', Params: ' . print_r($params, true));
+        
+        // 验证更新是否成功
+        $updated_title = get_the_title($post_id);
+        $updated_category = get_field('category', $post_id);
+        error_log('Viewing Records Update Result: Title=' . $updated_title . ', Category=' . $updated_category);
 
         return rest_ensure_response(array(
             'id' => $post_id,
-            'message' => '记录更新成功'
+            'message' => '记录更新成功',
+            'updated' => true
         ));
     }
 
