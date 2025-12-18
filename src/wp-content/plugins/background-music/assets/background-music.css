@@ -337,6 +337,111 @@
     }
 }
 
+/* 隐藏按钮样式 */
+#music-toggle-hide {
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    padding: 0;
+    opacity: 0.7;
+}
+
+#music-toggle-hide:hover {
+    opacity: 1;
+    background: rgba(102, 126, 234, 0.1);
+    transform: scale(1.1);
+}
+
+#music-toggle-hide svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 隐藏状态 - 播放器滑到右侧边缘 */
+#background-music-player.hidden {
+    transform: translateX(calc(100% - 72px)) !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
+}
+
+#background-music-player.hidden #music-play-pause,
+#background-music-player.hidden #music-select-control,
+#background-music-player.hidden #music-volume-control,
+#background-music-player.hidden #music-toggle-hide {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    transition: opacity 0.2s ease, width 0.3s ease;
+}
+
+/* 展开按钮样式 */
+#music-show-button {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4),
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#music-show-button:hover {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5),
+                0 4px 12px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+#music-show-button:active {
+    transform: scale(1.05) translateY(0);
+}
+
+#music-show-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* 响应式 - 展开按钮 */
+@media (max-width: 768px) {
+    #music-show-button {
+        bottom: 16px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+    }
+    
+    #music-show-button svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
 /* 隐藏音频元素（只用于播放，不显示默认控件） */
 #background-music {
     display: none;

@@ -14,6 +14,8 @@
         const musicInfo = document.getElementById('music-info');
         const musicPlayer = document.getElementById('background-music-player');
         const musicSelect = document.getElementById('music-select');
+        const toggleHideBtn = document.getElementById('music-toggle-hide');
+        const showButton = document.getElementById('music-show-button');
         
         if (!audio) return;
         
@@ -57,10 +59,16 @@
             
             // 保存位置
             function savePosition() {
-                localStorage.setItem('backgroundMusicPosition', JSON.stringify({
+                const position = {
                     x: xOffset,
                     y: yOffset
-                }));
+                };
+                localStorage.setItem('backgroundMusicPosition', JSON.stringify(position));
+                
+                // 如果播放器是隐藏状态，同步更新展开按钮位置
+                if (musicPlayer && musicPlayer.classList.contains('hidden') && showButton) {
+                    showButton.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+                }
             }
             
             // 鼠标按下事件
@@ -406,6 +414,64 @@
                     musicInfo.style.display = 'none';
                 }, 500);
             }, 3000);
+        }
+        
+        // 隐藏/显示播放器功能
+        function hidePlayer() {
+            if (!musicPlayer || !showButton) return;
+            
+            // 获取播放器当前位置
+            const savedPosition = localStorage.getItem('backgroundMusicPosition');
+            let pos = { x: 0, y: 0 };
+            if (savedPosition) {
+                try {
+                    pos = JSON.parse(savedPosition);
+                } catch (e) {
+                    console.warn('恢复位置失败:', e);
+                }
+            }
+            
+            // 设置展开按钮位置与播放器位置一致
+            if (pos.x !== undefined && pos.y !== undefined) {
+                showButton.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+            } else {
+                showButton.style.transform = 'translate(0, 0)';
+            }
+            
+            musicPlayer.classList.add('hidden');
+            showButton.style.display = 'flex';
+            localStorage.setItem('backgroundMusicHidden', 'true');
+        }
+        
+        function showPlayer() {
+            if (!musicPlayer || !showButton) return;
+            musicPlayer.classList.remove('hidden');
+            showButton.style.display = 'none';
+            localStorage.setItem('backgroundMusicHidden', 'false');
+        }
+        
+        // 隐藏按钮点击事件
+        if (toggleHideBtn) {
+            toggleHideBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // 防止触发拖拽
+                hidePlayer();
+            });
+        }
+        
+        // 展开按钮点击事件
+        if (showButton) {
+            showButton.addEventListener('click', function() {
+                showPlayer();
+            });
+        }
+        
+        // 恢复隐藏状态
+        const isHidden = localStorage.getItem('backgroundMusicHidden');
+        if (isHidden === 'true' && musicPlayer && showButton) {
+            // 延迟执行，确保样式已加载
+            setTimeout(function() {
+                hidePlayer();
+            }, 100);
         }
     });
 })();
