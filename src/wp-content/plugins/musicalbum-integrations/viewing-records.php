@@ -1129,30 +1129,30 @@ final class Viewing_Records {
         
         ob_start();
         ?>
-        <div class="musicalbum-dashboard-container">
-            <div class="musicalbum-dashboard-header">
-                <h1 class="musicalbum-dashboard-title">观影点滴</h1>
-                <p class="musicalbum-dashboard-subtitle">记录每一次观演的美好时光</p>
+        <div class="musicalbum-dashboard-container" style="max-width: 1200px !important; margin: 2rem auto !important; padding: 2rem 1.5rem !important; background: #f8fafc !important; border-radius: 16px !important; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important; width: 100% !important; box-sizing: border-box !important;">
+            <div class="musicalbum-dashboard-header" style="text-align: center !important; margin-bottom: 3rem !important; padding-bottom: 2rem !important; border-bottom: 2px solid #e5e7eb !important; width: 100% !important;">
+                <h1 class="musicalbum-dashboard-title" style="font-size: 3rem !important; font-weight: 800 !important; margin: 0 0 0.75rem 0 !important; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; letter-spacing: -0.02em !important; color: transparent !important; display: block !important;">观影点滴</h1>
+                <p class="musicalbum-dashboard-subtitle" style="font-size: 1.25rem !important; color: #64748b !important; margin: 0 !important; font-weight: 400 !important; display: block !important;">记录每一次观演的美好时光</p>
             </div>
             
             <!-- 快速导航卡片 -->
-            <div class="musicalbum-dashboard-nav">
-                <a href="<?php echo esc_url($manager_url); ?>" class="musicalbum-dashboard-card">
-                    <div class="musicalbum-dashboard-card-icon">📝</div>
-                    <h3>记录管理</h3>
-                    <p>管理您的观演记录，添加、编辑或删除记录</p>
+            <div class="musicalbum-dashboard-nav" style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important; gap: 1.5rem !important; margin-bottom: 3rem !important; width: 100% !important; box-sizing: border-box !important;">
+                <a href="<?php echo esc_url($manager_url); ?>" class="musicalbum-dashboard-card" style="display: block !important; padding: 2.5rem 2rem !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 16px !important; text-decoration: none !important; color: #1f2937 !important; text-align: center !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; width: 100% !important; box-sizing: border-box !important;">
+                    <div class="musicalbum-dashboard-card-icon" style="font-size: 3.5rem !important; margin-bottom: 1.25rem !important; display: block !important;">📝</div>
+                    <h3 style="font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 0.75rem 0 !important; color: #1e293b !important; text-decoration: none !important; border: none !important; padding: 0 !important;">记录管理</h3>
+                    <p style="font-size: 0.9375rem !important; color: #64748b !important; margin: 0 !important; text-decoration: none !important; line-height: 1.6 !important;">管理您的观演记录，添加、编辑或删除记录</p>
                 </a>
-                <a href="<?php echo esc_url($statistics_url); ?>" class="musicalbum-dashboard-card">
-                    <div class="musicalbum-dashboard-card-icon">📊</div>
-                    <h3>数据统计</h3>
-                    <p>查看观演数据可视化图表和统计分析</p>
+                <a href="<?php echo esc_url($statistics_url); ?>" class="musicalbum-dashboard-card" style="display: block !important; padding: 2.5rem 2rem !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 16px !important; text-decoration: none !important; color: #1f2937 !important; text-align: center !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; width: 100% !important; box-sizing: border-box !important;">
+                    <div class="musicalbum-dashboard-card-icon" style="font-size: 3.5rem !important; margin-bottom: 1.25rem !important; display: block !important;">📊</div>
+                    <h3 style="font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 0.75rem 0 !important; color: #1e293b !important; text-decoration: none !important; border: none !important; padding: 0 !important;">数据统计</h3>
+                    <p style="font-size: 0.9375rem !important; color: #64748b !important; margin: 0 !important; text-decoration: none !important; line-height: 1.6 !important;">查看观演数据可视化图表和统计分析</p>
                 </a>
             </div>
             
             <!-- 数据概览 -->
-            <div class="musicalbum-dashboard-overview" id="musicalbum-dashboard-overview">
-                <h2 class="musicalbum-dashboard-section-title">数据概览</h2>
-                <div class="musicalbum-dashboard-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div class="musicalbum-dashboard-overview" id="musicalbum-dashboard-overview" style="margin-bottom: 3rem !important; width: 100% !important;">
+                <h2 class="musicalbum-dashboard-section-title" style="font-size: 1.75rem !important; font-weight: 700 !important; margin: 0 0 1.5rem 0 !important; color: #1e293b !important; position: relative !important; padding-bottom: 0.75rem !important; display: block !important; width: 100% !important;">数据概览</h2>
+                <div class="musicalbum-dashboard-stats-grid" style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important; gap: 1.5rem !important; width: 100% !important;">
                     <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
                         <div class="stat-value" id="stat-total-count" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
                         <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">总记录数</div>
@@ -1173,9 +1173,9 @@ final class Viewing_Records {
             </div>
             
             <!-- 最近观演记录 -->
-            <div class="musicalbum-dashboard-recent" id="musicalbum-dashboard-recent">
-                <h2 class="musicalbum-dashboard-section-title">最近观演</h2>
-                <div class="musicalbum-dashboard-recent-list" id="musicalbum-recent-list">
+            <div class="musicalbum-dashboard-recent" id="musicalbum-dashboard-recent" style="margin-bottom: 3rem !important; width: 100% !important;">
+                <h2 class="musicalbum-dashboard-section-title" style="font-size: 1.75rem !important; font-weight: 700 !important; margin: 0 0 1.5rem 0 !important; color: #1e293b !important; position: relative !important; padding-bottom: 0.75rem !important; display: block !important; width: 100% !important;">最近观演</h2>
+                <div class="musicalbum-dashboard-recent-list" id="musicalbum-recent-list" style="background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 16px !important; overflow: hidden !important; width: 100% !important; box-sizing: border-box !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;">
                     <div class="musicalbum-dashboard-loading">加载中...</div>
                 </div>
             </div>
