@@ -32,7 +32,6 @@
             let initialY = 0;
             let xOffset = 0;
             let yOffset = 0;
-            let rafId = null;
             
             // 恢复保存的位置
             const savedPosition = localStorage.getItem('backgroundMusicPosition');
@@ -91,7 +90,7 @@
                 }
             });
             
-            // 鼠标移动事件（使用requestAnimationFrame优化）
+            // 鼠标移动事件（直接更新位置，确保快速响应）
             document.addEventListener('mousemove', function(e) {
                 // 只有在拖拽状态下才处理移动
                 if (!isDragging) {
@@ -100,21 +99,15 @@
                 
                 e.preventDefault();
                 
-                // 取消之前的动画帧请求
-                if (rafId !== null) {
-                    cancelAnimationFrame(rafId);
-                }
+                // 直接计算并更新位置，不使用requestAnimationFrame以减少延迟
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
                 
-                // 使用requestAnimationFrame确保流畅
-                rafId = requestAnimationFrame(function() {
-                    currentX = e.clientX - initialX;
-                    currentY = e.clientY - initialY;
-                    
-                    xOffset = currentX;
-                    yOffset = currentY;
-                    
-                    setTranslate(currentX, currentY, musicPlayer);
-                });
+                xOffset = currentX;
+                yOffset = currentY;
+                
+                // 直接更新位置，确保实时跟随鼠标
+                setTranslate(currentX, currentY, musicPlayer);
             });
             
             // 鼠标释放事件
@@ -157,23 +150,17 @@
                 if (isDragging) {
                     e.preventDefault();
                     
-                    // 取消之前的动画帧请求
-                    if (rafId !== null) {
-                        cancelAnimationFrame(rafId);
-                    }
-                    
                     const touch = e.touches[0];
                     
-                    // 使用requestAnimationFrame确保流畅
-                    rafId = requestAnimationFrame(function() {
-                        currentX = touch.clientX - initialX;
-                        currentY = touch.clientY - initialY;
-                        
-                        xOffset = currentX;
-                        yOffset = currentY;
-                        
-                        setTranslate(currentX, currentY, musicPlayer);
-                    });
+                    // 直接计算并更新位置，确保快速响应
+                    currentX = touch.clientX - initialX;
+                    currentY = touch.clientY - initialY;
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    // 直接更新位置，确保实时跟随触摸
+                    setTranslate(currentX, currentY, musicPlayer);
                 }
             });
             
