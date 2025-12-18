@@ -246,6 +246,25 @@
         }
         
         // 音量控制
+        const volumeControl = document.getElementById('music-volume-control');
+        
+        // 点击音量图标显示/隐藏音量滑块
+        if (volumeIcon) {
+            volumeIcon.addEventListener('click', function(e) {
+                e.stopPropagation(); // 防止触发拖拽
+                if (volumeControl) {
+                    volumeControl.classList.toggle('show-volume');
+                }
+            });
+        }
+        
+        // 点击播放器外部时隐藏音量滑块
+        document.addEventListener('click', function(e) {
+            if (volumeControl && !volumeControl.contains(e.target) && !e.target.closest('#music-volume-control')) {
+                volumeControl.classList.remove('show-volume');
+            }
+        });
+        
         if (volumeSlider) {
             volumeSlider.addEventListener('input', function() {
                 const volume = parseFloat(this.value);
