@@ -927,16 +927,50 @@
     }
     
     // 文本输入框：支持直接输入日期
-    $textInput.on('change blur', function() {
+    var isShowingAlert = false;
+    var lastValidatedValue = '';
+    
+    $textInput.on('change', function() {
       var dateStr = $(this).val();
+      
+      // 如果值没有变化，不重复验证
+      if (dateStr === lastValidatedValue) {
+        return;
+      }
+      
+      // 防止重复弹出 alert
+      if (isShowingAlert) {
+        return;
+      }
+      
       var formattedDate = validateAndFormatDate(dateStr);
       
       if (formattedDate) {
         $(this).val(formattedDate);
         $datePicker.val(formattedDate);
+        lastValidatedValue = formattedDate;
       } else if (dateStr) {
+        isShowingAlert = true;
         alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
-        $(this).focus();
+        // 延迟重置标志，确保 alert 已关闭
+        setTimeout(function() {
+          isShowingAlert = false;
+        }, 100);
+        lastValidatedValue = dateStr; // 记录已验证的值，避免重复验证
+      } else {
+        lastValidatedValue = '';
+      }
+    });
+    
+    // blur 事件只用于格式化，不显示错误提示
+    $textInput.on('blur', function() {
+      var dateStr = $(this).val();
+      var formattedDate = validateAndFormatDate(dateStr);
+      
+      if (formattedDate && dateStr !== formattedDate) {
+        $(this).val(formattedDate);
+        $datePicker.val(formattedDate);
+        lastValidatedValue = formattedDate;
       }
     });
     
@@ -1314,17 +1348,52 @@
     }
     
     // 文本输入框：支持直接输入日期
-    dateInput.on('change blur', function() {
+    var isShowingAlert = false;
+    var lastValidatedValue = '';
+    
+    dateInput.on('change', function() {
       var dateStr = $(this).val();
+      
+      // 如果值没有变化，不重复验证
+      if (dateStr === lastValidatedValue) {
+        return;
+      }
+      
+      // 防止重复弹出 alert
+      if (isShowingAlert) {
+        return;
+      }
+      
       var formattedDate = validateAndFormatDate(dateStr);
       
       if (formattedDate) {
         $(this).val(formattedDate);
         datePicker.val(formattedDate);
         calendar.gotoDate(formattedDate);
+        lastValidatedValue = formattedDate;
       } else if (dateStr) {
+        isShowingAlert = true;
         alert('日期格式不正确，请使用 YYYY-MM-DD 格式（如：2025-12-17）');
-        $(this).focus();
+        // 延迟重置标志，确保 alert 已关闭
+        setTimeout(function() {
+          isShowingAlert = false;
+        }, 100);
+        lastValidatedValue = dateStr; // 记录已验证的值，避免重复验证
+      } else {
+        lastValidatedValue = '';
+      }
+    });
+    
+    // blur 事件只用于格式化，不显示错误提示
+    dateInput.on('blur', function() {
+      var dateStr = $(this).val();
+      var formattedDate = validateAndFormatDate(dateStr);
+      
+      if (formattedDate && dateStr !== formattedDate) {
+        $(this).val(formattedDate);
+        datePicker.val(formattedDate);
+        calendar.gotoDate(formattedDate);
+        lastValidatedValue = formattedDate;
       }
     });
     
