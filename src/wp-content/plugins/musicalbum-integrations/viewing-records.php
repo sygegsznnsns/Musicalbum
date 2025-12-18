@@ -2662,60 +2662,62 @@ final class Viewing_Records {
         echo '</div>';
         
         // 初始化表单功能 - 确保关闭按钮能正常工作
-        echo '<script>';
-        echo 'jQuery(document).ready(function($) {';
-        echo '  // 关闭模态框 - 直接绑定，确保能正常工作';
-        echo '  $("#musicalbum-form-modal .musicalbum-modal-close, #musicalbum-form-cancel").off("click").on("click", function(e) {';
-        echo '    e.preventDefault();';
-        echo '    e.stopPropagation();';
-        echo '    $("#musicalbum-form-modal").hide();';
-        echo '    if (typeof resetForm === "function") {';
-        echo '      resetForm();';
-        echo '    }';
-        echo '    return false;';
-        echo '  });';
-        echo '  // 点击外部关闭';
-        echo '  $("#musicalbum-form-modal").off("click").on("click", function(e) {';
-        echo '    if ($(e.target).is("#musicalbum-form-modal")) {';
-        echo '      $(this).hide();';
-        echo '      if (typeof resetForm === "function") {';
-        echo '        resetForm();';
-        echo '      }';
-        echo '    }';
-        echo '  });';
-        echo '  // 表单提交 - 使用事件委托确保能正常工作';
-        echo '  $(document).off("submit", "#musicalbum-manual-form").on("submit", "#musicalbum-manual-form", function(e) {';
-        echo '    e.preventDefault();';
-        echo '    e.stopPropagation();';
-        echo '    console.log("详情页表单提交事件触发");';
-        echo '    if (typeof saveViewing === "function") {';
-        echo '      saveViewing($(this));';
-        echo '    } else {';
-        echo '      console.error("saveViewing 函数未定义");';
-        echo '      alert("保存功能暂时不可用，请刷新页面后重试");';
-        echo '    }';
-        echo '    return false;';
-        echo '  });';
-        echo '  // 图片上传 - 确保事件能正常工作（详情页模态框）';
-        echo '  // 使用事件委托，确保动态添加的元素也能响应';
-        echo '  $(document).off("change", "#musicalbum-form-modal input[type=\'file\'][name=\'ticket_image\']").on("change", "#musicalbum-form-modal input[type=\'file\'][name=\'ticket_image\']", function() {';
-        echo '    console.log("详情页图片上传事件触发", this);';
-        echo '    if (typeof handleImageUpload === "function") {';
-        echo '      handleImageUpload(this, "#musicalbum-form-ticket-preview", "#musicalbum-form-ticket-image-id");';
-        echo '    } else {';
-        echo '      console.error("handleImageUpload 函数未定义");';
-        echo '    }';
-        echo '  });';
-        echo '  // 初始化日期输入框';
-        echo '  if (typeof initDateInput === "function") {';
-        echo '    initDateInput("#musicalbum-form-date", "#musicalbum-form-date-picker");';
-        echo '  }';
-        echo '  // 初始化时间验证';
-        echo '  if (typeof initTimeValidation === "function") {';
-        echo '    initTimeValidation("#musicalbum-form-time-start", "#musicalbum-form-time-end");';
-        echo '  }';
-        echo '});';
-        echo '</script>';
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+          // 关闭模态框 - 直接绑定，确保能正常工作
+          $("#musicalbum-form-modal .musicalbum-modal-close, #musicalbum-form-cancel").off("click").on("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $("#musicalbum-form-modal").hide();
+            if (typeof resetForm === "function") {
+              resetForm();
+            }
+            return false;
+          });
+          // 点击外部关闭
+          $("#musicalbum-form-modal").off("click").on("click", function(e) {
+            if ($(e.target).is("#musicalbum-form-modal")) {
+              $(this).hide();
+              if (typeof resetForm === "function") {
+                resetForm();
+              }
+            }
+          });
+          // 表单提交 - 使用事件委托确保能正常工作
+          $(document).off("submit", "#musicalbum-manual-form").on("submit", "#musicalbum-manual-form", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("详情页表单提交事件触发");
+            if (typeof saveViewing === "function") {
+              saveViewing($(this));
+            } else {
+              console.error("saveViewing 函数未定义");
+              alert("保存功能暂时不可用，请刷新页面后重试");
+            }
+            return false;
+          });
+          // 图片上传 - 确保事件能正常工作（详情页模态框）
+          // 使用事件委托，确保动态添加的元素也能响应
+          $(document).off("change", "#musicalbum-form-modal input[type='file'][name='ticket_image']").on("change", "#musicalbum-form-modal input[type='file'][name='ticket_image']", function() {
+            console.log("详情页图片上传事件触发", this);
+            if (typeof handleImageUpload === "function") {
+              handleImageUpload(this, "#musicalbum-form-ticket-preview", "#musicalbum-form-ticket-image-id");
+            } else {
+              console.error("handleImageUpload 函数未定义");
+            }
+          });
+          // 初始化日期输入框
+          if (typeof initDateInput === "function") {
+            initDateInput("#musicalbum-form-date", "#musicalbum-form-date-picker");
+          }
+          // 初始化时间验证
+          if (typeof initTimeValidation === "function") {
+            initTimeValidation("#musicalbum-form-time-start", "#musicalbum-form-time-end");
+          }
+        });
+        </script>
+        <?php
     }
 }
 
