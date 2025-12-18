@@ -32,7 +32,7 @@ final class Musicalbum_Smart_Recs {
     public static function enqueue_assets() {
         wp_enqueue_style(
             'musicalbum-recommendation',
-            plugins_url('assets/recommendation.css', __FILE__),
+            plugins_url('assets/recommendations.css', __FILE__),
             [],
             '0.4.0'
         );
