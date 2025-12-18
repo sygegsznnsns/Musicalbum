@@ -36,16 +36,15 @@
     // 统计数据图表渲染
     if ($('.musicalbum-statistics-container').length > 0) {
       // 等待Chart.js加载完成
-      if (typeof Chart !== 'undefined') {
-        loadStatistics();
-      } else {
-        // 如果Chart.js还没加载，等待一下
-        setTimeout(function() {
-          if (typeof Chart !== 'undefined') {
-            loadStatistics();
-          }
-        }, 500);
+      function initStatistics() {
+        if (typeof Chart !== 'undefined') {
+          loadStatistics();
+        } else {
+          // 如果Chart.js还没加载，继续等待
+          setTimeout(initStatistics, 100);
+        }
       }
+      initStatistics();
     }
     
     // 按钮事件绑定（使用事件委托，不依赖Chart.js）
@@ -89,32 +88,62 @@
    * 加载统计数据并渲染固定图表
    */
   function loadStatistics(callback) {
+    // 检查容器是否存在
+    if ($('.musicalbum-statistics-container').length === 0) {
+      if (callback) callback();
+      return;
+    }
+    
     var loadingEl = $('#musicalbum-statistics-loading');
-    loadingEl.show();
+    if (loadingEl.length > 0) {
+      loadingEl.show();
+    }
 
     $.ajax({
       url: ViewingRecords.rest.statistics,
       method: 'GET',
       headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
     }).done(function(data) {
-      loadingEl.hide();
+      if (loadingEl.length > 0) {
+        loadingEl.hide();
+      }
       
       // 保存统计数据
       statisticsData = data;
       
       // 销毁旧图表
-      if (chartInstances.category) chartInstances.category.destroy();
-      if (chartInstances.cast) chartInstances.cast.destroy();
-      if (chartInstances.price) chartInstances.price.destroy();
+      if (chartInstances.category) {
+        try {
+          chartInstances.category.destroy();
+        } catch(e) {}
+        chartInstances.category = null;
+      }
+      if (chartInstances.cast) {
+        try {
+          chartInstances.cast.destroy();
+        } catch(e) {}
+        chartInstances.cast = null;
+      }
+      if (chartInstances.price) {
+        try {
+          chartInstances.price.destroy();
+        } catch(e) {}
+        chartInstances.price = null;
+      }
       
-      // 渲染固定的三个图表
-      renderCategoryChart(data.category || {});
-      renderCastChart(data.cast || {});
-      renderPriceChart(data.price || {});
+      // 渲染固定的三个图表（确保Chart.js已加载）
+      if (typeof Chart !== 'undefined') {
+        renderCategoryChart(data.category || {});
+        renderCastChart(data.cast || {});
+        renderPriceChart(data.price || {});
+      }
       
       if (callback) callback();
-    }).fail(function() {
-      loadingEl.html('加载数据失败，请稍后重试').css('color', '#dc2626');
+    }).fail(function(xhr, status, error) {
+      if (loadingEl.length > 0) {
+        loadingEl.html('加载数据失败，请稍后重试').css('color', '#dc2626');
+      }
+      console.error('加载统计数据失败:', error);
       if (callback) callback();
     });
   }

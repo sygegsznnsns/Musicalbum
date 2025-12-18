@@ -92,16 +92,14 @@ final class Viewing_Records {
         add_shortcode('viewing_hello', array(__CLASS__, 'shortcode_hello'));
         add_shortcode('viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
-        add_shortcode('viewing_statistics', array(__CLASS__, 'shortcode_statistics'));
-        add_shortcode('viewing_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
-        add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
+        add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
     }
 
@@ -126,12 +124,12 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'viewing_hello') ||
             has_shortcode($post->post_content, 'viewing_form') ||
             has_shortcode($post->post_content, 'viewing_list') ||
-            has_shortcode($post->post_content, 'viewing_statistics') ||
             has_shortcode($post->post_content, 'viewing_manager') ||
             has_shortcode($post->post_content, 'musicalbum_hello') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
             has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
             has_shortcode($post->post_content, 'musicalbum_statistics') ||
+            has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_manager')
         )) {
             $load_assets = true;
@@ -1018,7 +1016,7 @@ final class Viewing_Records {
 
     /**
      * 自定义图表短码：显示可自定义的数据可视化图表
-     * 使用 [viewing_custom_chart] 或 [musicalbum_custom_chart] 在页面中插入
+     * 使用 [musicalbum_custom_chart] 在页面中插入
      */
     public static function shortcode_custom_chart($atts = array(), $content = '') {
         if (!is_user_logged_in()) {
