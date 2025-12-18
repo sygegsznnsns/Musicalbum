@@ -93,10 +93,12 @@ final class Viewing_Records {
         add_shortcode('viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('viewing_statistics', array(__CLASS__, 'shortcode_statistics'));
+        add_shortcode('viewing_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
+        add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
@@ -1008,43 +1010,60 @@ final class Viewing_Records {
                 </div>
             </div>
             
-            <!-- 自定义图表区域 -->
-            <div class="musicalbum-custom-charts-section">
-                <h2 class="musicalbum-custom-charts-title">自定义图表</h2>
-                
-                <!-- 图表配置面板 -->
-                <div class="musicalbum-chart-config-panel">
-                    <div class="musicalbum-chart-config-item">
-                        <label for="musicalbum-data-type">数据类型：</label>
-                        <select id="musicalbum-data-type" class="musicalbum-select">
-                            <option value="category">剧目类别</option>
-                            <option value="theater">剧院</option>
-                            <option value="cast">演员出场频率</option>
-                            <option value="price">票价区间</option>
-                        </select>
-                    </div>
-                    <div class="musicalbum-chart-config-item">
-                        <label for="musicalbum-chart-type">图表类型：</label>
-                        <select id="musicalbum-chart-type" class="musicalbum-select">
-                            <option value="pie">饼图</option>
-                            <option value="bar">柱状图</option>
-                            <option value="line">折线图</option>
-                            <option value="doughnut">环形图</option>
-                        </select>
-                    </div>
-                    <button type="button" class="musicalbum-btn musicalbum-btn-primary" id="musicalbum-generate-chart-btn">生成图表</button>
+            <div class="musicalbum-statistics-loading" id="musicalbum-statistics-loading">正在加载数据...</div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * 自定义图表短码：显示可自定义的数据可视化图表
+     * 使用 [viewing_custom_chart] 或 [musicalbum_custom_chart] 在页面中插入
+     */
+    public static function shortcode_custom_chart($atts = array(), $content = '') {
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-statistics-error">请先登录以查看统计数据</div>';
+        }
+        
+        // 生成唯一ID，支持页面中多个实例
+        $instance_id = 'custom-chart-' . wp_generate_uuid4();
+        $instance_id = sanitize_html_class($instance_id);
+        
+        ob_start();
+        ?>
+        <div class="musicalbum-custom-charts-section" data-instance-id="<?php echo esc_attr($instance_id); ?>">
+            <h2 class="musicalbum-custom-charts-title">自定义图表</h2>
+            
+            <!-- 图表配置面板 -->
+            <div class="musicalbum-chart-config-panel">
+                <div class="musicalbum-chart-config-item">
+                    <label for="musicalbum-data-type-<?php echo esc_attr($instance_id); ?>">数据类型：</label>
+                    <select id="musicalbum-data-type-<?php echo esc_attr($instance_id); ?>" class="musicalbum-select" data-instance-id="<?php echo esc_attr($instance_id); ?>">
+                        <option value="category">剧目类别</option>
+                        <option value="theater">剧院</option>
+                        <option value="cast">演员出场频率</option>
+                        <option value="price">票价区间</option>
+                    </select>
                 </div>
-                
-                <!-- 自定义图表显示区域 -->
-                <div class="musicalbum-charts-grid" id="musicalbum-custom-charts-container">
-                    <div class="musicalbum-chart-wrapper" id="musicalbum-chart-wrapper">
-                        <h3 id="musicalbum-chart-title">请选择数据类型和图表类型</h3>
-                        <canvas id="musicalbum-chart-main"></canvas>
-                    </div>
+                <div class="musicalbum-chart-config-item">
+                    <label for="musicalbum-chart-type-<?php echo esc_attr($instance_id); ?>">图表类型：</label>
+                    <select id="musicalbum-chart-type-<?php echo esc_attr($instance_id); ?>" class="musicalbum-select" data-instance-id="<?php echo esc_attr($instance_id); ?>">
+                        <option value="pie">饼图</option>
+                        <option value="bar">柱状图</option>
+                        <option value="line">折线图</option>
+                        <option value="doughnut">环形图</option>
+                    </select>
                 </div>
+                <button type="button" class="musicalbum-btn musicalbum-btn-primary musicalbum-generate-chart-btn" data-instance-id="<?php echo esc_attr($instance_id); ?>">生成图表</button>
             </div>
             
-            <div class="musicalbum-statistics-loading" id="musicalbum-statistics-loading">正在加载数据...</div>
+            <!-- 自定义图表显示区域 -->
+            <div class="musicalbum-charts-grid" id="musicalbum-custom-charts-container-<?php echo esc_attr($instance_id); ?>">
+                <div class="musicalbum-chart-wrapper" id="musicalbum-chart-wrapper-<?php echo esc_attr($instance_id); ?>">
+                    <h3 id="musicalbum-chart-title-<?php echo esc_attr($instance_id); ?>">请选择数据类型和图表类型</h3>
+                    <canvas id="musicalbum-chart-main-<?php echo esc_attr($instance_id); ?>"></canvas>
+                </div>
+            </div>
         </div>
         <?php
         return ob_get_clean();

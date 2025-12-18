@@ -121,11 +121,16 @@
   
   /**
    * 生成图表（根据用户选择的数据类型和图表类型）
+   * @param {string} dataType - 数据类型
+   * @param {string} chartType - 图表类型
+   * @param {string} instanceId - 实例ID（用于支持多个图表实例）
    */
-  function generateChart(dataType, chartType) {
+  function generateChart(dataType, chartType, instanceId) {
+    instanceId = instanceId || '';
+    
     if (!statisticsData || Object.keys(statisticsData).length === 0) {
       loadStatistics(function() {
-        generateChart(dataType, chartType);
+        generateChart(dataType, chartType, instanceId);
       });
       return;
     }
@@ -138,10 +143,11 @@
       return;
     }
     
-    // 销毁旧图表
-    if (chartInstances.main) {
-      chartInstances.main.destroy();
-      chartInstances.main = null;
+    // 销毁旧图表（使用实例ID）
+    var chartKey = instanceId ? 'main_' + instanceId : 'main';
+    if (chartInstances[chartKey]) {
+      chartInstances[chartKey].destroy();
+      chartInstances[chartKey] = null;
     }
     
     // 获取图表标题
@@ -153,18 +159,25 @@
     };
     var chartTitle = titles[dataType] || '数据统计';
     
-    // 更新标题
-    $('#musicalbum-chart-title').text(chartTitle);
+    // 更新标题（使用实例ID）
+    var titleSelector = instanceId ? '#musicalbum-chart-title-' + instanceId : '#musicalbum-chart-title';
+    $(titleSelector).text(chartTitle);
     
     // 渲染图表
-    renderDynamicChart(data, chartType, dataType);
+    renderDynamicChart(data, chartType, dataType, instanceId);
   }
   
   /**
    * 动态渲染图表
+   * @param {object} data - 图表数据
+   * @param {string} chartType - 图表类型
+   * @param {string} dataType - 数据类型
+   * @param {string} instanceId - 实例ID
    */
-  function renderDynamicChart(data, chartType, dataType) {
-    var ctx = document.getElementById('musicalbum-chart-main');
+  function renderDynamicChart(data, chartType, dataType, instanceId) {
+    instanceId = instanceId || '';
+    var canvasId = instanceId ? 'musicalbum-chart-main-' + instanceId : 'musicalbum-chart-main';
+    var ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
     var labels = Object.keys(data);
@@ -205,7 +218,9 @@
       options: getChartOptions(chartType, dataType)
     };
     
-    chartInstances.main = new Chart(ctx, chartConfig);
+    // 保存图表实例（使用实例ID）
+    var chartKey = instanceId ? 'main_' + instanceId : 'main';
+    chartInstances[chartKey] = new Chart(ctx, chartConfig);
   }
   
   /**
@@ -317,18 +332,25 @@
   }
   
   
-  // 生成图表按钮事件
-  $(document).on('click', '#musicalbum-generate-chart-btn', function(e) {
+  // 生成图表按钮事件（支持多个实例）
+  $(document).on('click', '.musicalbum-generate-chart-btn', function(e) {
     e.preventDefault();
-    var dataType = $('#musicalbum-data-type').val();
-    var chartType = $('#musicalbum-chart-type').val();
+    var btn = $(this);
+    var instanceId = btn.data('instance-id') || '';
+    
+    // 获取该实例的选择框
+    var dataTypeSelect = $('#musicalbum-data-type-' + instanceId);
+    var chartTypeSelect = $('#musicalbum-chart-type-' + instanceId);
+    
+    var dataType = dataTypeSelect.val();
+    var chartType = chartTypeSelect.val();
     
     if (!dataType || !chartType) {
       alert('请选择数据类型和图表类型');
       return;
     }
     
-    generateChart(dataType, chartType);
+    generateChart(dataType, chartType, instanceId);
   });
 
   /**
@@ -697,31 +719,49 @@
       return;
     }
     
-    // 导出当前显示的自定义图表
-    if (chartType === 'current' && chartInstances.main) {
-      var dataType = $('#musicalbum-data-type').val() || 'category';
-      var chartTypeName = $('#musicalbum-chart-type').val() || 'pie';
-      var titles = {
-        'category': '剧目类别',
-        'theater': '剧院',
-        'cast': '演员出场频率',
-        'price': '票价区间'
-      };
-      var chartTitle = titles[dataType] || '数据统计';
-      var fileName = chartTitle + '_' + chartTypeName + '_' + new Date().getTime() + '.png';
+    // 导出当前显示的自定义图表（查找第一个存在的实例）
+    if (chartType === 'current') {
+      var mainChart = chartInstances.main;
+      var instanceId = '';
       
-      try {
-        var url = chartInstances.main.toBase64Image();
-        var link = document.createElement('a');
-        link.download = fileName;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (e) {
-        alert('导出失败：' + e.message);
+      // 查找第一个存在的图表实例
+      if (!mainChart) {
+        for (var key in chartInstances) {
+          if (key.startsWith('main_') && chartInstances[key]) {
+            mainChart = chartInstances[key];
+            instanceId = key.replace('main_', '');
+            break;
+          }
+        }
       }
-      return;
+      
+      if (mainChart) {
+        var dataTypeSelect = instanceId ? $('#musicalbum-data-type-' + instanceId) : $('#musicalbum-data-type');
+        var chartTypeSelect = instanceId ? $('#musicalbum-chart-type-' + instanceId) : $('#musicalbum-chart-type');
+        var dataType = dataTypeSelect.val() || 'category';
+        var chartTypeName = chartTypeSelect.val() || 'pie';
+        var titles = {
+          'category': '剧目类别',
+          'theater': '剧院',
+          'cast': '演员出场频率',
+          'price': '票价区间'
+        };
+        var chartTitle = titles[dataType] || '数据统计';
+        var fileName = chartTitle + '_' + chartTypeName + '_' + new Date().getTime() + '.png';
+        
+        try {
+          var url = mainChart.toBase64Image();
+          var link = document.createElement('a');
+          link.download = fileName;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (e) {
+          alert('导出失败：' + e.message);
+        }
+        return;
+      }
     }
     
     // 导出固定图表
