@@ -94,6 +94,7 @@ final class Viewing_Records {
         add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         add_shortcode('viewing_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
+        add_shortcode('viewing_overview', array(__CLASS__, 'shortcode_viewing_overview'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
@@ -103,6 +104,7 @@ final class Viewing_Records {
         add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         add_shortcode('musicalbum_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
+        add_shortcode('musicalbum_overview', array(__CLASS__, 'shortcode_viewing_overview'));
     }
 
     /**
@@ -128,13 +130,15 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'viewing_list') ||
             has_shortcode($post->post_content, 'viewing_manager') ||
             has_shortcode($post->post_content, 'viewing_dashboard') ||
+            has_shortcode($post->post_content, 'viewing_overview') ||
             has_shortcode($post->post_content, 'musicalbum_hello') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
             has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
             has_shortcode($post->post_content, 'musicalbum_statistics') ||
             has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_manager') ||
-            has_shortcode($post->post_content, 'musicalbum_dashboard')
+            has_shortcode($post->post_content, 'musicalbum_dashboard') ||
+            has_shortcode($post->post_content, 'musicalbum_overview')
         )) {
             $load_assets = true;
         }
@@ -1080,6 +1084,58 @@ final class Viewing_Records {
     }
 
     /**
+     * 数据概览短码：显示观演数据概览
+     * 使用 [viewing_overview] 或 [musicalbum_overview] 在页面中插入
+     */
+    public static function shortcode_viewing_overview($atts = array(), $content = '') {
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-dashboard-error">请先登录以查看数据概览</div>';
+        }
+        
+        // 生成唯一的ID，避免多个短码实例冲突
+        $instance_id = 'overview-' . uniqid();
+        
+        ob_start();
+        ?>
+        <div class="musicalbum-overview-section" data-instance-id="<?php echo esc_attr($instance_id); ?>">
+            <h2 class="musicalbum-overview-title">数据概览</h2>
+            <div class="musicalbum-overview-grid" id="musicalbum-overview-grid-<?php echo esc_attr($instance_id); ?>">
+                <div class="musicalbum-overview-item">
+                    <div class="musicalbum-overview-icon">📋</div>
+                    <div class="musicalbum-overview-content">
+                        <div class="musicalbum-overview-label">总记录数</div>
+                        <div class="musicalbum-overview-value" data-field="total-count">-</div>
+                    </div>
+                </div>
+                <div class="musicalbum-overview-item">
+                    <div class="musicalbum-overview-icon">📅</div>
+                    <div class="musicalbum-overview-content">
+                        <div class="musicalbum-overview-label">本月观演</div>
+                        <div class="musicalbum-overview-value" data-field="month-count">-</div>
+                    </div>
+                </div>
+                <div class="musicalbum-overview-item">
+                    <div class="musicalbum-overview-icon">💰</div>
+                    <div class="musicalbum-overview-content">
+                        <div class="musicalbum-overview-label">总花费</div>
+                        <div class="musicalbum-overview-value" data-field="total-spending">-</div>
+                    </div>
+                </div>
+                <div class="musicalbum-overview-item">
+                    <div class="musicalbum-overview-icon">❤️</div>
+                    <div class="musicalbum-overview-content">
+                        <div class="musicalbum-overview-label">最爱类别</div>
+                        <div class="musicalbum-overview-value" data-field="favorite-category">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="musicalbum-overview-loading" id="musicalbum-overview-loading-<?php echo esc_attr($instance_id); ?>">正在加载数据...</div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
      * 观影点滴总页面短码：显示导航卡片
      * 使用 [viewing_dashboard] 或 [musicalbum_dashboard] 在页面中插入
      */
@@ -1093,49 +1149,9 @@ final class Viewing_Records {
         $manager_url = esc_url($atts['manager_url']);
         $statistics_url = esc_url($atts['statistics_url']);
         
-        if (!is_user_logged_in()) {
-            return '<div class="musicalbum-dashboard-error">请先登录以查看观影点滴</div>';
-        }
-        
         ob_start();
         ?>
         <div class="musicalbum-dashboard-container">
-            <!-- 数据概览部分 -->
-            <div class="musicalbum-overview-section">
-                <h2 class="musicalbum-overview-title">数据概览</h2>
-                <div class="musicalbum-overview-grid" id="musicalbum-overview-grid">
-                    <div class="musicalbum-overview-item">
-                        <div class="musicalbum-overview-icon">📋</div>
-                        <div class="musicalbum-overview-content">
-                            <div class="musicalbum-overview-label">总记录数</div>
-                            <div class="musicalbum-overview-value" id="overview-total-count">-</div>
-                        </div>
-                    </div>
-                    <div class="musicalbum-overview-item">
-                        <div class="musicalbum-overview-icon">📅</div>
-                        <div class="musicalbum-overview-content">
-                            <div class="musicalbum-overview-label">本月观演</div>
-                            <div class="musicalbum-overview-value" id="overview-month-count">-</div>
-                        </div>
-                    </div>
-                    <div class="musicalbum-overview-item">
-                        <div class="musicalbum-overview-icon">💰</div>
-                        <div class="musicalbum-overview-content">
-                            <div class="musicalbum-overview-label">总花费</div>
-                            <div class="musicalbum-overview-value" id="overview-total-spending">-</div>
-                        </div>
-                    </div>
-                    <div class="musicalbum-overview-item">
-                        <div class="musicalbum-overview-icon">❤️</div>
-                        <div class="musicalbum-overview-content">
-                            <div class="musicalbum-overview-label">最爱类别</div>
-                            <div class="musicalbum-overview-value" id="overview-favorite-category">-</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="musicalbum-overview-loading" id="musicalbum-overview-loading">正在加载数据...</div>
-            </div>
-            
             <!-- 功能卡片部分 -->
             <div class="musicalbum-dashboard-cards">
                 <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager">
