@@ -1044,6 +1044,19 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 769px) {
+  .musicalbum-dashboard-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .musicalbum-dashboard-card {
+    max-width: 100%;
+  }
 }
 
 .musicalbum-dashboard-card {
