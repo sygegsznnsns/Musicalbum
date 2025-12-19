@@ -1419,6 +1419,7 @@
   font-size: 0.875rem;
   color: #000000;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .musicalbum-recent-viewings-count-select {
@@ -1478,6 +1479,15 @@
   text-decoration: underline;
 }
 
+/* 确保链接内的所有元素（除了标题）都没有下划线 */
+.musicalbum-recent-viewings-link * {
+  text-decoration: none;
+}
+
+.musicalbum-recent-viewings-link .musicalbum-recent-viewings-item-title {
+  text-decoration: underline;
+}
+
 .musicalbum-recent-viewings-content {
   display: flex;
   flex-direction: column;
@@ -1511,18 +1521,25 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  text-decoration: none;
+  text-decoration: none !important;
 }
 
 .musicalbum-recent-viewings-link .musicalbum-recent-viewings-date,
 .musicalbum-recent-viewings-link .musicalbum-recent-viewings-category,
 .musicalbum-recent-viewings-link .musicalbum-recent-viewings-theater {
-  text-decoration: none;
+  text-decoration: none !important;
+}
+
+.musicalbum-recent-viewings-link .musicalbum-recent-viewings-date *,
+.musicalbum-recent-viewings-link .musicalbum-recent-viewings-category *,
+.musicalbum-recent-viewings-link .musicalbum-recent-viewings-theater * {
+  text-decoration: none !important;
 }
 
 .musicalbum-recent-viewings-label {
   font-weight: 600;
   color: #000000;
+  text-decoration: none !important;
 }
 
 .musicalbum-recent-viewings-date .musicalbum-recent-viewings-label,
@@ -1561,6 +1578,11 @@
   .musicalbum-recent-viewings-controls {
     width: 100%;
     justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+
+  .musicalbum-recent-viewings-count-label {
+    white-space: nowrap;
   }
 
   .musicalbum-recent-viewings-item-title {
