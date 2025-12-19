@@ -1475,19 +1475,6 @@
   text-decoration: none;
 }
 
-.musicalbum-recent-viewings-link:hover .musicalbum-recent-viewings-item-title {
-  text-decoration: underline;
-}
-
-/* 确保链接内的所有元素（除了标题）都没有下划线 */
-.musicalbum-recent-viewings-link * {
-  text-decoration: none;
-}
-
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-item-title {
-  text-decoration: underline;
-}
-
 .musicalbum-recent-viewings-content {
   display: flex;
   flex-direction: column;
@@ -1500,7 +1487,6 @@
   margin: 0;
   color: #000000;
   transition: color 0.3s ease;
-  text-decoration: underline;
 }
 
 .musicalbum-recent-viewings-item:hover .musicalbum-recent-viewings-item-title {
@@ -1521,25 +1507,11 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  text-decoration: none !important;
-}
-
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-date,
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-category,
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-theater {
-  text-decoration: none !important;
-}
-
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-date *,
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-category *,
-.musicalbum-recent-viewings-link .musicalbum-recent-viewings-theater * {
-  text-decoration: none !important;
 }
 
 .musicalbum-recent-viewings-label {
   font-weight: 600;
   color: #000000;
-  text-decoration: none !important;
 }
 
 .musicalbum-recent-viewings-date .musicalbum-recent-viewings-label,
