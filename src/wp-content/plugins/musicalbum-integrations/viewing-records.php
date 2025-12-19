@@ -1140,14 +1140,50 @@ final class Viewing_Records {
      * 使用 [viewing_dashboard] 或 [musicalbum_dashboard] 在页面中插入
      */
     public static function shortcode_viewing_dashboard($atts = array(), $content = '') {
-        // 解析短码属性，允许自定义链接
+        // 解析短码属性，允许自定义链接和背景图片
         $atts = shortcode_atts(array(
             'manager_url' => 'https://musicalbum.chenpan.icu/%e6%88%91%e7%9a%84%e8%a7%82%e6%bc%94%e7%ae%a1%e7%90%86/',
-            'statistics_url' => 'https://musicalbum.chenpan.icu/%e6%88%91%e7%9a%84%e8%a7%82%e6%bc%94%e7%bb%9f%e8%ae%a1/'
+            'statistics_url' => 'https://musicalbum.chenpan.icu/%e6%88%91%e7%9a%84%e8%a7%82%e6%bc%94%e7%bb%9f%e8%ae%a1/',
+            'manager_bg' => '',
+            'statistics_bg' => ''
         ), $atts);
         
         $manager_url = esc_url($atts['manager_url']);
         $statistics_url = esc_url($atts['statistics_url']);
+        
+        // 处理背景图片：支持媒体库图片ID或图片URL
+        $manager_bg = '';
+        $statistics_bg = '';
+        
+        if (!empty($atts['manager_bg'])) {
+            // 如果是数字，当作媒体库图片ID处理
+            if (is_numeric($atts['manager_bg'])) {
+                $manager_bg = wp_get_attachment_image_url(intval($atts['manager_bg']), 'full');
+            } else {
+                // 否则当作URL处理
+                $manager_bg = esc_url($atts['manager_bg']);
+            }
+        }
+        
+        if (!empty($atts['statistics_bg'])) {
+            // 如果是数字，当作媒体库图片ID处理
+            if (is_numeric($atts['statistics_bg'])) {
+                $statistics_bg = wp_get_attachment_image_url(intval($atts['statistics_bg']), 'full');
+            } else {
+                // 否则当作URL处理
+                $statistics_bg = esc_url($atts['statistics_bg']);
+            }
+        }
+        
+        // 生成内联样式
+        $manager_style = '';
+        $statistics_style = '';
+        if ($manager_bg) {
+            $manager_style = ' style="background-image: url(' . esc_attr($manager_bg) . ');"';
+        }
+        if ($statistics_bg) {
+            $statistics_style = ' style="background-image: url(' . esc_attr($statistics_bg) . ');"';
+        }
         
         ob_start();
         ?>
@@ -1155,18 +1191,24 @@ final class Viewing_Records {
             <h2 class="musicalbum-dashboard-title">我的观影</h2>
             <!-- 功能卡片部分 -->
             <div class="musicalbum-dashboard-cards">
-                <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager">
-                    <div class="musicalbum-card-icon">📝</div>
-                    <h3 class="musicalbum-card-title">我的观影管理</h3>
-                    <p class="musicalbum-card-description">管理您的观演记录，添加、编辑或删除记录</p>
-                    <div class="musicalbum-card-arrow">→</div>
+                <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager"<?php echo $manager_style; ?>>
+                    <div class="musicalbum-card-overlay"></div>
+                    <div class="musicalbum-card-content">
+                        <div class="musicalbum-card-icon">📝</div>
+                        <h3 class="musicalbum-card-title">我的观影管理</h3>
+                        <p class="musicalbum-card-description">管理您的观演记录，添加、编辑或删除记录</p>
+                        <div class="musicalbum-card-arrow">→</div>
+                    </div>
                 </a>
                 
-                <a href="<?php echo $statistics_url; ?>" class="musicalbum-dashboard-card musicalbum-card-statistics">
-                    <div class="musicalbum-card-icon">📊</div>
-                    <h3 class="musicalbum-card-title">我的观影统计</h3>
-                    <p class="musicalbum-card-description">查看观演数据可视化图表和统计分析</p>
-                    <div class="musicalbum-card-arrow">→</div>
+                <a href="<?php echo $statistics_url; ?>" class="musicalbum-dashboard-card musicalbum-card-statistics"<?php echo $statistics_style; ?>>
+                    <div class="musicalbum-card-overlay"></div>
+                    <div class="musicalbum-card-content">
+                        <div class="musicalbum-card-icon">📊</div>
+                        <h3 class="musicalbum-card-title">我的观影统计</h3>
+                        <p class="musicalbum-card-description">查看观演数据可视化图表和统计分析</p>
+                        <div class="musicalbum-card-arrow">→</div>
+                    </div>
                 </a>
             </div>
         </div>
