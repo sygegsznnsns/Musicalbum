@@ -1041,10 +1041,10 @@
 
 .musicalbum-dashboard-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
   margin-top: 2rem;
-  max-width: 900px;
+  max-width: 700px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -1062,10 +1062,10 @@
 .musicalbum-dashboard-card {
   display: flex;
   flex-direction: column;
-  padding: 2.5rem 2rem;
+  padding: 1.5rem 1.25rem;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 10px;
   text-decoration: none;
   color: inherit;
   transition: all 0.3s ease;
@@ -1080,25 +1080,25 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  height: 3px;
+  background: linear-gradient(90deg, #ff6464, #ff6464);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
 }
 
 .musicalbum-card-manager::before {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  background: linear-gradient(90deg, #ff6464, #ff6464);
 }
 
 .musicalbum-card-statistics::before {
-  background: linear-gradient(90deg, #10b981, #059669);
+  background: linear-gradient(90deg, #ff6464, #ffd700);
 }
 
 .musicalbum-dashboard-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-  border-color: transparent;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(255, 100, 100, 0.2);
+  border-color: #ff6464;
 }
 
 .musicalbum-dashboard-card:hover::before {
@@ -1106,8 +1106,8 @@
 }
 
 .musicalbum-card-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
   line-height: 1;
   transition: transform 0.3s ease;
 }
@@ -1117,45 +1117,45 @@
 }
 
 .musicalbum-card-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 0.75rem 0;
-  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+  color: #000;
   transition: color 0.3s ease;
 }
 
 .musicalbum-card-manager:hover .musicalbum-card-title {
-  color: #3b82f6;
+  color: #ff6464;
 }
 
 .musicalbum-card-statistics:hover .musicalbum-card-title {
-  color: #10b981;
+  color: #ff6464;
 }
 
 .musicalbum-card-description {
-  font-size: 1rem;
-  color: #6b7280;
+  font-size: 0.875rem;
+  color: #4b5563;
   margin: 0 0 auto 0;
-  line-height: 1.6;
+  line-height: 1.5;
   flex: 1;
 }
 
 .musicalbum-card-arrow {
-  margin-top: 1.5rem;
-  font-size: 1.5rem;
+  margin-top: 1rem;
+  font-size: 1.25rem;
   color: #9ca3af;
   transition: all 0.3s ease;
   display: inline-block;
 }
 
 .musicalbum-card-manager:hover .musicalbum-card-arrow {
-  color: #3b82f6;
-  transform: translateX(8px);
+  color: #ff6464;
+  transform: translateX(6px);
 }
 
 .musicalbum-card-statistics:hover .musicalbum-card-arrow {
-  color: #10b981;
-  transform: translateX(8px);
+  color: #ff6464;
+  transform: translateX(6px);
 }
 
 /* 响应式设计 */
@@ -1175,19 +1175,24 @@
   
   .musicalbum-dashboard-cards {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    max-width: 100%;
   }
   
   .musicalbum-dashboard-card {
-    padding: 2rem 1.5rem;
+    padding: 1.25rem 1rem;
   }
   
   .musicalbum-card-icon {
-    font-size: 3rem;
+    font-size: 2rem;
   }
   
   .musicalbum-card-title {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+  }
+  
+  .musicalbum-card-description {
+    font-size: 0.8125rem;
   }
 }
 
