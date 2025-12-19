@@ -1062,7 +1062,7 @@
 
 /* 确保背景图片显示在遮罩层下方 */
 .musicalbum-dashboard-card[style*="background-image"] {
-  background-color: transparent;
+  background-color: transparent !important;
 }
 
 .musicalbum-card-overlay {
