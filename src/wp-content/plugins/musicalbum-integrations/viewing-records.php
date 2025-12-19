@@ -1179,10 +1179,10 @@ final class Viewing_Records {
         $manager_style = '';
         $statistics_style = '';
         if ($manager_bg) {
-            $manager_style = ' style="background-image: url(' . esc_attr($manager_bg) . ');"';
+            $manager_style = ' style="background-image: url(\'' . esc_attr($manager_bg) . '\');"';
         }
         if ($statistics_bg) {
-            $statistics_style = ' style="background-image: url(' . esc_attr($statistics_bg) . ');"';
+            $statistics_style = ' style="background-image: url(\'' . esc_attr($statistics_bg) . '\');"';
         }
         
         ob_start();
