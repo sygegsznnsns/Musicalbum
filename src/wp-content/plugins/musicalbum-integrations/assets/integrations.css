@@ -349,8 +349,7 @@
 .musicalbum-loading {
   text-align: center;
   padding: 2rem;
-  color: #000000;
-  font-weight: 500;
+  color: #6b7280;
 }
 
 /* 导出菜单 */
@@ -657,14 +656,6 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
-  color: #000000;
-  transition: all 0.2s;
-}
-
-.musicalbum-list-filters input:focus,
-.musicalbum-list-filters select:focus {
-  outline: none;
-  border-color: #d1d5db;
 }
 
 .musicalbum-list-filters input {
@@ -678,16 +669,12 @@
 
 .musicalbum-list-container {
   min-height: 400px;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .musicalbum-list-items {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .musicalbum-list-item {
@@ -696,35 +683,11 @@
   border-radius: 8px;
   padding: 1rem 1.25rem;
   transition: all 0.2s;
-  overflow: hidden;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  box-sizing: border-box;
 }
 
 .musicalbum-list-item:hover {
-  background: #ff6464;
-  border-color: #ff6464;
-}
-
-.musicalbum-list-item:hover .musicalbum-item-title-row h4 a {
-  color: #ffffff;
-}
-
-.musicalbum-list-item:hover .musicalbum-item-meta {
-  color: #ffffff;
-}
-
-.musicalbum-list-item:hover .musicalbum-item-notes {
-  color: #ffffff;
-}
-
-.musicalbum-list-item:hover .musicalbum-btn-toggle {
-  color: #ffffff;
-}
-
-.musicalbum-list-item:hover .musicalbum-btn-icon {
-  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* 主要信息区域（标题和类型） */
@@ -733,8 +696,6 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  min-width: 0;
-  max-width: 100%;
 }
 
 .musicalbum-item-title-row {
@@ -742,87 +703,29 @@
   align-items: center;
   gap: 0.75rem;
   flex: 1;
-  min-width: 0;
-  max-width: 100%;
 }
 
 .musicalbum-item-title-row h4 {
   margin: 0;
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
 .musicalbum-item-title-row h4 a {
-  color: #000000;
+  color: #1f2937;
   text-decoration: none;
   font-size: 1.125rem;
   font-weight: 600;
-  transition: color 0.2s;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  display: inline-block;
-  max-width: 100%;
 }
 
 .musicalbum-item-title-row h4 a:hover {
-  color: #ff6464;
-}
-
-.musicalbum-list-item:hover .musicalbum-item-title-row h4 a:hover {
-  color: #ffffff;
+  color: #3b82f6;
 }
 
 /* 详细信息区域（可展开） */
 .musicalbum-item-details {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.musicalbum-list-item:hover .musicalbum-item-details {
-  border-top-color: rgba(255, 255, 255, 0.3);
-}
-
-/* 自定义滚动条样式 */
-.musicalbum-item-details::-webkit-scrollbar {
-  width: 6px;
-}
-
-.musicalbum-item-details::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 3px;
-}
-
-.musicalbum-item-details::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-.musicalbum-item-details::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.musicalbum-list-item:hover .musicalbum-item-details::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.musicalbum-list-item:hover .musicalbum-item-details::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.musicalbum-list-item:hover .musicalbum-item-details::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  border-top: 1px solid #e5e7eb;
 }
 
 .musicalbum-item-actions {
@@ -835,17 +738,16 @@
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #000000;
+  color: #6b7280;
   padding: 0.25rem 0.5rem;
-  transition: all 0.2s;
+  transition: color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .musicalbum-btn-toggle:hover {
-  color: #ff6464;
-  background: rgba(255, 100, 100, 0.1);
+  color: #3b82f6;
 }
 
 .musicalbum-btn-icon {
@@ -855,13 +757,11 @@
   font-size: 1.25rem;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  transition: all 0.2s;
-  color: #000000;
+  transition: background 0.2s;
 }
 
 .musicalbum-btn-icon:hover {
-  background: rgba(255, 100, 100, 0.15);
-  color: #ff6464;
+  background: #f3f4f6;
 }
 
 .musicalbum-item-meta {
@@ -869,52 +769,36 @@
   flex-wrap: wrap;
   gap: 1rem;
   font-size: 0.875rem;
-  color: #000000;
+  color: #6b7280;
   margin-bottom: 0.75rem;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
 }
 
 .musicalbum-meta-tag {
-  background: #ff6464;
-  color: #ffffff;
+  background: #dbeafe;
+  color: #1e40af;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
-  font-weight: 600;
-  border: none;
-  transition: all 0.2s;
-}
-
-.musicalbum-list-item:hover .musicalbum-meta-tag {
-  background: #ffffff;
-  color: #ff6464;
+  font-weight: 500;
 }
 
 .musicalbum-item-notes {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  color: #000000;
+  border-top: 1px solid #f3f4f6;
+  color: #6b7280;
   font-size: 0.875rem;
   line-height: 1.6;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  white-space: normal;
-  max-width: 100%;
 }
 
 .musicalbum-empty,
 .musicalbum-error {
   text-align: center;
   padding: 3rem;
-  color: #000000;
-  font-weight: 500;
+  color: #6b7280;
 }
 
 .musicalbum-error {
-  color: #ff6464;
+  color: #dc2626;
 }
 
 /* 日历视图 */
