@@ -1071,13 +1071,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.5);
   transition: background 0.3s ease;
   z-index: 1;
 }
 
 .musicalbum-dashboard-card:hover .musicalbum-card-overlay {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .musicalbum-card-content {
