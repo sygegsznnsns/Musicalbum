@@ -147,8 +147,8 @@
 
 .musicalbum-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ff8383;
+  box-shadow: 0 0 0 3px rgba(255, 131, 131, 0.15);
 }
 
 .musicalbum-btn-primary {
@@ -480,8 +480,8 @@
 
 .musicalbum-view-btn.active {
   background: #fff;
-  color: #3b82f6;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: #ff8383;
+  box-shadow: 0 1px 2px rgba(255, 131, 131, 0.2);
 }
 
 .musicalbum-view-content {
@@ -521,8 +521,8 @@
 }
 
 .musicalbum-tab-btn.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: #ff8383;
+  border-bottom-color: #ff8383;
   font-weight: 600;
 }
 
@@ -583,8 +583,8 @@
 .musicalbum-form-group select:focus,
 .musicalbum-form-group textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ff8383;
+  box-shadow: 0 0 0 3px rgba(255, 131, 131, 0.15);
 }
 
 .musicalbum-form-actions {
@@ -605,11 +605,11 @@
 }
 
 .musicalbum-btn-primary {
-  background: #3b82f6;
+  background: #ff8383;
 }
 
 .musicalbum-btn-primary:hover {
-  background: #2563eb;
+  background: #ff6b6b;
 }
 
 .musicalbum-btn-sm {
@@ -686,8 +686,8 @@
 }
 
 .musicalbum-list-item:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #ff8383;
+  box-shadow: 0 2px 8px rgba(255, 131, 131, 0.15);
 }
 
 /* 主要信息区域（标题和类型） */
@@ -718,7 +718,7 @@
 }
 
 .musicalbum-item-title-row h4 a:hover {
-  color: #3b82f6;
+  color: #ff8383;
 }
 
 /* 详细信息区域（可展开） */
@@ -747,7 +747,7 @@
 }
 
 .musicalbum-btn-toggle:hover {
-  color: #3b82f6;
+  color: #ff8383;
 }
 
 .musicalbum-btn-icon {
@@ -761,7 +761,7 @@
 }
 
 .musicalbum-btn-icon:hover {
-  background: #f3f4f6;
+  background: #ffe5e5;
 }
 
 .musicalbum-item-meta {
@@ -774,8 +774,8 @@
 }
 
 .musicalbum-meta-tag {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #ffe5e5;
+  color: #ff8383;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-weight: 500;
@@ -846,8 +846,8 @@
 
 .musicalbum-calendar-date-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #ff8383;
+  box-shadow: 0 0 0 3px rgba(255, 131, 131, 0.15);
 }
 
 .musicalbum-calendar-icon-btn {
