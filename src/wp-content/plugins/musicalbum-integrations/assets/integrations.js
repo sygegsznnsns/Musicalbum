@@ -2237,4 +2237,61 @@
     loadOverview($(this));
   });
   
+  // 最近观演记录数量选择器功能
+  function initRecentViewingsCountSelector() {
+    $('.musicalbum-recent-viewings-count-select').on('change', function() {
+      var $select = $(this);
+      var instanceId = $select.closest('.musicalbum-recent-viewings').data('instance-id');
+      var count = parseInt($select.val(), 10);
+      
+      // 保存用户选择到localStorage
+      var storageKey = 'musicalbum_recent_viewings_count_' + instanceId;
+      if (typeof Storage !== 'undefined') {
+        localStorage.setItem(storageKey, count);
+      }
+      
+      // 显示/隐藏记录项
+      var $container = $select.closest('.musicalbum-recent-viewings');
+      $container.find('.musicalbum-recent-viewings-item').each(function(index) {
+        var $item = $(this);
+        if (index < count) {
+          $item.slideDown(200);
+        } else {
+          $item.slideUp(200);
+        }
+      });
+    });
+    
+    // 页面加载时恢复用户之前的选择
+    $('.musicalbum-recent-viewings').each(function() {
+      var $container = $(this);
+      var instanceId = $container.data('instance-id');
+      var $select = $container.find('.musicalbum-recent-viewings-count-select');
+      var defaultCount = parseInt($select.data('default'), 10);
+      
+      if (typeof Storage !== 'undefined') {
+        var storageKey = 'musicalbum_recent_viewings_count_' + instanceId;
+        var savedCount = localStorage.getItem(storageKey);
+        if (savedCount !== null) {
+          var count = parseInt(savedCount, 10);
+          if (count >= 0 && count <= 10) {
+            $select.val(count);
+            // 触发显示/隐藏
+            $container.find('.musicalbum-recent-viewings-item').each(function(index) {
+              var $item = $(this);
+              if (index < count) {
+                $item.show();
+              } else {
+                $item.hide();
+              }
+            });
+          }
+        }
+      }
+    });
+  }
+  
+  // 初始化最近观演记录数量选择器
+  initRecentViewingsCountSelector();
+  
 })(jQuery);

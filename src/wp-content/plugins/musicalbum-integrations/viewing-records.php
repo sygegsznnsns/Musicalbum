@@ -556,8 +556,11 @@ final class Viewing_Records {
         ), $atts);
 
         $count = absint($atts['count']);
-        if ($count <= 0) {
-            $count = 5;
+        // 限制在0-10之间
+        if ($count < 0) {
+            $count = 0;
+        } elseif ($count > 10) {
+            $count = 10;
         }
 
         // 查询最近观演记录
@@ -598,24 +601,38 @@ final class Viewing_Records {
             return $b['timestamp'] - $a['timestamp'];
         });
         
-        // 只取前$count条
-        $posts_with_dates = array_slice($posts_with_dates, 0, $count);
+        // 只取前10条（最大显示数量）
+        $posts_with_dates = array_slice($posts_with_dates, 0, 10);
+        
+        // 生成唯一ID，避免多个短码实例冲突
+        $instance_id = 'recent-viewings-' . uniqid();
 
         ob_start();
         ?>
-        <div class="musicalbum-recent-viewings">
-            <h3 class="musicalbum-recent-viewings-title">最近观演记录</h3>
+        <div class="musicalbum-recent-viewings" data-instance-id="<?php echo esc_attr($instance_id); ?>">
+            <div class="musicalbum-recent-viewings-header">
+                <h3 class="musicalbum-recent-viewings-title">最近观演记录</h3>
+                <div class="musicalbum-recent-viewings-controls">
+                    <label for="musicalbum-recent-viewings-count-<?php echo esc_attr($instance_id); ?>" class="musicalbum-recent-viewings-count-label">显示数量：</label>
+                    <select id="musicalbum-recent-viewings-count-<?php echo esc_attr($instance_id); ?>" class="musicalbum-recent-viewings-count-select" data-default="<?php echo esc_attr($count); ?>">
+                        <?php for ($i = 0; $i <= 10; $i++) : ?>
+                            <option value="<?php echo esc_attr($i); ?>" <?php selected($i, $count); ?>><?php echo esc_html($i); ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+            </div>
             <?php if (!empty($posts_with_dates)) : ?>
                 <div class="musicalbum-recent-viewings-list">
-                    <?php foreach ($posts_with_dates as $post_data) : 
+                    <?php foreach ($posts_with_dates as $index => $post_data) : 
                         $post_id = $post_data['post_id'];
                         $title = get_the_title($post_id);
                         $view_date = $post_data['view_date'];
                         $category = get_field('category', $post_id);
                         $theater = get_field('theater', $post_id);
                         $permalink = get_permalink($post_id);
+                        $is_visible = ($index < $count) ? '' : ' style="display: none;"';
                     ?>
-                        <div class="musicalbum-recent-viewings-item">
+                        <div class="musicalbum-recent-viewings-item" data-index="<?php echo esc_attr($index); ?>"<?php echo $is_visible; ?>>
                             <a href="<?php echo esc_url($permalink); ?>" class="musicalbum-recent-viewings-link">
                                 <div class="musicalbum-recent-viewings-content">
                                     <h4 class="musicalbum-recent-viewings-item-title"><?php echo esc_html($title); ?></h4>
