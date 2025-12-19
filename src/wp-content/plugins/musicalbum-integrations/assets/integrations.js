@@ -272,6 +272,17 @@
     var baseOptions = {
       responsive: true,
       maintainAspectRatio: true,
+      onClick: function(event, elements) {
+        if (elements.length > 0) {
+          var index = elements[0].index;
+          // 通过 this 访问图表实例，获取标签
+          var labels = this.data.labels;
+          if (labels && labels[index] !== undefined) {
+            var value = labels[index];
+            showDetails(dataType, value);
+          }
+        }
+      },
       plugins: {
         legend: {
           position: chartType === 'pie' || chartType === 'doughnut' ? 'bottom' : 'top',
@@ -617,6 +628,7 @@
     var title = '';
     if (type === 'category') title = '类别：' + value;
     else if (type === 'cast') title = '演员：' + value;
+    else if (type === 'theater') title = '剧院：' + value;
     else if (type === 'price') title = '票价区间：' + value;
     
     modal.find('.musicalbum-modal-title').text(title);

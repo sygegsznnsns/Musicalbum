@@ -1659,7 +1659,7 @@ final class Viewing_Records {
             return new WP_Error('unauthorized', '未授权', array('status' => 401));
         }
 
-        $type = $request->get_param('type'); // category, cast, price
+        $type = $request->get_param('type'); // category, cast, price, theater
         $value = $request->get_param('value'); // 具体的类别、演员名或票价区间
         $page = absint($request->get_param('page')) ?: 1;
         $per_page = absint($request->get_param('per_page')) ?: 20;
