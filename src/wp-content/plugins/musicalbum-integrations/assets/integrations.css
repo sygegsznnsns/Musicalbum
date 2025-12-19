@@ -1384,3 +1384,140 @@
     font-size: 1.5rem;
   }
 }
+
+/* 最近观演记录样式 */
+.musicalbum-recent-viewings {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(255, 100, 100, 0.15);
+  border: 2px solid #ff6464;
+}
+
+.musicalbum-recent-viewings-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #ff6464;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #ff6464;
+}
+
+.musicalbum-recent-viewings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.musicalbum-recent-viewings-item {
+  margin-bottom: 1rem;
+  border: 2px solid #ff6464;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  background: #fff;
+}
+
+.musicalbum-recent-viewings-item:last-child {
+  margin-bottom: 0;
+}
+
+.musicalbum-recent-viewings-item:hover {
+  border-color: #ff6464;
+  box-shadow: 0 4px 12px rgba(255, 100, 100, 0.3);
+  transform: translateY(-2px);
+  background: #fff5f5;
+}
+
+.musicalbum-recent-viewings-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 1rem;
+}
+
+.musicalbum-recent-viewings-link:hover {
+  text-decoration: none;
+}
+
+.musicalbum-recent-viewings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.musicalbum-recent-viewings-item-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+  line-height: 1.4;
+}
+
+.musicalbum-recent-viewings-link:hover .musicalbum-recent-viewings-item-title {
+  color: #ff6464;
+}
+
+.musicalbum-recent-viewings-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.musicalbum-recent-viewings-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.musicalbum-recent-viewings-meta strong {
+  font-weight: 600;
+  color: #ff6464;
+}
+
+.musicalbum-recent-viewings-date,
+.musicalbum-recent-viewings-category,
+.musicalbum-recent-viewings-theater {
+  padding: 0.375rem 0.75rem;
+  background: #ff6464;
+  color: #fff;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.musicalbum-recent-viewings-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .musicalbum-recent-viewings {
+    padding: 1rem;
+    border-width: 2px;
+  }
+  
+  .musicalbum-recent-viewings-title {
+    font-size: 1.25rem;
+    border-bottom-width: 3px;
+  }
+  
+  .musicalbum-recent-viewings-item {
+    border-width: 2px;
+  }
+  
+  .musicalbum-recent-viewings-item-title {
+    font-size: 1rem;
+  }
+  
+  .musicalbum-recent-viewings-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
