@@ -2199,4 +2199,41 @@
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
   }
   
+  // 数据概览功能
+  function loadOverview() {
+    var overviewGrid = $('#musicalbum-overview-grid');
+    var loadingEl = $('#musicalbum-overview-loading');
+    
+    if (overviewGrid.length === 0) {
+      return;
+    }
+    
+    loadingEl.addClass('show');
+    
+    $.ajax({
+      url: ViewingRecords.rest.overview,
+      method: 'GET',
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
+    }).done(function(data) {
+      if (data && typeof data === 'object') {
+        $('#overview-total-count').text(data.total_count || 0);
+        $('#overview-month-count').text(data.month_count || 0);
+        $('#overview-total-spending').text('¥' + (data.total_spending || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#overview-favorite-category').text(data.favorite_category || '暂无');
+      }
+      loadingEl.removeClass('show');
+    }).fail(function() {
+      $('#overview-total-count').text('加载失败');
+      $('#overview-month-count').text('加载失败');
+      $('#overview-total-spending').text('加载失败');
+      $('#overview-favorite-category').text('加载失败');
+      loadingEl.removeClass('show');
+    });
+  }
+  
+  // 页面加载时自动加载概览数据
+  if ($('.musicalbum-overview-section').length > 0) {
+    loadOverview();
+  }
+  
 })(jQuery);

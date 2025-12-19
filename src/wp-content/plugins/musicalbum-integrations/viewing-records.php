@@ -172,6 +172,7 @@ final class Viewing_Records {
                 'statisticsExport' => esc_url_raw(rest_url('viewing/v1/statistics/export')),
                 'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
                 'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
+                'overview' => esc_url_raw(rest_url('viewing/v1/overview')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -596,6 +597,13 @@ final class Viewing_Records {
             'methods' => 'POST',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_upload_image')
+        ));
+        
+        // 数据概览端点
+        register_rest_route('viewing/v1', '/overview', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_overview')
         ));
     }
 
@@ -1085,9 +1093,50 @@ final class Viewing_Records {
         $manager_url = esc_url($atts['manager_url']);
         $statistics_url = esc_url($atts['statistics_url']);
         
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-dashboard-error">请先登录以查看观影点滴</div>';
+        }
+        
         ob_start();
         ?>
         <div class="musicalbum-dashboard-container">
+            <!-- 数据概览部分 -->
+            <div class="musicalbum-overview-section">
+                <h2 class="musicalbum-overview-title">数据概览</h2>
+                <div class="musicalbum-overview-grid" id="musicalbum-overview-grid">
+                    <div class="musicalbum-overview-item">
+                        <div class="musicalbum-overview-icon">📋</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">总记录数</div>
+                            <div class="musicalbum-overview-value" id="overview-total-count">-</div>
+                        </div>
+                    </div>
+                    <div class="musicalbum-overview-item">
+                        <div class="musicalbum-overview-icon">📅</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">本月观演</div>
+                            <div class="musicalbum-overview-value" id="overview-month-count">-</div>
+                        </div>
+                    </div>
+                    <div class="musicalbum-overview-item">
+                        <div class="musicalbum-overview-icon">💰</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">总花费</div>
+                            <div class="musicalbum-overview-value" id="overview-total-spending">-</div>
+                        </div>
+                    </div>
+                    <div class="musicalbum-overview-item">
+                        <div class="musicalbum-overview-icon">❤️</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">最爱类别</div>
+                            <div class="musicalbum-overview-value" id="overview-favorite-category">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="musicalbum-overview-loading" id="musicalbum-overview-loading">正在加载数据...</div>
+            </div>
+            
+            <!-- 功能卡片部分 -->
             <div class="musicalbum-dashboard-cards">
                 <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager">
                     <div class="musicalbum-card-icon">📝</div>
@@ -1280,6 +1329,96 @@ final class Viewing_Records {
         }
         
         return $ranges;
+    }
+
+    /**
+     * 数据概览 REST API 端点
+     * 返回总记录数、本月观演、总花费、最爱类别
+     */
+    public static function rest_overview($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        // 查询观演记录：管理员查看所有，普通用户只看自己的
+        $args = array(
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        );
+        
+        // 如果不是管理员，只查询当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
+        $query = new WP_Query($args);
+
+        $total_count = 0; // 总记录数
+        $month_count = 0; // 本月观演次数
+        $total_spending = 0; // 总花费
+        $category_counts = array(); // 类别统计
+
+        // 获取当前月份的开始和结束时间
+        $current_month_start = date('Y-m-01 00:00:00');
+        $current_month_end = date('Y-m-t 23:59:59');
+
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $total_count++;
+
+            // 获取观演日期
+            $view_date = get_field('view_date', $post_id);
+            if ($view_date) {
+                $view_timestamp = strtotime($view_date);
+                $month_start = strtotime($current_month_start);
+                $month_end = strtotime($current_month_end);
+                if ($view_timestamp >= $month_start && $view_timestamp <= $month_end) {
+                    $month_count++;
+                }
+            }
+
+            // 获取价格并累加总花费
+            $price = get_field('price', $post_id);
+            if ($price) {
+                $price_num = floatval(preg_replace('/[^0-9.]/', '', $price));
+                if ($price_num > 0) {
+                    $total_spending += $price_num;
+                }
+            }
+
+            // 统计类别
+            $title = get_the_title();
+            $category = get_field('category', $post_id);
+            if (!$category || $category === '') {
+                $category = self::extract_category_from_title($title);
+            }
+            if ($category) {
+                $category_counts[$category] = isset($category_counts[$category]) ? $category_counts[$category] + 1 : 1;
+            }
+        }
+        wp_reset_postdata();
+
+        // 找出最爱类别（观演最多的类别）
+        $favorite_category = '';
+        if (!empty($category_counts)) {
+            arsort($category_counts);
+            // 兼容 PHP 7.3 之前的版本
+            if (function_exists('array_key_first')) {
+                $favorite_category = array_key_first($category_counts);
+            } else {
+                reset($category_counts);
+                $favorite_category = key($category_counts);
+            }
+        }
+
+        return array(
+            'total_count' => $total_count,
+            'month_count' => $month_count,
+            'total_spending' => round($total_spending, 2),
+            'favorite_category' => $favorite_category ?: '暂无'
+        );
     }
 
     /**

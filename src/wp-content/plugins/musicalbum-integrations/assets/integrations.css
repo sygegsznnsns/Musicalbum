@@ -1190,3 +1190,121 @@
     font-size: 1.25rem;
   }
 }
+
+/* 数据概览样式 */
+.musicalbum-overview-section {
+  margin-bottom: 3rem;
+}
+
+.musicalbum-overview-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #1f2937;
+  text-align: center;
+}
+
+.musicalbum-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 769px) {
+  .musicalbum-overview-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.musicalbum-overview-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.musicalbum-overview-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+}
+
+.musicalbum-overview-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.musicalbum-overview-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.musicalbum-overview-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.musicalbum-overview-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.musicalbum-overview-loading {
+  text-align: center;
+  padding: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  display: none;
+}
+
+.musicalbum-overview-loading.show {
+  display: block;
+}
+
+.musicalbum-dashboard-error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+@media (max-width: 768px) {
+  .musicalbum-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .musicalbum-overview-item {
+    padding: 1.25rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .musicalbum-overview-icon {
+    font-size: 2rem;
+  }
+  
+  .musicalbum-overview-value {
+    font-size: 1.25rem;
+  }
+  
+  .musicalbum-overview-title {
+    font-size: 1.5rem;
+  }
+}
