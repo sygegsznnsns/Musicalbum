@@ -21,5 +21,9 @@ get_header();
     <h2>我的观演记录</h2>
     <?php echo shortcode_exists('musicalbum_profile_viewings') ? do_shortcode('[musicalbum_profile_viewings]') : esc_html__('短码未注册或插件未启用', 'musicalbum-child'); ?>
   </section>
+  <hr />
+  <section>
+    <?php echo shortcode_exists('musicalbum_recent_viewings') ? do_shortcode('[musicalbum_recent_viewings]') : esc_html__('短码未注册或插件未启用', 'musicalbum-child'); ?>
+  </section>
 </main>
 <?php get_footer(); ?>

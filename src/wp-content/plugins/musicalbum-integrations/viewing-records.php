@@ -95,11 +95,13 @@ final class Viewing_Records {
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         add_shortcode('viewing_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
         add_shortcode('viewing_overview', array(__CLASS__, 'shortcode_viewing_overview'));
+        add_shortcode('viewing_recent', array(__CLASS__, 'shortcode_recent_viewings'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
         add_shortcode('musicalbum_viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('musicalbum_profile_viewings', array(__CLASS__, 'shortcode_profile_viewings'));
+        add_shortcode('musicalbum_recent_viewings', array(__CLASS__, 'shortcode_recent_viewings'));
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
         add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
@@ -131,9 +133,11 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'viewing_manager') ||
             has_shortcode($post->post_content, 'viewing_dashboard') ||
             has_shortcode($post->post_content, 'viewing_overview') ||
+            has_shortcode($post->post_content, 'viewing_recent') ||
             has_shortcode($post->post_content, 'musicalbum_hello') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
             has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
+            has_shortcode($post->post_content, 'musicalbum_recent_viewings') ||
             has_shortcode($post->post_content, 'musicalbum_statistics') ||
             has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_manager') ||
@@ -534,6 +538,117 @@ final class Viewing_Records {
         }
         wp_reset_postdata();
         echo '</div>';
+        return ob_get_clean();
+    }
+
+    /**
+     * 短码：显示最近观演记录
+     * 显示最近5条观演记录，包含标题、日期、类别、剧院，点击可跳转到详情页
+     */
+    public static function shortcode_recent_viewings($atts = array(), $content = '') {
+        if (!is_user_logged_in()) {
+            return '<div class="musicalbum-recent-viewings-error">请先登录以查看最近观演记录</div>';
+        }
+
+        // 解析短码属性
+        $atts = shortcode_atts(array(
+            'count' => 5, // 默认显示5条
+        ), $atts);
+
+        $count = absint($atts['count']);
+        if ($count <= 0) {
+            $count = 5;
+        }
+
+        // 查询最近观演记录
+        // 注意：需要按view_date（观演日期）排序，而不是post_date（记录创建日期）
+        $args = array(
+            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
+            'posts_per_page' => -1, // 先获取所有记录，然后按view_date排序
+            'post_status' => 'publish'
+        );
+
+        // 如果不是管理员，只显示当前用户的记录
+        if (!current_user_can('manage_options')) {
+            $args['author'] = get_current_user_id();
+        }
+
+        $query = new WP_Query($args);
+        
+        // 收集所有记录及其view_date，然后排序
+        $posts_with_dates = array();
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $view_date = get_field('view_date', $post_id);
+            
+            // 将日期转换为时间戳用于排序
+            $timestamp = $view_date ? strtotime($view_date) : 0;
+            
+            $posts_with_dates[] = array(
+                'post_id' => $post_id,
+                'timestamp' => $timestamp,
+                'view_date' => $view_date
+            );
+        }
+        wp_reset_postdata();
+        
+        // 按时间戳降序排序（最新的在前）
+        usort($posts_with_dates, function($a, $b) {
+            return $b['timestamp'] - $a['timestamp'];
+        });
+        
+        // 只取前$count条
+        $posts_with_dates = array_slice($posts_with_dates, 0, $count);
+
+        ob_start();
+        ?>
+        <div class="musicalbum-recent-viewings">
+            <h3 class="musicalbum-recent-viewings-title">最近观演记录</h3>
+            <?php if (!empty($posts_with_dates)) : ?>
+                <div class="musicalbum-recent-viewings-list">
+                    <?php foreach ($posts_with_dates as $post_data) : 
+                        $post_id = $post_data['post_id'];
+                        $title = get_the_title($post_id);
+                        $view_date = $post_data['view_date'];
+                        $category = get_field('category', $post_id);
+                        $theater = get_field('theater', $post_id);
+                        $permalink = get_permalink($post_id);
+                    ?>
+                        <div class="musicalbum-recent-viewings-item">
+                            <a href="<?php echo esc_url($permalink); ?>" class="musicalbum-recent-viewings-link">
+                                <div class="musicalbum-recent-viewings-content">
+                                    <h4 class="musicalbum-recent-viewings-item-title"><?php echo esc_html($title); ?></h4>
+                                    <div class="musicalbum-recent-viewings-meta">
+                                        <?php if ($view_date) : ?>
+                                            <span class="musicalbum-recent-viewings-date">
+                                                <span class="musicalbum-recent-viewings-label">日期：</span>
+                                                <?php echo esc_html($view_date); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($category) : ?>
+                                            <span class="musicalbum-recent-viewings-category">
+                                                <span class="musicalbum-recent-viewings-label">类别：</span>
+                                                <?php echo esc_html($category); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($theater) : ?>
+                                            <span class="musicalbum-recent-viewings-theater">
+                                                <span class="musicalbum-recent-viewings-label">剧院：</span>
+                                                <?php echo esc_html($theater); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else : ?>
+                <div class="musicalbum-recent-viewings-empty">暂无观演记录</div>
+            <?php endif; ?>
+        </div>
+        <?php
         return ob_get_clean();
     }
 
