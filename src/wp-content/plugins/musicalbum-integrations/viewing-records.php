@@ -595,15 +595,17 @@ final class Viewing_Records {
                 echo '<div class="musicalbum-recent-viewings-content">';
                 echo '<h4 class="musicalbum-recent-viewings-item-title">' . esc_html($title) . '</h4>';
                 echo '<div class="musicalbum-recent-viewings-meta">';
+                $meta_parts = array();
                 if ($view_date) {
-                    echo '<span class="musicalbum-recent-viewings-date"><strong>日期：</strong>' . esc_html($view_date) . '</span>';
+                    $meta_parts[] = '<span class="musicalbum-recent-viewings-date"><strong>日期：</strong>' . esc_html($view_date) . '</span>';
                 }
                 if ($category) {
-                    echo '<span class="musicalbum-recent-viewings-category"><strong>类别：</strong>' . esc_html($category) . '</span>';
+                    $meta_parts[] = '<span class="musicalbum-recent-viewings-category"><strong>类别：</strong>' . esc_html($category) . '</span>';
                 }
                 if ($theater) {
-                    echo '<span class="musicalbum-recent-viewings-theater"><strong>剧院：</strong>' . esc_html($theater) . '</span>';
+                    $meta_parts[] = '<span class="musicalbum-recent-viewings-theater"><strong>剧院：</strong>' . esc_html($theater) . '</span>';
                 }
+                echo implode('', $meta_parts);
                 echo '</div>';
                 echo '</div>';
                 echo '</a>';

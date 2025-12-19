@@ -1399,7 +1399,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 1.5rem 0;
-  color: #ff6464;
+  color: #000;
   padding-bottom: 0.75rem;
   border-bottom: 3px solid #ff6464;
 }
@@ -1412,29 +1412,17 @@
 
 .musicalbum-recent-viewings-item {
   margin-bottom: 1rem;
-  border: 2px solid #ff6464;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  overflow: hidden;
-  background: #fff;
+  padding-left: 0;
 }
 
 .musicalbum-recent-viewings-item:last-child {
   margin-bottom: 0;
 }
 
-.musicalbum-recent-viewings-item:hover {
-  border-color: #ff6464;
-  box-shadow: 0 4px 12px rgba(255, 100, 100, 0.3);
-  transform: translateY(-2px);
-  background: #fff5f5;
-}
-
 .musicalbum-recent-viewings-link {
   display: block;
   text-decoration: none;
   color: inherit;
-  padding: 1rem;
 }
 
 .musicalbum-recent-viewings-link:hover {
@@ -1444,33 +1432,35 @@
 .musicalbum-recent-viewings-content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .musicalbum-recent-viewings-item-title {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
-  color: #000;
+  color: #ff6464;
   line-height: 1.4;
+  text-decoration: underline;
+  text-decoration-color: #ff6464;
+  text-underline-offset: 3px;
+  display: inline-block;
 }
 
 .musicalbum-recent-viewings-link:hover .musicalbum-recent-viewings-item-title {
   color: #ff6464;
+  text-decoration-thickness: 2px;
 }
 
 .musicalbum-recent-viewings-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
   font-size: 0.875rem;
-  color: #333;
+  color: #ff6464;
+  line-height: 1.6;
 }
 
 .musicalbum-recent-viewings-meta span {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  display: inline;
+  color: #ff6464;
 }
 
 .musicalbum-recent-viewings-meta strong {
@@ -1481,10 +1471,7 @@
 .musicalbum-recent-viewings-date,
 .musicalbum-recent-viewings-category,
 .musicalbum-recent-viewings-theater {
-  padding: 0.375rem 0.75rem;
-  background: #ff6464;
-  color: #fff;
-  border-radius: 4px;
+  color: #ff6464;
   font-weight: 500;
 }
 
@@ -1508,16 +1495,12 @@
     border-bottom-width: 3px;
   }
   
-  .musicalbum-recent-viewings-item {
-    border-width: 2px;
-  }
-  
   .musicalbum-recent-viewings-item-title {
     font-size: 1rem;
   }
   
   .musicalbum-recent-viewings-meta {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 }
