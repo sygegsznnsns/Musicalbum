@@ -1305,7 +1305,7 @@ final class Viewing_Records {
     }
 
     /**
-     * 观影点滴总页面短码：显示导航卡片
+     * 我的观演总页面短码：显示导航卡片
      * 使用 [viewing_dashboard] 或 [musicalbum_dashboard] 在页面中插入
      */
     public static function shortcode_viewing_dashboard($atts = array(), $content = '') {
@@ -1357,14 +1357,14 @@ final class Viewing_Records {
         ob_start();
         ?>
         <div class="musicalbum-dashboard-container">
-            <h2 class="musicalbum-dashboard-title">我的观影</h2>
+            <h2 class="musicalbum-dashboard-title">我的观演</h2>
             <!-- 功能卡片部分 -->
             <div class="musicalbum-dashboard-cards">
                 <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager"<?php echo $manager_style; ?>>
                     <div class="musicalbum-card-overlay"></div>
                     <div class="musicalbum-card-content">
                         <div class="musicalbum-card-icon">📝</div>
-                        <h3 class="musicalbum-card-title">我的观影管理</h3>
+                        <h3 class="musicalbum-card-title">我的观演管理</h3>
                         <p class="musicalbum-card-description">管理您的观演记录，添加、编辑或删除记录</p>
                         <div class="musicalbum-card-arrow">→</div>
                     </div>
@@ -1374,7 +1374,7 @@ final class Viewing_Records {
                     <div class="musicalbum-card-overlay"></div>
                     <div class="musicalbum-card-content">
                         <div class="musicalbum-card-icon">📊</div>
-                        <h3 class="musicalbum-card-title">我的观影统计</h3>
+                        <h3 class="musicalbum-card-title">我的观演记录</h3>
                         <p class="musicalbum-card-description">查看观演数据可视化图表和统计分析</p>
                         <div class="musicalbum-card-arrow">→</div>
                     </div>
