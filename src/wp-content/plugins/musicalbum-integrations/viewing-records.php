@@ -1088,11 +1088,6 @@ final class Viewing_Records {
         ob_start();
         ?>
         <div class="musicalbum-dashboard-container">
-            <div class="musicalbum-dashboard-header">
-                <h1 class="musicalbum-dashboard-title">观影点滴</h1>
-                <p class="musicalbum-dashboard-subtitle">记录每一次观演的美好时光</p>
-            </div>
-            
             <div class="musicalbum-dashboard-cards">
                 <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager">
                     <div class="musicalbum-card-icon">📝</div>
