@@ -61,7 +61,7 @@
 }
 
 #music-play-pause {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff6464 0%, #cc0000 100%);
     border: none;
     border-radius: 50%;
     width: 36px;
@@ -78,7 +78,7 @@
     color: white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
-    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4),
+    box-shadow: 0 3px 10px rgba(255, 100, 100, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
     position: relative;
     overflow: hidden;
@@ -105,9 +105,9 @@
 }
 
 #music-play-pause:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, #cc0000 0%, #ff6464 100%);
     transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5),
+    box-shadow: 0 6px 20px rgba(255, 100, 100, 0.5),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -116,14 +116,14 @@
 }
 
 #music-play-pause.playing {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4),
+    background: linear-gradient(135deg, #ff6464 0%, #000000 100%);
+    box-shadow: 0 4px 12px rgba(255, 100, 100, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 #music-play-pause.playing:hover {
-    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
-    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5),
+    background: linear-gradient(135deg, #000000 0%, #ff6464 100%);
+    box-shadow: 0 6px 20px rgba(255, 100, 100, 0.5),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -148,10 +148,10 @@
 
 #music-select {
     padding: 5px 8px;
-    border: 1px solid rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(255, 100, 100, 0.3);
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.9);
-    color: #333;
+    color: #000;
     font-size: 11px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     cursor: pointer;
@@ -162,7 +162,7 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23ff6464' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 10px;
@@ -170,20 +170,20 @@
 }
 
 #music-select:hover {
-    border-color: rgba(102, 126, 234, 0.5);
+    border-color: rgba(255, 100, 100, 0.5);
     background-color: rgba(255, 255, 255, 1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 2px 8px rgba(255, 100, 100, 0.2);
 }
 
 #music-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #ff6464;
+    box-shadow: 0 0 0 3px rgba(255, 100, 100, 0.1);
 }
 
 #music-select option {
     padding: 8px;
     background: white;
-    color: #333;
+    color: #000;
 }
 
 #music-volume-control {
@@ -199,14 +199,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #667eea;
+    color: #ff6464;
     transition: color 0.3s ease;
     flex-shrink: 0;
     cursor: pointer;
 }
 
 #music-volume-icon:hover {
-    color: #764ba2;
+    color: #000;
     transform: scale(1.1);
 }
 
@@ -218,7 +218,7 @@
 #music-volume {
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 100%);
+    background: linear-gradient(to right, #ffcccc 0%, #ff9999 100%);
     outline: none;
     -webkit-appearance: none;
     appearance: none;
@@ -239,7 +239,7 @@
 }
 
 #music-volume:hover {
-    background: linear-gradient(to right, #c7d2fe 0%, #a5b4fc 100%);
+    background: linear-gradient(to right, #ff9999 0%, #ff6464 100%);
 }
 
 #music-volume::-webkit-slider-thumb {
@@ -248,16 +248,16 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff6464 0%, #000000 100%);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4),
+    box-shadow: 0 2px 6px rgba(255, 100, 100, 0.4),
                 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 #music-volume::-webkit-slider-thumb:hover {
     transform: scale(1.3);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6),
+    box-shadow: 0 4px 12px rgba(255, 100, 100, 0.6),
                 0 0 0 3px rgba(255, 255, 255, 0.9);
 }
 
@@ -269,17 +269,17 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff6464 0%, #000000 100%);
     cursor: pointer;
     border: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4),
+    box-shadow: 0 2px 6px rgba(255, 100, 100, 0.4),
                 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 #music-volume::-moz-range-thumb:hover {
     transform: scale(1.3);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6),
+    box-shadow: 0 4px 12px rgba(255, 100, 100, 0.6),
                 0 0 0 3px rgba(255, 255, 255, 0.9);
 }
 
@@ -291,7 +291,7 @@
     position: fixed;
     bottom: 90px;
     right: 24px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(255, 100, 100, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%);
     color: white;
     padding: 12px 18px;
     border-radius: 12px;
@@ -299,7 +299,7 @@
     z-index: 10000;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     max-width: 250px;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3),
+    box-shadow: 0 8px 24px rgba(255, 100, 100, 0.3),
                 0 2px 8px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
