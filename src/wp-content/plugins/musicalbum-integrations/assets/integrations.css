@@ -1214,7 +1214,7 @@
   font-size: 1.75rem;
   font-weight: 600;
   margin: 0 0 1.5rem 0;
-  color: #1f2937;
+  color: #000;
   text-align: left;
 }
 
@@ -1235,18 +1235,54 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem;
-  background: #fff;
+  padding: 0;
+  background-color: #fff;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   transition: all 0.3s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+}
+
+/* 确保背景图片显示在遮罩层下方 */
+.musicalbum-overview-item[style*="background-image"] {
+  background-color: transparent !important;
+}
+
+.musicalbum-overview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.5);
+  transition: background 0.3s ease;
+  z-index: 1;
+}
+
+.musicalbum-overview-item:hover .musicalbum-overview-overlay {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.musicalbum-overview-item-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  width: 100%;
 }
 
 .musicalbum-overview-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: #3b82f6;
+  border-color: #ff6464;
 }
 
 .musicalbum-overview-icon {
@@ -1270,7 +1306,7 @@
 .musicalbum-overview-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1f2937;
+  color: #000;
   line-height: 1.2;
   word-break: break-word;
 }
@@ -1305,6 +1341,10 @@
   }
   
   .musicalbum-overview-item {
+    min-height: 100px;
+  }
+  
+  .musicalbum-overview-item-content {
     padding: 1.25rem;
     flex-direction: column;
     text-align: center;

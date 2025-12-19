@@ -1092,6 +1092,31 @@ final class Viewing_Records {
             return '<div class="musicalbum-dashboard-error">请先登录以查看数据概览</div>';
         }
         
+        // 解析短码属性，允许自定义背景图片
+        $atts = shortcode_atts(array(
+            'bg1' => '',
+            'bg2' => '',
+            'bg3' => '',
+            'bg4' => ''
+        ), $atts);
+        
+        // 处理背景图片：支持媒体库图片ID或图片URL
+        $bg_images = array();
+        for ($i = 1; $i <= 4; $i++) {
+            $bg_key = 'bg' . $i;
+            $bg_value = '';
+            if (!empty($atts[$bg_key])) {
+                // 如果是数字，当作媒体库图片ID处理
+                if (is_numeric($atts[$bg_key])) {
+                    $bg_value = wp_get_attachment_image_url(intval($atts[$bg_key]), 'full');
+                } else {
+                    // 否则当作URL处理
+                    $bg_value = esc_url($atts[$bg_key]);
+                }
+            }
+            $bg_images[$i] = $bg_value;
+        }
+        
         // 生成唯一的ID，避免多个短码实例冲突
         $instance_id = 'overview-' . uniqid();
         
@@ -1100,32 +1125,44 @@ final class Viewing_Records {
         <div class="musicalbum-overview-section" data-instance-id="<?php echo esc_attr($instance_id); ?>">
             <h2 class="musicalbum-overview-title">数据概览</h2>
             <div class="musicalbum-overview-grid" id="musicalbum-overview-grid-<?php echo esc_attr($instance_id); ?>">
-                <div class="musicalbum-overview-item">
-                    <div class="musicalbum-overview-icon">📋</div>
-                    <div class="musicalbum-overview-content">
-                        <div class="musicalbum-overview-label">总记录数</div>
-                        <div class="musicalbum-overview-value" data-field="total-count">-</div>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[1] ? ' style="background-image: url(\'' . esc_attr($bg_images[1]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                    <div class="musicalbum-overview-overlay"></div>
+                    <div class="musicalbum-overview-item-content">
+                        <div class="musicalbum-overview-icon">📋</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">总记录数</div>
+                            <div class="musicalbum-overview-value" data-field="total-count">-</div>
+                        </div>
                     </div>
                 </div>
-                <div class="musicalbum-overview-item">
-                    <div class="musicalbum-overview-icon">📅</div>
-                    <div class="musicalbum-overview-content">
-                        <div class="musicalbum-overview-label">本月观演</div>
-                        <div class="musicalbum-overview-value" data-field="month-count">-</div>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[2] ? ' style="background-image: url(\'' . esc_attr($bg_images[2]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                    <div class="musicalbum-overview-overlay"></div>
+                    <div class="musicalbum-overview-item-content">
+                        <div class="musicalbum-overview-icon">📅</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">本月观演</div>
+                            <div class="musicalbum-overview-value" data-field="month-count">-</div>
+                        </div>
                     </div>
                 </div>
-                <div class="musicalbum-overview-item">
-                    <div class="musicalbum-overview-icon">💰</div>
-                    <div class="musicalbum-overview-content">
-                        <div class="musicalbum-overview-label">总花费</div>
-                        <div class="musicalbum-overview-value" data-field="total-spending">-</div>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[3] ? ' style="background-image: url(\'' . esc_attr($bg_images[3]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                    <div class="musicalbum-overview-overlay"></div>
+                    <div class="musicalbum-overview-item-content">
+                        <div class="musicalbum-overview-icon">💰</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">总花费</div>
+                            <div class="musicalbum-overview-value" data-field="total-spending">-</div>
+                        </div>
                     </div>
                 </div>
-                <div class="musicalbum-overview-item">
-                    <div class="musicalbum-overview-icon">❤️</div>
-                    <div class="musicalbum-overview-content">
-                        <div class="musicalbum-overview-label">最爱类别</div>
-                        <div class="musicalbum-overview-value" data-field="favorite-category">-</div>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[4] ? ' style="background-image: url(\'' . esc_attr($bg_images[4]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                    <div class="musicalbum-overview-overlay"></div>
+                    <div class="musicalbum-overview-item-content">
+                        <div class="musicalbum-overview-icon">❤️</div>
+                        <div class="musicalbum-overview-content">
+                            <div class="musicalbum-overview-label">最爱类别</div>
+                            <div class="musicalbum-overview-value" data-field="favorite-category">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
