@@ -1152,18 +1152,19 @@ final class Viewing_Records {
         ob_start();
         ?>
         <div class="musicalbum-dashboard-container">
+            <h2 class="musicalbum-dashboard-title">我的观影</h2>
             <!-- 功能卡片部分 -->
             <div class="musicalbum-dashboard-cards">
                 <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager">
                     <div class="musicalbum-card-icon">📝</div>
-                    <h3 class="musicalbum-card-title">记录管理</h3>
+                    <h3 class="musicalbum-card-title">我的观影管理</h3>
                     <p class="musicalbum-card-description">管理您的观演记录，添加、编辑或删除记录</p>
                     <div class="musicalbum-card-arrow">→</div>
                 </a>
                 
                 <a href="<?php echo $statistics_url; ?>" class="musicalbum-dashboard-card musicalbum-card-statistics">
                     <div class="musicalbum-card-icon">📊</div>
-                    <h3 class="musicalbum-card-title">数据统计</h3>
+                    <h3 class="musicalbum-card-title">我的观影统计</h3>
                     <p class="musicalbum-card-description">查看观演数据可视化图表和统计分析</p>
                     <div class="musicalbum-card-arrow">→</div>
                 </a>
