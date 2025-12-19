@@ -1249,6 +1249,11 @@
   min-height: 120px;
 }
 
+/* 确保有背景图片时，背景色透明 */
+.musicalbum-overview-item[style*="background-image"] {
+  background-color: transparent !important;
+}
+
 .musicalbum-overview-overlay {
   position: absolute;
   top: 0;
