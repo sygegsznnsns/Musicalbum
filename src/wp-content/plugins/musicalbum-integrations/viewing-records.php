@@ -1125,7 +1125,7 @@ final class Viewing_Records {
         <div class="musicalbum-overview-section" data-instance-id="<?php echo esc_attr($instance_id); ?>">
             <h2 class="musicalbum-overview-title">数据概览</h2>
             <div class="musicalbum-overview-grid" id="musicalbum-overview-grid-<?php echo esc_attr($instance_id); ?>">
-                <div class="musicalbum-overview-item"<?php echo $bg_images[1] ? ' style="background-image: url(\'' . esc_attr($bg_images[1]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[1] ? ' style="background-image: url(' . esc_attr($bg_images[1]) . ') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: transparent !important;"' : ''; ?>>
                     <div class="musicalbum-overview-overlay"></div>
                     <div class="musicalbum-overview-item-content">
                         <div class="musicalbum-overview-icon">📋</div>
@@ -1135,7 +1135,7 @@ final class Viewing_Records {
                         </div>
                     </div>
                 </div>
-                <div class="musicalbum-overview-item"<?php echo $bg_images[2] ? ' style="background-image: url(\'' . esc_attr($bg_images[2]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[2] ? ' style="background-image: url(' . esc_attr($bg_images[2]) . ') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: transparent !important;"' : ''; ?>>
                     <div class="musicalbum-overview-overlay"></div>
                     <div class="musicalbum-overview-item-content">
                         <div class="musicalbum-overview-icon">📅</div>
@@ -1145,7 +1145,7 @@ final class Viewing_Records {
                         </div>
                     </div>
                 </div>
-                <div class="musicalbum-overview-item"<?php echo $bg_images[3] ? ' style="background-image: url(\'' . esc_attr($bg_images[3]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[3] ? ' style="background-image: url(' . esc_attr($bg_images[3]) . ') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: transparent !important;"' : ''; ?>>
                     <div class="musicalbum-overview-overlay"></div>
                     <div class="musicalbum-overview-item-content">
                         <div class="musicalbum-overview-icon">💰</div>
@@ -1155,7 +1155,7 @@ final class Viewing_Records {
                         </div>
                     </div>
                 </div>
-                <div class="musicalbum-overview-item"<?php echo $bg_images[4] ? ' style="background-image: url(\'' . esc_attr($bg_images[4]) . '\') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important;"' : ''; ?>>
+                <div class="musicalbum-overview-item"<?php echo $bg_images[4] ? ' style="background-image: url(' . esc_attr($bg_images[4]) . ') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: transparent !important;"' : ''; ?>>
                     <div class="musicalbum-overview-overlay"></div>
                     <div class="musicalbum-overview-item-content">
                         <div class="musicalbum-overview-icon">❤️</div>
