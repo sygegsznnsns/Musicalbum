@@ -93,6 +93,7 @@ final class Viewing_Records {
         add_shortcode('viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
+        add_shortcode('viewing_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
@@ -101,6 +102,7 @@ final class Viewing_Records {
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
         add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
+        add_shortcode('musicalbum_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
     }
 
     /**
@@ -125,12 +127,14 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'viewing_form') ||
             has_shortcode($post->post_content, 'viewing_list') ||
             has_shortcode($post->post_content, 'viewing_manager') ||
+            has_shortcode($post->post_content, 'viewing_dashboard') ||
             has_shortcode($post->post_content, 'musicalbum_hello') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
             has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
             has_shortcode($post->post_content, 'musicalbum_statistics') ||
             has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
-            has_shortcode($post->post_content, 'musicalbum_viewing_manager')
+            has_shortcode($post->post_content, 'musicalbum_viewing_manager') ||
+            has_shortcode($post->post_content, 'musicalbum_dashboard')
         )) {
             $load_assets = true;
         }
@@ -1061,6 +1065,48 @@ final class Viewing_Records {
                     <h3 id="musicalbum-chart-title-<?php echo esc_attr($instance_id); ?>">请选择数据类型和图表类型</h3>
                     <canvas id="musicalbum-chart-main-<?php echo esc_attr($instance_id); ?>"></canvas>
                 </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * 观影点滴总页面短码：显示导航卡片
+     * 使用 [viewing_dashboard] 或 [musicalbum_dashboard] 在页面中插入
+     */
+    public static function shortcode_viewing_dashboard($atts = array(), $content = '') {
+        // 解析短码属性，允许自定义链接
+        $atts = shortcode_atts(array(
+            'manager_url' => 'https://musicalbum.chenpan.icu/%e6%88%91%e7%9a%84%e8%a7%82%e6%bc%94%e7%ae%a1%e7%90%86/',
+            'statistics_url' => 'https://musicalbum.chenpan.icu/%e6%88%91%e7%9a%84%e8%a7%82%e6%bc%94%e7%bb%9f%e8%ae%a1/'
+        ), $atts);
+        
+        $manager_url = esc_url($atts['manager_url']);
+        $statistics_url = esc_url($atts['statistics_url']);
+        
+        ob_start();
+        ?>
+        <div class="musicalbum-dashboard-container">
+            <div class="musicalbum-dashboard-header">
+                <h1 class="musicalbum-dashboard-title">观影点滴</h1>
+                <p class="musicalbum-dashboard-subtitle">记录每一次观演的美好时光</p>
+            </div>
+            
+            <div class="musicalbum-dashboard-cards">
+                <a href="<?php echo $manager_url; ?>" class="musicalbum-dashboard-card musicalbum-card-manager">
+                    <div class="musicalbum-card-icon">📝</div>
+                    <h3 class="musicalbum-card-title">记录管理</h3>
+                    <p class="musicalbum-card-description">管理您的观演记录，添加、编辑或删除记录</p>
+                    <div class="musicalbum-card-arrow">→</div>
+                </a>
+                
+                <a href="<?php echo $statistics_url; ?>" class="musicalbum-dashboard-card musicalbum-card-statistics">
+                    <div class="musicalbum-card-icon">📊</div>
+                    <h3 class="musicalbum-card-title">数据统计</h3>
+                    <p class="musicalbum-card-description">查看观演数据可视化图表和统计分析</p>
+                    <div class="musicalbum-card-arrow">→</div>
+                </a>
             </div>
         </div>
         <?php
