@@ -93,7 +93,6 @@ final class Viewing_Records {
         add_shortcode('viewing_form', array(__CLASS__, 'shortcode_viewing_form'));
         add_shortcode('viewing_list', array(__CLASS__, 'shortcode_profile_viewings'));
         add_shortcode('viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
-        add_shortcode('viewing_dashboard', array(__CLASS__, 'shortcode_dashboard'));
         
         // 兼容旧短码名称
         add_shortcode('musicalbum_hello', array(__CLASS__, 'shortcode_hello'));
@@ -102,7 +101,6 @@ final class Viewing_Records {
         add_shortcode('musicalbum_statistics', array(__CLASS__, 'shortcode_statistics'));
         add_shortcode('musicalbum_custom_chart', array(__CLASS__, 'shortcode_custom_chart'));
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
-        add_shortcode('musicalbum_dashboard', array(__CLASS__, 'shortcode_dashboard'));
     }
 
     /**
@@ -127,14 +125,12 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'viewing_form') ||
             has_shortcode($post->post_content, 'viewing_list') ||
             has_shortcode($post->post_content, 'viewing_manager') ||
-            has_shortcode($post->post_content, 'viewing_dashboard') ||
             has_shortcode($post->post_content, 'musicalbum_hello') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_form') ||
             has_shortcode($post->post_content, 'musicalbum_profile_viewings') ||
             has_shortcode($post->post_content, 'musicalbum_statistics') ||
             has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
-            has_shortcode($post->post_content, 'musicalbum_viewing_manager') ||
-            has_shortcode($post->post_content, 'musicalbum_dashboard')
+            has_shortcode($post->post_content, 'musicalbum_viewing_manager')
         )) {
             $load_assets = true;
         }
@@ -148,45 +144,13 @@ final class Viewing_Records {
             return;
         }
         
-        wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.2');
+        wp_register_style('viewing-records', plugins_url('assets/integrations.css', __FILE__), array(), '0.3.0');
         wp_enqueue_style('viewing-records');
         
         // 获取主题颜色并注入动态 CSS
         $theme_colors = self::get_theme_colors();
         $dynamic_css = self::generate_theme_colored_css($theme_colors);
         wp_add_inline_style('viewing-records', $dynamic_css);
-        
-        // 为仪表板添加额外的内联样式，确保样式优先级
-        if (has_shortcode($post->post_content, 'musicalbum_dashboard') || has_shortcode($post->post_content, 'viewing_dashboard')) {
-            $dashboard_css = '
-                .musicalbum-dashboard-container .musicalbum-dashboard-card {
-                    display: block !important;
-                    padding: 2rem !important;
-                    background: #fff !important;
-                    border: 2px solid #e5e7eb !important;
-                    border-radius: 12px !important;
-                    text-decoration: none !important;
-                    color: #1f2937 !important;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-                }
-                .musicalbum-dashboard-container .musicalbum-dashboard-card:hover {
-                    border-color: #3b82f6 !important;
-                    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15) !important;
-                }
-                .musicalbum-dashboard-container .musicalbum-dashboard-card h3 {
-                    color: #1f2937 !important;
-                    text-decoration: none !important;
-                    border: none !important;
-                }
-                .musicalbum-dashboard-container .musicalbum-dashboard-stat-card {
-                    display: flex !important;
-                    flex-direction: column !important;
-                    justify-content: center !important;
-                    align-items: center !important;
-                }
-            ';
-            wp_add_inline_style('viewing-records', $dashboard_css);
-        }
         
         // 引入 Chart.js 库
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
@@ -202,7 +166,6 @@ final class Viewing_Records {
                 'statistics' => esc_url_raw(rest_url('viewing/v1/statistics')),
                 'statisticsDetails' => esc_url_raw(rest_url('viewing/v1/statistics/details')),
                 'statisticsExport' => esc_url_raw(rest_url('viewing/v1/statistics/export')),
-                'dashboard' => esc_url_raw(rest_url('viewing/v1/dashboard')),
                 'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
                 'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
                 'nonce' => wp_create_nonce('wp_rest')
@@ -583,11 +546,6 @@ final class Viewing_Records {
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_statistics')
-        ));
-        register_rest_route('viewing/v1', '/dashboard', array(
-            'methods' => 'GET',
-            'permission_callback' => function($req){ return is_user_logged_in(); },
-            'callback' => array(__CLASS__, 'rest_dashboard')
         ));
         register_rest_route('viewing/v1', '/statistics/details', array(
             'methods' => 'GET',
@@ -1110,95 +1068,6 @@ final class Viewing_Records {
     }
 
     /**
-     * 观影点滴仪表板短码：父页面概览
-     * 使用 [musicalbum_dashboard] 或 [viewing_dashboard] 在页面中插入
-     */
-    public static function shortcode_dashboard($atts = array(), $content = '') {
-        if (!is_user_logged_in()) {
-            return '<div class="musicalbum-statistics-error">请先登录以查看观影点滴</div>';
-        }
-        
-        // 解析短码属性，允许自定义子页面链接
-        $atts = shortcode_atts(array(
-            'manager_url' => 'https://musicalbum.chenpan.icu/我的观演管理/',
-            'statistics_url' => 'https://musicalbum.chenpan.icu/我的观演统计/'
-        ), $atts);
-        
-        $manager_url = esc_url($atts['manager_url']);
-        $statistics_url = esc_url($atts['statistics_url']);
-        
-        ob_start();
-        ?>
-        <div class="musicalbum-dashboard-container" style="max-width: 1200px !important; margin: 2rem auto !important; padding: 2rem 1.5rem !important; background: #f8fafc !important; border-radius: 16px !important; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important; width: 100% !important; box-sizing: border-box !important;">
-            <div class="musicalbum-dashboard-header" style="text-align: center !important; margin-bottom: 3rem !important; padding-bottom: 2rem !important; border-bottom: 2px solid #e5e7eb !important; width: 100% !important;">
-                <h1 class="musicalbum-dashboard-title" style="font-size: 3rem !important; font-weight: 800 !important; margin: 0 0 0.75rem 0 !important; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; letter-spacing: -0.02em !important; color: transparent !important; display: block !important;">观影点滴</h1>
-                <p class="musicalbum-dashboard-subtitle" style="font-size: 1.25rem !important; color: #64748b !important; margin: 0 !important; font-weight: 400 !important; display: block !important;">记录每一次观演的美好时光</p>
-            </div>
-            
-            <!-- 快速导航卡片 -->
-            <div class="musicalbum-dashboard-nav" style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important; gap: 1.5rem !important; margin-bottom: 3rem !important; width: 100% !important; box-sizing: border-box !important;">
-                <a href="<?php echo esc_url($manager_url); ?>" class="musicalbum-dashboard-card" style="display: block !important; padding: 2.5rem 2rem !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 16px !important; text-decoration: none !important; color: #1f2937 !important; text-align: center !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; width: 100% !important; box-sizing: border-box !important;">
-                    <div class="musicalbum-dashboard-card-icon" style="font-size: 3.5rem !important; margin-bottom: 1.25rem !important; display: block !important;">📝</div>
-                    <h3 style="font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 0.75rem 0 !important; color: #1e293b !important; text-decoration: none !important; border: none !important; padding: 0 !important;">记录管理</h3>
-                    <p style="font-size: 0.9375rem !important; color: #64748b !important; margin: 0 !important; text-decoration: none !important; line-height: 1.6 !important;">管理您的观演记录，添加、编辑或删除记录</p>
-                </a>
-                <a href="<?php echo esc_url($statistics_url); ?>" class="musicalbum-dashboard-card" style="display: block !important; padding: 2.5rem 2rem !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 16px !important; text-decoration: none !important; color: #1f2937 !important; text-align: center !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; width: 100% !important; box-sizing: border-box !important;">
-                    <div class="musicalbum-dashboard-card-icon" style="font-size: 3.5rem !important; margin-bottom: 1.25rem !important; display: block !important;">📊</div>
-                    <h3 style="font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 0.75rem 0 !important; color: #1e293b !important; text-decoration: none !important; border: none !important; padding: 0 !important;">数据统计</h3>
-                    <p style="font-size: 0.9375rem !important; color: #64748b !important; margin: 0 !important; text-decoration: none !important; line-height: 1.6 !important;">查看观演数据可视化图表和统计分析</p>
-                </a>
-            </div>
-            
-            <!-- 数据概览 -->
-            <div class="musicalbum-dashboard-overview" id="musicalbum-dashboard-overview" style="margin-bottom: 3rem !important; width: 100% !important;">
-                <h2 class="musicalbum-dashboard-section-title" style="font-size: 1.75rem !important; font-weight: 700 !important; margin: 0 0 1.5rem 0 !important; color: #1e293b !important; position: relative !important; padding-bottom: 0.75rem !important; display: block !important; width: 100% !important;">数据概览</h2>
-                <div class="musicalbum-dashboard-stats-grid" style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important; gap: 1.5rem !important; width: 100% !important;">
-                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
-                        <div class="stat-value" id="stat-total-count" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
-                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">总记录数</div>
-                    </div>
-                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
-                        <div class="stat-value" id="stat-this-month" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
-                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">本月观演</div>
-                    </div>
-                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
-                        <div class="stat-value" id="stat-total-spent" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
-                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">总花费</div>
-                    </div>
-                    <div class="musicalbum-dashboard-stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; color: #fff; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 120px;">
-                        <div class="stat-value" id="stat-favorite-category" style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; display: block;">-</div>
-                        <div class="stat-label" style="font-size: 0.875rem; opacity: 0.9; color: #fff; display: block;">最爱类别</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 最近观演记录 -->
-            <div class="musicalbum-dashboard-recent" id="musicalbum-dashboard-recent" style="margin-bottom: 3rem !important; width: 100% !important;">
-                <h2 class="musicalbum-dashboard-section-title" style="font-size: 1.75rem !important; font-weight: 700 !important; margin: 0 0 1.5rem 0 !important; color: #1e293b !important; position: relative !important; padding-bottom: 0.75rem !important; display: block !important; width: 100% !important;">最近观演</h2>
-                <div class="musicalbum-dashboard-recent-list" id="musicalbum-recent-list" style="background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 16px !important; overflow: hidden !important; width: 100% !important; box-sizing: border-box !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;">
-                    <div class="musicalbum-dashboard-loading">加载中...</div>
-                </div>
-            </div>
-            <style>
-                .musicalbum-dashboard-recent-item .recent-title,
-                .musicalbum-dashboard-recent-item .recent-title:link,
-                .musicalbum-dashboard-recent-item .recent-title:visited,
-                .musicalbum-dashboard-recent-item .recent-title:active {
-                    color: #1e293b !important;
-                    text-decoration: none !important;
-                    border: none !important;
-                }
-                .musicalbum-dashboard-recent-item .recent-title:hover {
-                    color: #667eea !important;
-                    text-decoration: none !important;
-                }
-            </style>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
-
-    /**
      * 统计数据 REST API 端点
      * 返回当前用户的观演数据统计（管理员可查看所有数据）
      */
@@ -1283,90 +1152,6 @@ final class Viewing_Records {
             'cast' => $cast_data,
             'price' => $price_ranges,
             'theater' => $theater_data
-        ));
-    }
-
-    /**
-     * 仪表板数据 REST API 端点
-     * 返回概览统计数据（总记录数、本月观演、总花费、最爱类别等）
-     */
-    public static function rest_dashboard($request) {
-        $user_id = get_current_user_id();
-        if (!$user_id) {
-            return new WP_Error('unauthorized', '未授权', array('status' => 401));
-        }
-
-        $args = array(
-            'post_type' => array('viewing_record', 'musicalbum_viewing'),
-            'posts_per_page' => -1,
-            'post_status' => 'publish'
-        );
-        
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
-        
-        $query = new WP_Query($args);
-        
-        $total_count = $query->post_count;
-        $this_month_count = 0;
-        $total_spent = 0;
-        $category_data = array();
-        $recent_viewings = array();
-        $current_month = date('Y-m');
-        
-        while ($query->have_posts()) {
-            $query->the_post();
-            $post_id = get_the_ID();
-            $view_date = get_field('view_date', $post_id);
-            $price = get_field('price', $post_id);
-            $category = get_field('category', $post_id);
-            
-            // 统计本月观演
-            if ($view_date && strpos($view_date, $current_month) === 0) {
-                $this_month_count++;
-            }
-            
-            // 统计总花费
-            if ($price) {
-                $price_num = floatval(preg_replace('/[^0-9.]/', '', $price));
-                if ($price_num > 0) {
-                    $total_spent += $price_num;
-                }
-            }
-            
-            // 统计类别
-            if ($category) {
-                $category_data[$category] = isset($category_data[$category]) ? $category_data[$category] + 1 : 1;
-            }
-            
-            // 收集最近5条记录
-            if (count($recent_viewings) < 5) {
-                $recent_viewings[] = array(
-                    'id' => $post_id,
-                    'title' => get_the_title(),
-                    'date' => $view_date ?: get_the_date('Y-m-d'),
-                    'category' => $category ?: '未分类',
-                    'theater' => get_field('theater', $post_id) ?: '',
-                    'url' => get_permalink()
-                );
-            }
-        }
-        wp_reset_postdata();
-        
-        // 找出最爱类别
-        $favorite_category = '暂无';
-        if (!empty($category_data)) {
-            arsort($category_data);
-            $favorite_category = array_key_first($category_data);
-        }
-        
-        return rest_ensure_response(array(
-            'total_count' => $total_count,
-            'this_month' => $this_month_count,
-            'total_spent' => round($total_spent, 2),
-            'favorite_category' => $favorite_category,
-            'recent_viewings' => $recent_viewings
         ));
     }
 
