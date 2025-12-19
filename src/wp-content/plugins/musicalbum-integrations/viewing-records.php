@@ -105,7 +105,6 @@ final class Viewing_Records {
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         add_shortcode('musicalbum_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
         add_shortcode('musicalbum_overview', array(__CLASS__, 'shortcode_viewing_overview'));
-        add_shortcode('musicalbum_recent_viewings', array(__CLASS__, 'shortcode_recent_viewings'));
     }
 
     /**
@@ -139,8 +138,7 @@ final class Viewing_Records {
             has_shortcode($post->post_content, 'musicalbum_custom_chart') ||
             has_shortcode($post->post_content, 'musicalbum_viewing_manager') ||
             has_shortcode($post->post_content, 'musicalbum_dashboard') ||
-            has_shortcode($post->post_content, 'musicalbum_overview') ||
-            has_shortcode($post->post_content, 'musicalbum_recent_viewings')
+            has_shortcode($post->post_content, 'musicalbum_overview')
         )) {
             $load_assets = true;
         }
@@ -534,88 +532,6 @@ final class Viewing_Records {
             $date = get_field('view_date', get_the_ID());
             echo '<div class="item"><a href="' . esc_url(get_permalink()) . '">' . esc_html(get_the_title()) . '</a><span class="date">' . esc_html($date) . '</span></div>';
         }
-        wp_reset_postdata();
-        echo '</div>';
-        return ob_get_clean();
-    }
-
-    /**
-     * 短码：显示最近观演记录
-     * 显示最近5条观演记录，包含标题、日期、类别、剧院，点击可跳转到详情页
-     */
-    public static function shortcode_recent_viewings($atts = array(), $content = '') {
-        if (!is_user_logged_in()) { 
-            return '<div class="musicalbum-recent-viewings">请先登录以查看观演记录</div>';
-        }
-        
-        $atts = shortcode_atts(array(
-            'limit' => 5,
-        ), $atts);
-        
-        $limit = absint($atts['limit']);
-        
-        $args = array(
-            'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
-            'posts_per_page' => $limit,
-            'orderby' => 'date',
-            'order' => 'DESC',
-            'post_status' => 'publish'
-        );
-        
-        // 如果不是管理员，只显示当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = get_current_user_id();
-        }
-        
-        $q = new WP_Query($args);
-        
-        ob_start();
-        echo '<div class="musicalbum-recent-viewings">';
-        echo '<h3 class="musicalbum-recent-viewings-title">最近观演记录</h3>';
-        
-        if ($q->have_posts()) {
-            echo '<ul class="musicalbum-recent-viewings-list">';
-            while ($q->have_posts()) { 
-                $q->the_post();
-                $post_id = get_the_ID();
-                $title = get_the_title();
-                $view_date = function_exists('get_field') ? get_field('view_date', $post_id) : '';
-                $category = function_exists('get_field') ? get_field('category', $post_id) : '';
-                $theater = function_exists('get_field') ? get_field('theater', $post_id) : '';
-                
-                // 如果类别为空，尝试从标题中提取
-                if (!$category || $category === '') {
-                    $category = self::extract_category_from_title($title);
-                }
-                
-                $permalink = get_permalink();
-                
-                echo '<li class="musicalbum-recent-viewings-item">';
-                echo '<a href="' . esc_url($permalink) . '" class="musicalbum-recent-viewings-link">';
-                echo '<div class="musicalbum-recent-viewings-content">';
-                echo '<h4 class="musicalbum-recent-viewings-item-title">' . esc_html($title) . '</h4>';
-                echo '<div class="musicalbum-recent-viewings-meta">';
-                $meta_parts = array();
-                if ($view_date) {
-                    $meta_parts[] = '<span class="musicalbum-recent-viewings-date"><strong>日期：</strong>' . esc_html($view_date) . '</span>';
-                }
-                if ($category) {
-                    $meta_parts[] = '<span class="musicalbum-recent-viewings-category"><strong>类别：</strong>' . esc_html($category) . '</span>';
-                }
-                if ($theater) {
-                    $meta_parts[] = '<span class="musicalbum-recent-viewings-theater"><strong>剧院：</strong>' . esc_html($theater) . '</span>';
-                }
-                echo implode('', $meta_parts);
-                echo '</div>';
-                echo '</div>';
-                echo '</a>';
-                echo '</li>';
-            }
-            echo '</ul>';
-        } else {
-            echo '<p class="musicalbum-recent-viewings-empty">暂无观演记录</p>';
-        }
-        
         wp_reset_postdata();
         echo '</div>';
         return ob_get_clean();

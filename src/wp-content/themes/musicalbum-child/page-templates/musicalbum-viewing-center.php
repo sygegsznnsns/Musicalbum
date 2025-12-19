@@ -6,7 +6,6 @@ Description: 观演记录中心：录入表单 + 我的观演列表
 /**
  * 使用短码渲染功能模块：
  * - [musicalbum_viewing_form]：前端录入观演记录表单（依赖 ACF）
- * - [musicalbum_recent_viewings]：显示最近5条观演记录（标题、日期、类别、剧院）
  * - [musicalbum_profile_viewings]：当前登录用户的观演记录列表
  * 已加入 shortcode_exists 守卫，插件未启用时显示友好提示。
  */
@@ -16,10 +15,6 @@ get_header();
 <main id="primary" class="site-main" style="padding:2rem;">
   <section>
     <?php echo shortcode_exists('musicalbum_viewing_form') ? do_shortcode('[musicalbum_viewing_form]') : esc_html__('短码未注册或插件未启用', 'musicalbum-child'); ?>
-  </section>
-  <hr />
-  <section>
-    <?php echo shortcode_exists('musicalbum_recent_viewings') ? do_shortcode('[musicalbum_recent_viewings]') : esc_html__('短码未注册或插件未启用', 'musicalbum-child'); ?>
   </section>
   <hr />
   <section>
