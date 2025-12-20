@@ -1383,7 +1383,19 @@
       if (data && data.length > 0) {
         var html = '<div class="musicalbum-list-items">';
         data.forEach(function(item) {
-          html += '<div class="musicalbum-list-item" data-id="' + item.id + '">';
+          // 检查是否有票面图片
+          var hasTicketImage = item.ticket_image && item.ticket_image.url;
+          var ticketImageUrl = hasTicketImage ? item.ticket_image.url : '';
+          var itemClass = 'musicalbum-list-item';
+          var itemStyle = '';
+          
+          if (hasTicketImage) {
+            itemClass += ' musicalbum-list-item-with-bg';
+            // 使用内联样式设置背景图片
+            itemStyle = ' style="background-image: url(\'' + escapeHtml(ticketImageUrl) + '\');"';
+          }
+          
+          html += '<div class="' + itemClass + '" data-id="' + item.id + '"' + itemStyle + '>';
           
           // 主要信息区域（默认显示：标题和类型）
           html += '<div class="musicalbum-item-main">';

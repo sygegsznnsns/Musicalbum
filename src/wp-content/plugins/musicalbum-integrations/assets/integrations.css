@@ -683,11 +683,43 @@
   border-radius: 8px;
   padding: 1rem 1.25rem;
   transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
 .musicalbum-list-item:hover {
   border-color: #ff8383;
   box-shadow: 0 2px 8px rgba(255, 131, 131, 0.15);
+}
+
+/* 有背景图片的列表项 */
+.musicalbum-list-item-with-bg {
+  background-color: #fff;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 120px;
+}
+
+.musicalbum-list-item-with-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  z-index: 0;
+  transition: background 0.2s;
+}
+
+.musicalbum-list-item-with-bg:hover::before {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.musicalbum-list-item-with-bg > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* 主要信息区域（标题和类型） */
