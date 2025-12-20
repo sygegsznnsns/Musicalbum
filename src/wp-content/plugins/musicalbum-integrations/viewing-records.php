@@ -1695,6 +1695,14 @@ final class Viewing_Records {
                     'compare' => 'LIKE'
                 )
             );
+        } elseif ($type === 'theater') {
+            $args['meta_query'] = array(
+                array(
+                    'key' => 'theater',
+                    'value' => $value,
+                    'compare' => '='
+                )
+            );
         } elseif ($type === 'price') {
             // 解析票价区间，例如 "100-150元"
             if (preg_match('/(\d+)-(\d+)/', $value, $matches)) {
