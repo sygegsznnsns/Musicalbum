@@ -631,8 +631,36 @@ final class Viewing_Records {
                         $theater = get_field('theater', $post_id);
                         $permalink = get_permalink($post_id);
                         $is_visible = ($index < $count) ? '' : ' style="display: none;"';
+                        
+                        // 检查是否有票面图片
+                        $ticket_image = get_field('ticket_image', $post_id);
+                        $ticket_image_url = '';
+                        $item_class = 'musicalbum-recent-viewings-item';
+                        $item_style = '';
+                        
+                        if ($ticket_image) {
+                            if (is_array($ticket_image) && isset($ticket_image['url'])) {
+                                $ticket_image_url = $ticket_image['url'];
+                            } elseif (is_numeric($ticket_image)) {
+                                $ticket_image_url = wp_get_attachment_image_url($ticket_image, 'full');
+                            }
+                            
+                            if ($ticket_image_url) {
+                                $item_class .= ' musicalbum-recent-viewings-item-with-bg';
+                                // 合并背景图片样式和显示/隐藏样式
+                                $style_parts = array('background-image: url(\'' . esc_url($ticket_image_url) . '\')');
+                                if ($index >= $count) {
+                                    $style_parts[] = 'display: none';
+                                }
+                                $item_style = ' style="' . implode('; ', $style_parts) . '"';
+                            } else {
+                                $item_style = $is_visible;
+                            }
+                        } else {
+                            $item_style = $is_visible;
+                        }
                     ?>
-                        <div class="musicalbum-recent-viewings-item" data-index="<?php echo esc_attr($index); ?>"<?php echo $is_visible; ?>>
+                        <div class="<?php echo esc_attr($item_class); ?>" data-index="<?php echo esc_attr($index); ?>"<?php echo $item_style; ?>>
                             <a href="<?php echo esc_url($permalink); ?>" class="musicalbum-recent-viewings-link">
                                 <div class="musicalbum-recent-viewings-content">
                                     <h4 class="musicalbum-recent-viewings-item-title"><?php echo esc_html($title); ?></h4>
