@@ -698,7 +698,14 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-attachment: local;
   min-height: 120px;
+  /* 优化图片渲染质量 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .musicalbum-list-item-with-bg::before {
@@ -708,18 +715,75 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.85);
+  background: linear-gradient(to bottom, 
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.65) 100%
+  );
   z-index: 0;
   transition: background 0.2s;
 }
 
 .musicalbum-list-item-with-bg:hover::before {
-  background: rgba(255, 255, 255, 0.75);
+  background: linear-gradient(to bottom, 
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0.55) 100%
+  );
 }
 
 .musicalbum-list-item-with-bg > * {
   position: relative;
   z-index: 1;
+}
+
+/* 增强有背景图片时的文字可读性 */
+.musicalbum-list-item-with-bg .musicalbum-item-title-row h4 a {
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9),
+               0 0 2px rgba(255, 255, 255, 0.8),
+               0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+}
+
+.musicalbum-list-item-with-bg .musicalbum-item-title-row h4 a:hover {
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.95),
+               0 0 2px rgba(255, 255, 255, 0.9),
+               0 2px 6px rgba(255, 131, 131, 0.3);
+}
+
+.musicalbum-list-item-with-bg .musicalbum-meta-tag {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.musicalbum-list-item-with-bg .musicalbum-item-meta span {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(2px);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 0.25rem 0.25rem 0.25rem 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.musicalbum-list-item-with-bg .musicalbum-item-notes {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(2px);
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.musicalbum-list-item-with-bg .musicalbum-btn-icon {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.musicalbum-list-item-with-bg .musicalbum-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 6px rgba(255, 131, 131, 0.3);
 }
 
 /* 主要信息区域（标题和类型） */
