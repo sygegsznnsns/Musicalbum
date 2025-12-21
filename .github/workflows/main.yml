@@ -62,3 +62,16 @@ jobs:
           server-dir: "wp-content/plugins/musicalbum-recommendation/"
           timeout: 60000
           log-level: verbose
+      
+      - name: 部署社区集成插件到服务器
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: "114.215.181.118"
+          username: "musicalbum"
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: "2121"
+          protocol: ftp
+          local-dir: "src/wp-content/plugins/musicalbum-community-integration/"
+          server-dir: "wp-content/plugins/musicalbum-community-integration/"
+          timeout: 60000
+          log-level: verbose
