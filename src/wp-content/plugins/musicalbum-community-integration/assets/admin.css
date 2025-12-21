@@ -1,0 +1,27 @@
+/**
+ * Musicalbum Community Integration Admin Styles
+ * 后台管理样式
+ */
+
+.musicalbum-dependency-status {
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}
+
+.musicalbum-dependency-status h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.musicalbum-dependency-status ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.musicalbum-dependency-status li {
+    margin-bottom: 5px;
+}
+
