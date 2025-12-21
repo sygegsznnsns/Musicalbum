@@ -99,47 +99,106 @@ final class Musicalbum_Community_Integration {
      * 初始化插件
      */
     public function init() {
-        // 加载必要的类文件
-        $this->load_includes();
-        
-        // 如果依赖插件未激活，不继续初始化
-        if (!$this->bbpress_active && !$this->buddypress_active) {
+        // 加载必要的类文件（带错误处理）
+        try {
+            $this->load_includes();
+        } catch (Exception $e) {
+            // 如果加载失败，记录错误但不中断其他功能
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Musicalbum Community Integration: Failed to load includes - ' . $e->getMessage());
+            }
             return;
         }
         
-        // 入队前端资源
+        // 入队前端资源（总是执行，因为资源分享和知识库不依赖其他插件）
         add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
         
         // 入队后台资源
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         
-        // 注册短码
+        // 注册短码（总是执行）
         add_action('init', array($this, 'register_shortcodes'));
         
-        // 注册 REST API
+        // 注册 REST API（总是执行）
         add_action('rest_api_init', array($this, 'register_rest_routes'));
         
-        // 添加后台菜单
+        // 添加后台菜单（总是执行）
         add_action('admin_menu', array($this, 'add_admin_menu'));
         
-        // 注册设置
+        // 注册设置（总是执行）
         add_action('admin_init', array($this, 'register_settings'));
         
-        // 初始化集成类
-        if ($this->bbpress_active) {
-            Musicalbum_BBPress_Integration::init();
+        // 初始化集成类（只在依赖激活时执行）
+        if ($this->bbpress_active && class_exists('Musicalbum_BBPress_Integration')) {
+            try {
+                Musicalbum_BBPress_Integration::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: bbPress integration failed - ' . $e->getMessage());
+                }
+            }
         }
         
-        if ($this->buddypress_active) {
-            Musicalbum_BuddyPress_Integration::init();
+        if ($this->buddypress_active && class_exists('Musicalbum_BuddyPress_Integration')) {
+            try {
+                Musicalbum_BuddyPress_Integration::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: BuddyPress integration failed - ' . $e->getMessage());
+                }
+            }
         }
         
-        // 初始化其他功能类
-        Musicalbum_Viewing_Integration::init();
-        Musicalbum_Resource_Sharing::init();
-        Musicalbum_Knowledge_Base::init();
-        Musicalbum_Community_Customizations::init();
-        Musicalbum_Recommendation_Integration::init();
+        // 初始化其他功能类（总是执行，带错误处理）
+        if (class_exists('Musicalbum_Viewing_Integration')) {
+            try {
+                Musicalbum_Viewing_Integration::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: Viewing integration failed - ' . $e->getMessage());
+                }
+            }
+        }
+        
+        if (class_exists('Musicalbum_Resource_Sharing')) {
+            try {
+                Musicalbum_Resource_Sharing::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: Resource sharing failed - ' . $e->getMessage());
+                }
+            }
+        }
+        
+        if (class_exists('Musicalbum_Knowledge_Base')) {
+            try {
+                Musicalbum_Knowledge_Base::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: Knowledge base failed - ' . $e->getMessage());
+                }
+            }
+        }
+        
+        if (class_exists('Musicalbum_Community_Customizations')) {
+            try {
+                Musicalbum_Community_Customizations::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: Customizations failed - ' . $e->getMessage());
+                }
+            }
+        }
+        
+        if (class_exists('Musicalbum_Recommendation_Integration')) {
+            try {
+                Musicalbum_Recommendation_Integration::init();
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Musicalbum Community Integration: Recommendation integration failed - ' . $e->getMessage());
+                }
+            }
+        }
     }
     
     /**
@@ -148,13 +207,23 @@ final class Musicalbum_Community_Integration {
     private function load_includes() {
         $includes_dir = $this->plugin_path . 'includes/';
         
-        require_once $includes_dir . 'class-bbpress-integration.php';
-        require_once $includes_dir . 'class-buddypress-integration.php';
-        require_once $includes_dir . 'class-viewing-integration.php';
-        require_once $includes_dir . 'class-resource-sharing.php';
-        require_once $includes_dir . 'class-knowledge-base.php';
-        require_once $includes_dir . 'class-customizations.php';
-        require_once $includes_dir . 'class-recommendation-integration.php';
+        // 检查文件是否存在再加载
+        $files = array(
+            'class-bbpress-integration.php',
+            'class-buddypress-integration.php',
+            'class-viewing-integration.php',
+            'class-resource-sharing.php',
+            'class-knowledge-base.php',
+            'class-customizations.php',
+            'class-recommendation-integration.php',
+        );
+        
+        foreach ($files as $file) {
+            $file_path = $includes_dir . $file;
+            if (file_exists($file_path)) {
+                require_once $file_path;
+            }
+        }
     }
     
     /**

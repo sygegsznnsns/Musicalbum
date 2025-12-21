@@ -27,18 +27,31 @@ class Musicalbum_Viewing_Integration {
      * 在观演记录内容后添加分享按钮
      */
     public static function add_share_button_to_viewing($content) {
+        // 确保只在观演记录页面显示
         if (!is_singular('musicalbum_viewing')) {
             return $content;
         }
         
+        // 确保用户已登录
         if (!is_user_logged_in()) {
             return $content;
         }
         
-        $viewing_id = get_the_ID();
-        $share_button = self::render_share_button($viewing_id);
-        
-        return $content . $share_button;
+        try {
+            $viewing_id = get_the_ID();
+            if (!$viewing_id) {
+                return $content;
+            }
+            
+            $share_button = self::render_share_button($viewing_id);
+            return $content . $share_button;
+        } catch (Exception $e) {
+            // 如果出错，返回原内容
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Musicalbum: Failed to add share button - ' . $e->getMessage());
+            }
+            return $content;
+        }
     }
     
     /**

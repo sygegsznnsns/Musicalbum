@@ -32,7 +32,8 @@ class Musicalbum_BBPress_Integration {
      * 创建观演记录相关的论坛分类
      */
     public static function create_viewing_forums() {
-        if (!function_exists('bbp_create_forum')) {
+        // 确保 bbPress 已加载
+        if (!class_exists('bbPress') || !function_exists('bbp_create_forum')) {
             return;
         }
         
@@ -43,14 +44,21 @@ class Musicalbum_BBPress_Integration {
         }
         
         // 创建"观演交流"论坛
-        $forum_id = bbp_create_forum(array(
-            'post_title' => '观演交流',
-            'post_content' => '分享观演记录，讨论剧目和演出体验',
-            'post_status' => 'publish',
-        ));
-        
-        if ($forum_id && !is_wp_error($forum_id)) {
-            update_option('musicalbum_viewing_forum_id', $forum_id);
+        try {
+            $forum_id = bbp_create_forum(array(
+                'post_title' => '观演交流',
+                'post_content' => '分享观演记录，讨论剧目和演出体验',
+                'post_status' => 'publish',
+            ));
+            
+            if ($forum_id && !is_wp_error($forum_id)) {
+                update_option('musicalbum_viewing_forum_id', $forum_id);
+            }
+        } catch (Exception $e) {
+            // 静默失败，不影响其他功能
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Musicalbum: Failed to create viewing forum - ' . $e->getMessage());
+            }
         }
     }
     

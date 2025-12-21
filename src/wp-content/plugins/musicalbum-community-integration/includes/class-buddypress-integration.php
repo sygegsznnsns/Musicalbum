@@ -35,18 +35,26 @@ class Musicalbum_BuddyPress_Integration {
      * 设置用户资料导航
      */
     public static function setup_profile_nav() {
-        if (!function_exists('bp_core_new_nav_item')) {
+        // 确保 BuddyPress 已加载
+        if (!function_exists('buddypress') || !function_exists('bp_core_new_nav_item')) {
             return;
         }
         
         // 添加"观演记录"标签页
-        bp_core_new_nav_item(array(
-            'name' => '观演记录',
-            'slug' => 'viewings',
-            'screen_function' => array(__CLASS__, 'viewings_screen'),
-            'position' => 30,
-            'default_subnav_slug' => 'viewings',
-        ));
+        try {
+            bp_core_new_nav_item(array(
+                'name' => '观演记录',
+                'slug' => 'viewings',
+                'screen_function' => array(__CLASS__, 'viewings_screen'),
+                'position' => 30,
+                'default_subnav_slug' => 'viewings',
+            ));
+        } catch (Exception $e) {
+            // 静默失败，不影响其他功能
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Musicalbum: Failed to setup profile nav - ' . $e->getMessage());
+            }
+        }
     }
     
     /**
@@ -179,26 +187,38 @@ class Musicalbum_BuddyPress_Integration {
      * 创建观演交流群组
      */
     public static function create_viewing_group() {
-        if (!function_exists('groups_create_group')) {
+        // 确保 BuddyPress 已加载
+        if (!function_exists('buddypress') || !function_exists('groups_create_group')) {
             return;
         }
         
         // 检查是否已经创建过
         $group_id = get_option('musicalbum_viewing_group_id', 0);
-        if ($group_id && groups_get_group($group_id)) {
-            return;
+        if ($group_id) {
+            // 检查群组是否存在
+            $group = groups_get_group($group_id);
+            if ($group && !empty($group->id)) {
+                return;
+            }
         }
         
         // 创建群组
-        $group_id = groups_create_group(array(
-            'name' => '观演交流',
-            'description' => '分享观演记录，讨论剧目和演出体验的群组',
-            'status' => 'public',
-            'creator_id' => 1, // 管理员ID
-        ));
-        
-        if ($group_id && !is_wp_error($group_id)) {
-            update_option('musicalbum_viewing_group_id', $group_id);
+        try {
+            $group_id = groups_create_group(array(
+                'name' => '观演交流',
+                'description' => '分享观演记录，讨论剧目和演出体验的群组',
+                'status' => 'public',
+                'creator_id' => 1, // 管理员ID
+            ));
+            
+            if ($group_id && !is_wp_error($group_id)) {
+                update_option('musicalbum_viewing_group_id', $group_id);
+            }
+        } catch (Exception $e) {
+            // 静默失败，不影响其他功能
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Musicalbum: Failed to create viewing group - ' . $e->getMessage());
+            }
         }
     }
     
