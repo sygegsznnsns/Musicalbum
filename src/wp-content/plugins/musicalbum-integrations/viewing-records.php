@@ -40,6 +40,44 @@ final class Viewing_Records {
     }
     
     /**
+     * 安全获取字段值（兼容 ACF 和原生 meta）
+     * 
+     * @param string $field_name 字段名
+     * @param int|false $post_id 文章ID，false 表示当前文章
+     * @return mixed 字段值
+     */
+    public static function safe_get_field($field_name, $post_id = false) {
+        // 如果 ACF 可用，使用 ACF 的 get_field
+        if (function_exists('get_field')) {
+            return get_field($field_name, $post_id);
+        }
+        
+        // 否则使用 WordPress 原生的 get_post_meta
+        if ($post_id === false) {
+            $post_id = get_the_ID();
+        }
+        
+        if (!$post_id) {
+            return '';
+        }
+        
+        // ACF 字段通常存储在 meta 中，字段名可能带前缀
+        // 尝试几种可能的 meta key 格式
+        $meta_value = get_post_meta($post_id, $field_name, true);
+        if ($meta_value !== '') {
+            return $meta_value;
+        }
+        
+        // 尝试带下划线前缀的格式（ACF 常用）
+        $meta_value = get_post_meta($post_id, '_' . $field_name, true);
+        if ($meta_value !== '') {
+            return $meta_value;
+        }
+        
+        return '';
+    }
+    
+    /**
      * 插件激活时的处理
      */
     public static function activate() {
@@ -533,7 +571,7 @@ final class Viewing_Records {
         ob_start();
         echo '<div class="musicalbum-viewings-list">';
         while ($q->have_posts()) { $q->the_post();
-            $date = get_field('view_date', get_the_ID());
+            $date = self::safe_get_field('view_date', get_the_ID());
             echo '<div class="item"><a href="' . esc_url(get_permalink()) . '">' . esc_html(get_the_title()) . '</a><span class="date">' . esc_html($date) . '</span></div>';
         }
         wp_reset_postdata();
@@ -583,7 +621,7 @@ final class Viewing_Records {
         while ($query->have_posts()) {
             $query->the_post();
             $post_id = get_the_ID();
-            $view_date = get_field('view_date', $post_id);
+            $view_date = self::safe_get_field('view_date', $post_id);
             
             // 将日期转换为时间戳用于排序
             $timestamp = $view_date ? strtotime($view_date) : 0;
@@ -627,13 +665,13 @@ final class Viewing_Records {
                         $post_id = $post_data['post_id'];
                         $title = get_the_title($post_id);
                         $view_date = $post_data['view_date'];
-                        $category = get_field('category', $post_id);
-                        $theater = get_field('theater', $post_id);
+                        $category = self::safe_get_field('category', $post_id);
+                        $theater = self::safe_get_field('theater', $post_id);
                         $permalink = get_permalink($post_id);
                         $is_visible = ($index < $count) ? '' : ' style="display: none;"';
                         
                         // 检查是否有票面图片
-                        $ticket_image = get_field('ticket_image', $post_id);
+                        $ticket_image = self::safe_get_field('ticket_image', $post_id);
                         $ticket_image_url = '';
                         $item_class = 'musicalbum-recent-viewings-item';
                         $item_style = '';
@@ -1118,11 +1156,11 @@ final class Viewing_Records {
             'PRODID:-//ViewingRecords//Viewing//CN'
         );
         while($q->have_posts()){ $q->the_post();
-            $date = get_field('view_date', get_the_ID());
+            $date = self::safe_get_field('view_date', get_the_ID());
             if (!$date) { continue; }
             $dt = preg_replace('/-/', '', $date);
             $summary = get_the_title();
-            $desc = trim('剧院: '.(get_field('theater', get_the_ID()) ?: '')."\n".'卡司: '.(get_field('cast', get_the_ID()) ?: '')."\n".'票价: '.(get_field('price', get_the_ID()) ?: ''));
+            $desc = trim('剧院: '.(self::safe_get_field('theater', get_the_ID()) ?: '')."\n".'卡司: '.(self::safe_get_field('cast', get_the_ID()) ?: '')."\n".'票价: '.(self::safe_get_field('price', get_the_ID()) ?: ''));
             $lines[] = 'BEGIN:VEVENT';
             $lines[] = 'UID:' . get_the_ID() . '@viewing';
             $lines[] = 'DTSTART;VALUE=DATE:' . $dt;

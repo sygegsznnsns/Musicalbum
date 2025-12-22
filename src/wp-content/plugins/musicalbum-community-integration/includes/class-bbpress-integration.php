@@ -33,26 +33,40 @@ class Musicalbum_BBPress_Integration {
      */
     public static function create_viewing_forums() {
         // 确保 bbPress 已加载
-        if (!class_exists('bbPress') || !function_exists('bbp_create_forum')) {
+        if (!class_exists('bbPress')) {
             return;
         }
         
         // 检查是否已经创建过
         $forum_id = get_option('musicalbum_viewing_forum_id', 0);
-        if ($forum_id && get_post($forum_id)) {
-            return;
+        if ($forum_id) {
+            $forum = get_post($forum_id);
+            if ($forum && $forum->post_type === 'forum') {
+                return; // 论坛已存在
+            }
+            // 如果论坛不存在，清除选项以便重新创建
+            delete_option('musicalbum_viewing_forum_id');
         }
         
         // 创建"观演交流"论坛
         try {
-            $forum_id = bbp_create_forum(array(
-                'post_title' => '观演交流',
+            // 使用 WordPress 原生方式创建论坛
+            $forum_id = wp_insert_post(array(
+                'post_title'   => '观演交流',
                 'post_content' => '分享观演记录，讨论剧目和演出体验',
-                'post_status' => 'publish',
+                'post_status'  => 'publish',
+                'post_type'    => 'forum',
+                'post_author'  => 1, // 管理员
             ));
             
             if ($forum_id && !is_wp_error($forum_id)) {
                 update_option('musicalbum_viewing_forum_id', $forum_id);
+                
+                // 设置论坛元数据（如果需要）
+                if (function_exists('bbp_update_forum_meta')) {
+                    bbp_update_forum_meta($forum_id, '_bbp_status', 'open');
+                    bbp_update_forum_meta($forum_id, '_bbp_visibility', 'publish');
+                }
             }
         } catch (Exception $e) {
             // 静默失败，不影响其他功能
@@ -60,6 +74,20 @@ class Musicalbum_BBPress_Integration {
                 error_log('Musicalbum: Failed to create viewing forum - ' . $e->getMessage());
             }
         }
+    }
+    
+    /**
+     * 手动创建论坛（管理员工具函数）
+     */
+    public static function force_create_forum() {
+        // 清除现有选项
+        delete_option('musicalbum_viewing_forum_id');
+        
+        // 重新创建
+        self::create_viewing_forums();
+        
+        $forum_id = get_option('musicalbum_viewing_forum_id', 0);
+        return $forum_id;
     }
     
     /**
@@ -103,7 +131,7 @@ class Musicalbum_BBPress_Integration {
      * 渲染论坛短码
      */
     public static function render_forum_shortcode($atts) {
-        if (!function_exists('bbp_get_forum')) {
+        if (!class_exists('bbPress')) {
             return '<p>bbPress 插件未激活。</p>';
         }
         
@@ -114,42 +142,93 @@ class Musicalbum_BBPress_Integration {
         if (!$forum_id) {
             // 如果没有指定论坛ID，使用观演记录论坛
             $forum_id = get_option('musicalbum_viewing_forum_id', 0);
+            
+            // 如果还是没有，尝试创建
+            if (!$forum_id) {
+                self::create_viewing_forums();
+                $forum_id = get_option('musicalbum_viewing_forum_id', 0);
+            }
         }
         
         if (!$forum_id) {
-            return '<p>未找到指定的论坛。</p>';
+            return '<p>未找到指定的论坛。请确保 bbPress 插件已激活，或联系管理员创建论坛。</p>';
         }
         
-        $forum = bbp_get_forum($forum_id);
-        if (!$forum) {
-            return '<p>论坛不存在。</p>';
+        // 使用 WordPress 原生方式获取论坛
+        $forum = get_post($forum_id);
+        if (!$forum || $forum->post_type !== 'forum') {
+            // 如果论坛不存在，尝试重新创建
+            delete_option('musicalbum_viewing_forum_id');
+            self::create_viewing_forums();
+            $forum_id = get_option('musicalbum_viewing_forum_id', 0);
+            $forum = $forum_id ? get_post($forum_id) : null;
+            
+            if (!$forum || $forum->post_type !== 'forum') {
+                return '<p>论坛不存在。请确保 bbPress 插件已激活。</p>';
+            }
         }
         
         // 获取论坛主题
-        $topics = bbp_get_forum_topics(array(
-            'post_parent' => $forum_id,
-            'posts_per_page' => $limit,
-        ));
+        $topics = array();
+        if (function_exists('bbp_get_forum_topics')) {
+            $topics = bbp_get_forum_topics(array(
+                'post_parent' => $forum_id,
+                'posts_per_page' => $limit,
+            ));
+        } else {
+            // 备用方式：使用 WP_Query
+            $topics_query = new WP_Query(array(
+                'post_type' => 'topic',
+                'post_parent' => $forum_id,
+                'posts_per_page' => $limit,
+                'post_status' => 'publish',
+            ));
+            $topics = $topics_query->posts;
+        }
         
         ob_start();
         ?>
         <div class="musicalbum-forum-shortcode">
             <h3><?php echo esc_html($forum->post_title); ?></h3>
-            <?php if ($topics) : ?>
+            <?php if ($forum->post_content) : ?>
+                <p class="forum-description"><?php echo esc_html($forum->post_content); ?></p>
+            <?php endif; ?>
+            <?php if ($topics && !empty($topics)) : ?>
                 <ul class="musicalbum-forum-topics">
-                    <?php foreach ($topics as $topic) : ?>
+                    <?php foreach ($topics as $topic) : 
+                        $topic_id = is_object($topic) ? $topic->ID : $topic;
+                        $topic_title = get_the_title($topic_id);
+                        $topic_permalink = get_permalink($topic_id);
+                        
+                        // 获取回复数
+                        $reply_count = 0;
+                        if (function_exists('bbp_get_topic_reply_count')) {
+                            $reply_count = bbp_get_topic_reply_count($topic_id);
+                        } else {
+                            $replies = get_posts(array(
+                                'post_type' => 'reply',
+                                'post_parent' => $topic_id,
+                                'posts_per_page' => -1,
+                                'fields' => 'ids',
+                            ));
+                            $reply_count = count($replies);
+                        }
+                    ?>
                         <li>
-                            <a href="<?php echo esc_url(bbp_get_topic_permalink($topic->ID)); ?>">
-                                <?php echo esc_html($topic->post_title); ?>
+                            <a href="<?php echo esc_url($topic_permalink); ?>">
+                                <?php echo esc_html($topic_title); ?>
                             </a>
                             <span class="topic-meta">
-                                <?php echo esc_html(bbp_get_topic_reply_count($topic->ID)); ?> 回复
+                                <?php echo esc_html($reply_count); ?> 回复
                             </span>
                         </li>
                     <?php endforeach; ?>
                 </ul>
             <?php else : ?>
-                <p>暂无主题。</p>
+                <p>暂无主题。成为第一个发帖的人吧！</p>
+            <?php endif; ?>
+            <?php if (function_exists('bbp_get_forum_permalink')) : ?>
+                <p><a href="<?php echo esc_url(bbp_get_forum_permalink($forum_id)); ?>" class="button">进入论坛</a></p>
             <?php endif; ?>
         </div>
         <?php

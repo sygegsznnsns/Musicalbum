@@ -450,6 +450,14 @@ final class Musicalbum_Community_Integration {
             'musicalbum_community_options',
             'musicalbum_community_section'
         );
+        
+        add_settings_field(
+            'musicalbum_community_create_forum',
+            '创建/重置论坛',
+            array($this, 'render_create_forum_field'),
+            'musicalbum_community_options',
+            'musicalbum_community_section'
+        );
     }
     
     /**
@@ -500,8 +508,38 @@ final class Musicalbum_Community_Integration {
      */
     public function render_viewing_forum_field() {
         $value = get_option('musicalbum_community_viewing_forum_id', '');
-        echo '<input type="number" name="musicalbum_community_viewing_forum_id" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">用于分享观演记录的论坛ID（bbPress 论坛ID）</p>';
+        $auto_created = get_option('musicalbum_viewing_forum_id', 0);
+        
+        echo '<input type="number" name="musicalbum_community_viewing_forum_id" value="' . esc_attr($value ?: $auto_created) . '" class="regular-text" />';
+        echo '<p class="description">用于分享观演记录的论坛ID（bbPress 论坛ID）。如果留空，将使用自动创建的"观演交流"论坛（ID: ' . esc_html($auto_created ?: '未创建') . '）</p>';
+        
+        if ($auto_created) {
+            $forum = get_post($auto_created);
+            if ($forum) {
+                echo '<p><a href="' . esc_url(get_permalink($auto_created)) . '" target="_blank">查看论坛</a> | ';
+                echo '<a href="' . esc_url(admin_url('post.php?post=' . $auto_created . '&action=edit')) . '" target="_blank">编辑论坛</a></p>';
+            }
+        }
+    }
+    
+    /**
+     * 渲染创建论坛字段
+     */
+    public function render_create_forum_field() {
+        // 检查是否有创建请求
+        if (isset($_POST['musicalbum_create_forum']) && wp_verify_nonce($_POST['_wpnonce'], 'musicalbum_community_options-options')) {
+            if (class_exists('Musicalbum_BBPress_Integration')) {
+                $forum_id = Musicalbum_BBPress_Integration::force_create_forum();
+                if ($forum_id) {
+                    echo '<div class="notice notice-success inline"><p>论坛创建成功！论坛ID: ' . esc_html($forum_id) . '</p></div>';
+                } else {
+                    echo '<div class="notice notice-error inline"><p>论坛创建失败。请确保 bbPress 插件已激活。</p></div>';
+                }
+            }
+        }
+        
+        echo '<button type="submit" name="musicalbum_create_forum" class="button button-secondary">创建/重置"观演交流"论坛</button>';
+        echo '<p class="description">如果论坛不存在或出现问题，点击此按钮重新创建论坛。</p>';
     }
     
     /**
