@@ -1,0 +1,62 @@
+@startuml
+package "Statistics & Visualization" {
+  class Viewing_Records <<PHP>> {
+    +shortcode_statistics()
+    +shortcode_custom_chart()
+    +shortcode_viewing_overview()
+    +rest_statistics(req)
+    +rest_statistics_details(req)
+    +rest_statistics_export(req)
+    +rest_overview(req)
+  }
+  
+  class StatisticsData {
+    +category: Map<string,int>
+    +cast: Map<string,int>
+    +price: Map<string,int>
+    +theater: Map<string,int>
+  }
+  
+  class StatisticsModule <<JS>> {
+    +loadStatistics(callback)
+    +renderCategoryChart(data)
+    +renderCastChart(data)
+    +renderPriceChart(data)
+    +generateChart(dataType, chartType, instanceId)
+    +renderDynamicChart(data, chartType, dataType, instanceId)
+    +getChartOptions(chartType, dataType)
+    +getDatasetLabel(dataType)
+    +showDetails(type, value)
+    +exportStatistics()
+    +loadOverview(instanceEl)
+  }
+  
+  class ChartJS <<Lib>> {
+  }
+  
+  class DetailsModal <<JS>> {
+    +open()
+    +update(content)
+  }
+  
+  class ExportService <<JS>> {
+    +export(format)
+  }
+  
+  class RESTClient <<JS>> {
+    +statistics: string
+    +statisticsDetails: string
+    +statisticsExport: string
+    +overview: string
+    +nonce: string
+  }
+  
+  StatisticsModule --> RESTClient : fetches
+  Viewing_Records --> StatisticsData : returns
+  StatisticsModule --> ChartJS : renders
+  StatisticsModule --> DetailsModal : opens
+  DetailsModal --> RESTClient : fetches details
+  ExportService --> RESTClient : exports
+  StatisticsModule --> StatisticsData : reads
+}
+@enduml

@@ -1,0 +1,48 @@
+@startuml
+title External Integrations Architecture
+
+package "Musicalbum Integrations Plugin" {
+  class Viewing_Records <<PHP>> {
+    +register_shortcodes()
+    +register_rest_routes()
+    +shortcode_theaters_map()
+    +rest_theaters_export(req)
+    +rest_ocr(req)
+  }
+  
+  class RESTClient <<JS>> {
+    +theatersExport: string
+    +ocr: string
+    +nonce: string
+  }
+  
+  class FrontendAssets <<Bundle>> {
+    +integrations.js
+    +integrations.css
+  }
+}
+
+package "Third-Party Plugins" {
+  component "WP Google Maps" as WPGM
+  component "Code Snippets" as CodeSnippets
+}
+
+package "External Services" {
+  cloud "Baidu AI OCR API" as BaiduOCR
+}
+
+Viewing_Records --> WPGM : [viewing_theaters_map] -> [wpgmza id=...]
+RESTClient --> Viewing_Records : /viewing/v1/theaters/export\n/viewing/v1/ocr
+FrontendAssets --> RESTClient
+CodeSnippets ..> Viewing_Records : filter viewing_ocr_process(bytes)
+Viewing_Records --> BaiduOCR : token + OCR request
+
+rectangle "Security Boundary" {
+  Viewing_Records
+  RESTClient
+}
+
+note "Options Store:\n- viewing_baidu_api_key\n- viewing_baidu_secret_key" as N1
+Viewing_Records .. N1
+
+@enduml

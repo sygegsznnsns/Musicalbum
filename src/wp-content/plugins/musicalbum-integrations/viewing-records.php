@@ -145,6 +145,8 @@ final class Viewing_Records {
         add_shortcode('musicalbum_viewing_manager', array(__CLASS__, 'shortcode_viewing_manager'));
         add_shortcode('musicalbum_dashboard', array(__CLASS__, 'shortcode_viewing_dashboard'));
         add_shortcode('musicalbum_overview', array(__CLASS__, 'shortcode_viewing_overview'));
+        add_shortcode('viewing_theaters_map', array(__CLASS__, 'shortcode_theaters_map'));
+        add_shortcode('musicalbum_theaters_map', array(__CLASS__, 'shortcode_theaters_map'));
     }
 
     /**
@@ -807,6 +809,11 @@ final class Viewing_Records {
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_overview')
         ));
+        register_rest_route('viewing/v1', '/theaters/export', array(
+            'methods' => 'GET',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_theaters_export')
+        ));
     }
 
     /**
@@ -1369,6 +1376,17 @@ final class Viewing_Records {
         <?php
         return ob_get_clean();
     }
+    
+    public static function shortcode_theaters_map($atts = array(), $content = '') {
+        $atts = shortcode_atts(array(
+            'map_id' => '1'
+        ), $atts);
+        if (!shortcode_exists('wpgmza')) {
+            return '<div class="musicalbum-statistics-error">未检测到地图服务插件（WP Google Maps）。</div>';
+        }
+        $map_id = sanitize_text_field($atts['map_id']);
+        return do_shortcode('[wpgmza id="' . esc_attr($map_id) . '"]');
+    }
 
     /**
      * 我的观演总页面短码：显示导航卡片
@@ -1923,6 +1941,50 @@ final class Viewing_Records {
             header('Content-Disposition: attachment; filename="观演统计_' . date('Y-m-d') . '.json"');
             echo json_encode($results, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
             exit;
+        }
+    }
+    
+    public static function rest_theaters_export($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+        $format = $request->get_param('format') ?: 'csv';
+        $args = array(
+            'post_type' => array('viewing_record', 'musicalbum_viewing'),
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
+        if (!current_user_can('manage_options')) {
+            $args['author'] = $user_id;
+        }
+        $query = new WP_Query($args);
+        $counts = array();
+        while ($query->have_posts()) {
+            $query->the_post();
+            $name = trim((string) get_field('theater', get_the_ID()));
+            if ($name !== '') {
+                $counts[$name] = isset($counts[$name]) ? ($counts[$name] + 1) : 1;
+            }
+        }
+        wp_reset_postdata();
+        if ($format === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="观演剧院_' . date('Y-m-d') . '.csv"');
+            $output = fopen('php://output', 'w');
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($output, array('剧院', '记录数'), ',');
+            foreach ($counts as $name => $count) {
+                fputcsv($output, array($name, $count), ',');
+            }
+            fclose($output);
+            exit;
+        } else {
+            return rest_ensure_response(array(
+                'theaters' => $counts
+            ));
         }
     }
 

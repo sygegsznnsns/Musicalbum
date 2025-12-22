@@ -1,0 +1,79 @@
+@startuml
+package "Viewing Records Management" {
+  class Viewing_Records <<PHP>> {
+    +register_shortcodes()
+    +enqueue_assets()
+    +register_viewing_post_type()
+    +register_rest_routes()
+    +shortcode_viewing_manager()
+    +rest_viewings_list(req)
+    +rest_viewings_get(req)
+    +rest_viewings_create(req)
+    +rest_viewings_update(req)
+    +rest_viewings_delete(req)
+    +rest_upload_image(req)
+  }
+  
+  class ViewingRecord {
+    +id: int
+    +title: string
+    +category: string
+    +theater: string
+    +cast: string
+    +price: string
+    +view_date: string
+    +view_time_start: string
+    +view_time_end: string
+    +notes: string
+    +ticket_image_id: int
+    +ticket_image_url: string
+    +author: string
+    +url: string
+  }
+  
+  class ViewingManager <<JS>> {
+    +initViewingManager()
+    +loadListView()
+    +initCalendarView()
+    +editViewing(id)
+    +deleteViewing(id)
+    +resetForm()
+    +initFormDateInputs()
+    +initImageUpload()
+    +handleImageUpload(input, previewSelector, imageIdSelector)
+    +initDateInput(textInputSelector, datePickerSelector)
+    +initTimeValidation(startSelector, endSelector)
+    +timeToMinutes(timeStr)
+    +escapeHtml(text)
+  }
+  
+  class OCRService <<PHP/JS>> {
+    +rest_ocr(image)
+    +default_baidu_ocr(bytes)
+    +default_aliyun_ocr(bytes)
+    +extract_title(text)
+    +extract_theater(text)
+    +extract_cast(text)
+    +extract_price(text)
+    +extract_date(text)
+  }
+  
+  class CalendarView <<JS>> {
+    +FullCalendar.Calendar
+  }
+  
+  class RESTClient <<JS>> {
+    +viewings: string
+    +uploadImage: string
+    +nonce: string
+  }
+  
+  ViewingManager --> RESTClient : uses
+  RESTClient --> Viewing_Records : calls
+  Viewing_Records --> ViewingRecord : returns
+  ViewingManager --> ViewingRecord : renders/edits
+  ViewingManager ..> OCRService : triggers
+  ViewingManager ..> CalendarView : controls
+  OCRService --> ViewingRecord : fills fields
+}
+@enduml
