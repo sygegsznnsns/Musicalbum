@@ -2687,6 +2687,8 @@ final class Viewing_Records {
             'viewing-data-migration',
             array(__CLASS__, 'render_migration_page')
         );
+        
+        remove_menu_page('edit.php?post_type=musicalbum_viewing');
     }
     
     /**
