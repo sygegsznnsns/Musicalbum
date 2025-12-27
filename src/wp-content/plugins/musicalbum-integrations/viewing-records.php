@@ -1132,7 +1132,7 @@ final class Viewing_Records {
      * 从 OCR 文本中提取标题
      * 支持格式：1) "标题：xxx" 2) 首行文本
      */
-    protected static function extract_title($text) {
+    public static function extract_title($text) {
         // 先尝试提取"标题："格式（支持中英文冒号）
         if (preg_match('/标题[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1155,7 +1155,7 @@ final class Viewing_Records {
     }
     
     /** 提取剧院行 */
-    protected static function extract_theater($text) {
+    public static function extract_theater($text) {
         // 优先提取"剧院："格式（支持多行匹配）
         if (preg_match('/剧院[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1177,7 +1177,7 @@ final class Viewing_Records {
     }
     
     /** 提取卡司行 */
-    protected static function extract_cast($text) {
+    public static function extract_cast($text) {
         // 优先提取"卡司："格式（支持多行匹配）
         if (preg_match('/卡司[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1197,7 +1197,7 @@ final class Viewing_Records {
     }
     
     /** 提取票价数值 */
-    protected static function extract_price($text) {
+    public static function extract_price($text) {
         // 优先提取"票价："格式（支持多行匹配）
         if (preg_match('/票价[:：]\s*([0-9]+(?:\.[0-9]+)?)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1219,7 +1219,7 @@ final class Viewing_Records {
     }
     
     /** 提取日期并格式化为 YYYY-MM-DD */
-    protected static function extract_date($text) {
+    public static function extract_date($text) {
         // 优先提取"日期："格式（支持多行匹配）
         if (preg_match('/日期[:：]\s*([0-9]{4}[-年\.\/][0-9]{1,2}[-月\.\/][0-9]{1,2})/um', $text, $m)) {
             $date_str = $m[1];
