@@ -821,72 +821,79 @@ final class Viewing_Records {
      * 优先使用外部过滤器；否则根据设置走默认提供商
      */
     public static function rest_ocr($request) {
-        $files = $request->get_file_params();
-        if (empty($files['image'])) { 
-            return new WP_Error('no_image', '缺少图片', array('status' => 400)); 
-        }
-        $path = $files['image']['tmp_name'];
-        $data = file_get_contents($path);
-        if (!$data) { 
-            return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); 
-        }
-        
-        $result = apply_filters('viewing_ocr_process', null, $data);
-        if (!is_array($result)) {
-            // 向后兼容：同时读取新旧选项名称
-            $provider = get_option('viewing_ocr_provider') ?: get_option('musicalbum_ocr_provider');
-            $baidu_api_key = get_option('viewing_baidu_api_key') ?: get_option('musicalbum_baidu_api_key');
-            $baidu_secret_key = get_option('viewing_baidu_secret_key') ?: get_option('musicalbum_baidu_secret_key');
-            $aliyun_api_key = get_option('viewing_aliyun_api_key') ?: get_option('musicalbum_aliyun_api_key');
-            $aliyun_endpoint = get_option('viewing_aliyun_endpoint') ?: get_option('musicalbum_aliyun_endpoint');
+        try {
+            $files = $request->get_file_params();
+            if (empty($files['image'])) { 
+                return new WP_Error('no_image', '缺少图片', array('status' => 400)); 
+            }
+            $path = $files['image']['tmp_name'];
+            if (empty($path) || !file_exists($path)) {
+                return new WP_Error('bad_image', '图片文件不存在', array('status' => 400));
+            }
+            $data = file_get_contents($path);
+            if (!$data) { 
+                return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); 
+            }
             
-            // 检查API配置
-            $has_baidu = !empty($baidu_api_key) && !empty($baidu_secret_key);
-            $has_aliyun = !empty($aliyun_api_key) && !empty($aliyun_endpoint);
+            $result = apply_filters('viewing_ocr_process', null, $data);
+            if (!is_array($result)) {
+                // 向后兼容：同时读取新旧选项名称
+                $provider = get_option('viewing_ocr_provider') ?: get_option('musicalbum_ocr_provider');
+                $baidu_api_key = get_option('viewing_baidu_api_key') ?: get_option('musicalbum_baidu_api_key');
+                $baidu_secret_key = get_option('viewing_baidu_secret_key') ?: get_option('musicalbum_baidu_secret_key');
+                $aliyun_api_key = get_option('viewing_aliyun_api_key') ?: get_option('musicalbum_aliyun_api_key');
+                $aliyun_endpoint = get_option('viewing_aliyun_endpoint') ?: get_option('musicalbum_aliyun_endpoint');
+                
+                // 检查API配置
+                $has_baidu = !empty($baidu_api_key) && !empty($baidu_secret_key);
+                $has_aliyun = !empty($aliyun_api_key) && !empty($aliyun_endpoint);
+                
+                if ($provider === 'aliyun' || ($has_aliyun && !$has_baidu)) {
+                    $result = self::default_aliyun_ocr($data);
+                    if (empty($result) && !$has_aliyun) {
+                        $result = array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
+                    }
+                } else if ($has_baidu) {
+                    $result = self::default_baidu_ocr($data);
+                    if (empty($result) && !$has_baidu) {
+                        $result = array('_debug_message' => '百度OCR API未配置（需要API密钥和Secret密钥）');
+                    }
+                } else {
+                    // 没有任何OCR API配置
+                    $result = array(
+                        'title' => '',
+                        'theater' => '',
+                        'cast' => '',
+                        'price' => '',
+                        'view_date' => '',
+                        '_debug_message' => 'OCR API未配置。请配置百度OCR（API密钥和Secret密钥）或阿里云OCR（API密钥和端点）'
+                    );
+                }
+            }
             
-            if ($provider === 'aliyun' || ($has_aliyun && !$has_baidu)) {
-                $result = self::default_aliyun_ocr($data);
-                if (empty($result) && !$has_aliyun) {
-                    $result = array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
-                }
-            } else if ($has_baidu) {
-                $result = self::default_baidu_ocr($data);
-                if (empty($result) && !$has_baidu) {
-                    $result = array('_debug_message' => '百度OCR API未配置（需要API密钥和Secret密钥）');
-                }
-            } else {
-                // 没有任何OCR API配置
+            // 如果OCR API没有配置或返回空结果，确保返回完整的字段结构
+            if (empty($result) || !is_array($result)) {
                 $result = array(
                     'title' => '',
                     'theater' => '',
                     'cast' => '',
                     'price' => '',
                     'view_date' => '',
-                    '_debug_message' => 'OCR API未配置。请配置百度OCR（API密钥和Secret密钥）或阿里云OCR（API密钥和端点）'
+                    '_debug_message' => isset($result['_debug_message']) ? $result['_debug_message'] : 'OCR API返回空结果'
                 );
+            } else {
+                // 确保所有字段都存在，即使API返回的结果中缺少某些字段
+                if (!isset($result['title'])) $result['title'] = '';
+                if (!isset($result['theater'])) $result['theater'] = '';
+                if (!isset($result['cast'])) $result['cast'] = '';
+                if (!isset($result['price'])) $result['price'] = '';
+                if (!isset($result['view_date'])) $result['view_date'] = '';
             }
+            
+            return rest_ensure_response($result);
+        } catch (Exception $e) {
+            return new WP_Error('ocr_exception', 'OCR处理异常: ' . $e->getMessage(), array('status' => 500));
         }
-        
-        // 如果OCR API没有配置或返回空结果，确保返回完整的字段结构
-        if (empty($result) || !is_array($result)) {
-            $result = array(
-                'title' => '',
-                'theater' => '',
-                'cast' => '',
-                'price' => '',
-                'view_date' => '',
-                '_debug_message' => isset($result['_debug_message']) ? $result['_debug_message'] : 'OCR API返回空结果'
-            );
-        } else {
-            // 确保所有字段都存在，即使API返回的结果中缺少某些字段
-            if (!isset($result['title'])) $result['title'] = '';
-            if (!isset($result['theater'])) $result['theater'] = '';
-            if (!isset($result['cast'])) $result['cast'] = '';
-            if (!isset($result['price'])) $result['price'] = '';
-            if (!isset($result['view_date'])) $result['view_date'] = '';
-        }
-        
-        return rest_ensure_response($result);
     }
 
     /**
@@ -915,7 +922,8 @@ final class Viewing_Records {
         
         // 检查JSON解析是否成功
         if ($json === null && json_last_error() !== JSON_ERROR_NONE) {
-            return array('_debug_message' => '百度OCR API返回无效的JSON响应: ' . json_last_error_msg(), '_debug_body' => substr($body, 0, 500));
+            $error_msg = function_exists('json_last_error_msg') ? json_last_error_msg() : 'JSON解析错误 (错误码: ' . json_last_error() . ')';
+            return array('_debug_message' => '百度OCR API返回无效的JSON响应: ' . $error_msg, '_debug_body' => substr($body, 0, 500));
         }
         
         // 检查API返回是否有错误
@@ -997,7 +1005,8 @@ final class Viewing_Records {
             if ($mode === 'octet' && !empty($body)) {
                 $text = $body;
             } else {
-                return array('_debug_message' => '阿里云OCR API返回无效的JSON响应: ' . json_last_error_msg(), '_debug_body' => substr($body, 0, 500));
+                $error_msg = function_exists('json_last_error_msg') ? json_last_error_msg() : 'JSON解析错误 (错误码: ' . json_last_error() . ')';
+                return array('_debug_message' => '阿里云OCR API返回无效的JSON响应: ' . $error_msg, '_debug_body' => substr($body, 0, 500));
             }
         } else {
             // JSON解析成功，尝试从不同字段提取文本
