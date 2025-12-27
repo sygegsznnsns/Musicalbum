@@ -850,14 +850,8 @@ final class Viewing_Records {
                 
                 if ($provider === 'aliyun' || ($has_aliyun && !$has_baidu)) {
                     $result = self::default_aliyun_ocr($data);
-                    if (empty($result) && !$has_aliyun) {
-                        $result = array('_debug_message' => '阿里云OCR API未配置（需要API密钥和端点）');
-                    }
                 } else if ($has_baidu) {
                     $result = self::default_baidu_ocr($data);
-                    if (empty($result) && !$has_baidu) {
-                        $result = array('_debug_message' => '百度OCR API未配置（需要API密钥和Secret密钥）');
-                    }
                 } else {
                     // 没有任何OCR API配置
                     $result = array(
@@ -873,13 +867,14 @@ final class Viewing_Records {
             
             // 如果OCR API没有配置或返回空结果，确保返回完整的字段结构
             if (empty($result) || !is_array($result)) {
+                $debug_msg = (is_array($result) && isset($result['_debug_message'])) ? $result['_debug_message'] : 'OCR API返回空结果';
                 $result = array(
                     'title' => '',
                     'theater' => '',
                     'cast' => '',
                     'price' => '',
                     'view_date' => '',
-                    '_debug_message' => isset($result['_debug_message']) ? $result['_debug_message'] : 'OCR API返回空结果'
+                    '_debug_message' => $debug_msg
                 );
             } else {
                 // 确保所有字段都存在，即使API返回的结果中缺少某些字段
@@ -912,7 +907,11 @@ final class Viewing_Records {
             return array('_debug_message' => '百度OCR获取访问令牌失败，请检查API密钥和Secret密钥是否正确');
         }
         $url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=' . urlencode($token);
-        $body = http_build_query(array('image' => base64_encode($bytes)));
+        $image_base64 = base64_encode($bytes);
+        if ($image_base64 === false) {
+            return array('_debug_message' => '图片编码失败');
+        }
+        $body = http_build_query(array('image' => $image_base64));
         $resp = wp_remote_post($url, array('headers' => array('Content-Type' => 'application/x-www-form-urlencoded'), 'body' => $body, 'timeout' => 20));
         if (is_wp_error($resp)) { 
             return array('_debug_message' => '百度OCR API请求失败: ' . $resp->get_error_message());
@@ -952,13 +951,30 @@ final class Viewing_Records {
             return $result;
         }
         
-        $title = self::extract_title($text);
-        $theater = self::extract_theater($text);
-        $cast = self::extract_cast($text);
-        $price = self::extract_price($text);
-        $date = self::extract_date($text);
+        // 安全地调用extract函数，捕获可能的异常
+        try {
+            $title = self::extract_title($text);
+            $theater = self::extract_theater($text);
+            $cast = self::extract_cast($text);
+            $price = self::extract_price($text);
+            $date = self::extract_date($text);
+        } catch (Exception $e) {
+            // 如果extract函数出错，返回空值但保留原始文本
+            $title = '';
+            $theater = '';
+            $cast = '';
+            $price = '';
+            $date = '';
+        }
         
-        // 添加调试信息（始终可用，方便排查问题）
+        // 确保所有值都是字符串
+        $title = is_string($title) ? $title : '';
+        $theater = is_string($theater) ? $theater : '';
+        $cast = is_string($cast) ? $cast : '';
+        $price = is_string($price) ? $price : '';
+        $date = is_string($date) ? $date : '';
+        
+        // 添加调试信息（始终可用，方便调试）
         $result = array(
             'title' => $title, 
             'theater' => $theater, 
