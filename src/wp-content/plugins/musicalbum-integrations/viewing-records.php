@@ -1082,13 +1082,30 @@ final class Viewing_Records {
             return $result;
         }
         
-        $title = self::extract_title($text);
-        $theater = self::extract_theater($text);
-        $cast = self::extract_cast($text);
-        $price = self::extract_price($text);
-        $date = self::extract_date($text);
+        // 安全地调用extract函数，捕获可能的异常
+        try {
+            $title = self::extract_title($text);
+            $theater = self::extract_theater($text);
+            $cast = self::extract_cast($text);
+            $price = self::extract_price($text);
+            $date = self::extract_date($text);
+        } catch (Exception $e) {
+            // 如果extract函数出错，返回空值但保留原始文本
+            $title = '';
+            $theater = '';
+            $cast = '';
+            $price = '';
+            $date = '';
+        }
         
-        // 添加调试信息（始终可用，方便排查问题）
+        // 确保所有值都是字符串
+        $title = is_string($title) ? $title : '';
+        $theater = is_string($theater) ? $theater : '';
+        $cast = is_string($cast) ? $cast : '';
+        $price = is_string($price) ? $price : '';
+        $date = is_string($date) ? $date : '';
+        
+        // 添加调试信息（始终可用，方便调试）
         $result = array(
             'title' => $title, 
             'theater' => $theater, 
@@ -1115,7 +1132,7 @@ final class Viewing_Records {
      * 从 OCR 文本中提取标题
      * 支持格式：1) "标题：xxx" 2) 首行文本
      */
-    private static function extract_title($text) {
+    protected static function extract_title($text) {
         // 先尝试提取"标题："格式（支持中英文冒号）
         if (preg_match('/标题[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1138,7 +1155,7 @@ final class Viewing_Records {
     }
     
     /** 提取剧院行 */
-    private static function extract_theater($text) {
+    protected static function extract_theater($text) {
         // 优先提取"剧院："格式（支持多行匹配）
         if (preg_match('/剧院[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1160,7 +1177,7 @@ final class Viewing_Records {
     }
     
     /** 提取卡司行 */
-    private static function extract_cast($text) {
+    protected static function extract_cast($text) {
         // 优先提取"卡司："格式（支持多行匹配）
         if (preg_match('/卡司[:：]\s*(.+?)(?:\n|$)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1180,7 +1197,7 @@ final class Viewing_Records {
     }
     
     /** 提取票价数值 */
-    private static function extract_price($text) {
+    protected static function extract_price($text) {
         // 优先提取"票价："格式（支持多行匹配）
         if (preg_match('/票价[:：]\s*([0-9]+(?:\.[0-9]+)?)/um', $text, $m)) {
             $result = trim($m[1]);
@@ -1202,7 +1219,7 @@ final class Viewing_Records {
     }
     
     /** 提取日期并格式化为 YYYY-MM-DD */
-    private static function extract_date($text) {
+    protected static function extract_date($text) {
         // 优先提取"日期："格式（支持多行匹配）
         if (preg_match('/日期[:：]\s*([0-9]{4}[-年\.\/][0-9]{1,2}[-月\.\/][0-9]{1,2})/um', $text, $m)) {
             $date_str = $m[1];
