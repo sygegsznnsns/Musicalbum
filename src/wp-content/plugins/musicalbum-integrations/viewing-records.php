@@ -910,7 +910,13 @@ final class Viewing_Records {
         if (is_wp_error($resp)) { 
             return array('_debug_message' => '百度OCR API请求失败: ' . $resp->get_error_message());
         }
-        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        $body = wp_remote_retrieve_body($resp);
+        $json = json_decode($body, true);
+        
+        // 检查JSON解析是否成功
+        if ($json === null && json_last_error() !== JSON_ERROR_NONE) {
+            return array('_debug_message' => '百度OCR API返回无效的JSON响应: ' . json_last_error_msg(), '_debug_body' => substr($body, 0, 500));
+        }
         
         // 检查API返回是否有错误
         if (isset($json['error_code']) || isset($json['error_msg'])) {
@@ -920,7 +926,7 @@ final class Viewing_Records {
         }
         
         $lines = array();
-        if (isset($json['words_result'])) {
+        if (isset($json['words_result']) && is_array($json['words_result'])) {
             foreach($json['words_result'] as $w){ 
                 if (isset($w['words'])) {
                     $lines[] = $w['words']; 
@@ -981,22 +987,35 @@ final class Viewing_Records {
         if (is_wp_error($resp)) { 
             return array('_debug_message' => '阿里云OCR API请求失败: ' . $resp->get_error_message());
         }
-        $json = json_decode(wp_remote_retrieve_body($resp), true);
+        $body = wp_remote_retrieve_body($resp);
+        $json = json_decode($body, true);
         $text = '';
-        if (is_string($json)) { $text = $json; }
-        if (!$text && isset($json['content']) && is_string($json['content'])) { $text = $json['content']; }
-        if (!$text && isset($json['result']) && is_string($json['result'])) { $text = $json['result']; }
-        if (!$text && isset($json['data']['content']) && is_string($json['data']['content'])) { $text = $json['data']['content']; }
-        if (!$text && isset($json['data']['text']) && is_string($json['data']['text'])) { $text = $json['data']['text']; }
-        if (!$text && isset($json['data']['lines']) && is_array($json['data']['lines'])) {
-            $lines = array();
-            foreach($json['data']['lines'] as $ln){ if (isset($ln['text'])) { $lines[] = $ln['text']; } }
-            $text = implode("\n", $lines);
-        }
-        if (!$text && isset($json['prism_wordsInfo']) && is_array($json['prism_wordsInfo'])) {
-            $lines = array();
-            foreach($json['prism_wordsInfo'] as $w){ if (isset($w['word'])) { $lines[] = $w['word']; } }
-            $text = implode("\n", $lines);
+        
+        // 检查JSON解析是否成功（注意：某些模式可能返回非JSON格式）
+        if ($json === null && json_last_error() !== JSON_ERROR_NONE) {
+            // 如果模式是octet，可能返回非JSON格式，尝试直接使用响应体
+            if ($mode === 'octet' && !empty($body)) {
+                $text = $body;
+            } else {
+                return array('_debug_message' => '阿里云OCR API返回无效的JSON响应: ' . json_last_error_msg(), '_debug_body' => substr($body, 0, 500));
+            }
+        } else {
+            // JSON解析成功，尝试从不同字段提取文本
+            if (is_string($json)) { $text = $json; }
+            if (!$text && isset($json['content']) && is_string($json['content'])) { $text = $json['content']; }
+            if (!$text && isset($json['result']) && is_string($json['result'])) { $text = $json['result']; }
+            if (!$text && isset($json['data']['content']) && is_string($json['data']['content'])) { $text = $json['data']['content']; }
+            if (!$text && isset($json['data']['text']) && is_string($json['data']['text'])) { $text = $json['data']['text']; }
+            if (!$text && isset($json['data']['lines']) && is_array($json['data']['lines'])) {
+                $lines = array();
+                foreach($json['data']['lines'] as $ln){ if (isset($ln['text'])) { $lines[] = $ln['text']; } }
+                $text = implode("\n", $lines);
+            }
+            if (!$text && isset($json['prism_wordsInfo']) && is_array($json['prism_wordsInfo'])) {
+                $lines = array();
+                foreach($json['prism_wordsInfo'] as $w){ if (isset($w['word'])) { $lines[] = $w['word']; } }
+                $text = implode("\n", $lines);
+            }
         }
         // 如果没有识别到文本，返回空结果（但包含调试信息）
         $result = array();
