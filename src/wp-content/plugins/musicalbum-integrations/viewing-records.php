@@ -822,19 +822,44 @@ final class Viewing_Records {
      */
     public static function rest_ocr($request) {
         try {
-            $files = $request->get_file_params();
-            if (empty($files['image'])) { 
-                return new WP_Error('no_image', '缺少图片', array('status' => 400)); 
+            // WordPress REST API文件上传需要使用$_FILES
+            // 先尝试使用get_file_params()（WordPress 4.7+），如果不存在则使用$_FILES
+            $files = null;
+            if (method_exists($request, 'get_file_params')) {
+                $files = $request->get_file_params();
             }
-            $path = $files['image']['tmp_name'];
-            if (empty($path) || !file_exists($path)) {
-                return new WP_Error('bad_image', '图片文件不存在', array('status' => 400));
+            
+            // 如果get_file_params()返回空，尝试使用$_FILES
+            if (empty($files) && isset($_FILES['image'])) {
+                $files = array('image' => $_FILES['image']);
             }
-            $data = file_get_contents($path);
-            if (!$data) { 
+            
+            if (empty($files) || !isset($files['image'])) { 
+                return new WP_Error('no_image', '缺少图片文件', array('status' => 400)); 
+            }
+            
+            $image_file = $files['image'];
+            if (!isset($image_file['tmp_name']) || empty($image_file['tmp_name'])) {
+                return new WP_Error('bad_image', '图片文件路径无效', array('status' => 400));
+            }
+            
+            $path = $image_file['tmp_name'];
+            if (!file_exists($path)) {
+                return new WP_Error('bad_image', '图片文件不存在: ' . $path, array('status' => 400));
+            }
+            
+            // 检查文件大小（限制为10MB）
+            $file_size = filesize($path);
+            if ($file_size === false || $file_size > 10 * 1024 * 1024) {
+                return new WP_Error('bad_image', '图片文件过大（最大10MB）', array('status' => 400));
+            }
+            
+            $data = @file_get_contents($path);
+            if ($data === false || empty($data)) { 
                 return new WP_Error('bad_image', '读取图片失败', array('status' => 400)); 
             }
             
+            // 应用过滤器
             $result = apply_filters('viewing_ocr_process', null, $data);
             if (!is_array($result)) {
                 // 向后兼容：同时读取新旧选项名称
@@ -887,7 +912,13 @@ final class Viewing_Records {
             
             return rest_ensure_response($result);
         } catch (Exception $e) {
+            // 记录详细错误信息
+            error_log('OCR Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
             return new WP_Error('ocr_exception', 'OCR处理异常: ' . $e->getMessage(), array('status' => 500));
+        } catch (Error $e) {
+            // PHP 7.0+ 的致命错误
+            error_log('OCR Fatal Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return new WP_Error('ocr_error', 'OCR处理错误: ' . $e->getMessage(), array('status' => 500));
         }
     }
 
