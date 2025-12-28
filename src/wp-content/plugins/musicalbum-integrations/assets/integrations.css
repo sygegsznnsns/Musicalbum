@@ -899,6 +899,82 @@
   color: #dc2626;
 }
 
+/* 列表项隐藏样式（用于分页） */
+.musicalbum-list-item-hidden {
+  display: none !important;
+}
+
+/* 分页控件样式 */
+.musicalbum-list-pagination {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.musicalbum-pagination-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.musicalbum-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.musicalbum-btn-pagination {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+
+.musicalbum-btn-pagination:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #ff8383;
+  color: #ff8383;
+}
+
+.musicalbum-btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.musicalbum-btn-pagination.musicalbum-btn-page {
+  min-width: 40px;
+  padding: 0.5rem 0.75rem;
+}
+
+.musicalbum-btn-pagination.musicalbum-btn-page-active {
+  background: #ff8383;
+  color: #fff;
+  border-color: #ff8383;
+  font-weight: 600;
+}
+
+.musicalbum-btn-pagination.musicalbum-btn-page-active:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.musicalbum-pagination-ellipsis {
+  padding: 0 0.5rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
 /* 日历视图 */
 /* 日历快速导航 */
 .musicalbum-calendar-nav {

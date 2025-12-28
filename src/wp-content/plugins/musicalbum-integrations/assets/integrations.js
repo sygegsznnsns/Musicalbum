@@ -1363,8 +1363,20 @@
     });
   }
 
+  // 列表视图分页相关变量
+  var listViewCurrentPage = 1;
+  var listViewItemsPerPage = 5;
+
   // 加载列表视图
-  function loadListView() {
+  function loadListView(page) {
+    // 如果传入了页码参数，更新当前页码
+    if (typeof page !== 'undefined') {
+      listViewCurrentPage = page;
+    } else {
+      // 如果没有传入页码，重置到第一页（用于搜索/筛选时）
+      listViewCurrentPage = 1;
+    }
+
     var container = $('#musicalbum-list-container');
     container.html('<div class="musicalbum-loading">加载中...</div>');
 
@@ -1381,13 +1393,25 @@
       data: params
     }).done(function(data) {
       if (data && data.length > 0) {
+        // 计算分页信息
+        var totalItems = data.length;
+        var totalPages = Math.ceil(totalItems / listViewItemsPerPage);
+        var startIndex = (listViewCurrentPage - 1) * listViewItemsPerPage;
+        var endIndex = Math.min(startIndex + listViewItemsPerPage, totalItems);
+
         var html = '<div class="musicalbum-list-items">';
-        data.forEach(function(item) {
+        data.forEach(function(item, index) {
           // 检查是否有票面图片
           var hasTicketImage = item.ticket_image && item.ticket_image.url;
           var ticketImageUrl = hasTicketImage ? item.ticket_image.url : '';
           var itemClass = 'musicalbum-list-item';
           var itemStyle = '';
+          
+          // 添加分页控制：只显示当前页的记录
+          var isVisible = (index >= startIndex && index < endIndex);
+          if (!isVisible) {
+            itemClass += ' musicalbum-list-item-hidden';
+          }
           
           if (hasTicketImage) {
             itemClass += ' musicalbum-list-item-with-bg';
@@ -1395,7 +1419,7 @@
             itemStyle = ' style="background-image: url(\'' + escapeHtml(ticketImageUrl) + '\');"';
           }
           
-          html += '<div class="' + itemClass + '" data-id="' + item.id + '"' + itemStyle + '>';
+          html += '<div class="' + itemClass + '" data-id="' + item.id + '" data-index="' + index + '"' + itemStyle + '>';
           
           // 主要信息区域（默认显示：标题和类型）
           html += '<div class="musicalbum-item-main">';
@@ -1450,6 +1474,59 @@
           html += '</div>';
         });
         html += '</div>';
+
+        // 添加分页控件
+        if (totalPages > 1) {
+          html += '<div class="musicalbum-list-pagination">';
+          html += '<div class="musicalbum-pagination-info">';
+          html += '<span>共 ' + totalItems + ' 条记录，第 ' + listViewCurrentPage + ' / ' + totalPages + ' 页</span>';
+          html += '</div>';
+          html += '<div class="musicalbum-pagination-controls">';
+          
+          // 上一页按钮
+          if (listViewCurrentPage > 1) {
+            html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-prev" data-page="' + (listViewCurrentPage - 1) + '">上一页</button>';
+          } else {
+            html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-prev" disabled>上一页</button>';
+          }
+          
+          // 页码按钮（显示当前页前后各2页）
+          var pageStart = Math.max(1, listViewCurrentPage - 2);
+          var pageEnd = Math.min(totalPages, listViewCurrentPage + 2);
+          
+          if (pageStart > 1) {
+            html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-page" data-page="1">1</button>';
+            if (pageStart > 2) {
+              html += '<span class="musicalbum-pagination-ellipsis">...</span>';
+            }
+          }
+          
+          for (var i = pageStart; i <= pageEnd; i++) {
+            if (i === listViewCurrentPage) {
+              html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-page musicalbum-btn-page-active" data-page="' + i + '">' + i + '</button>';
+            } else {
+              html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-page" data-page="' + i + '">' + i + '</button>';
+            }
+          }
+          
+          if (pageEnd < totalPages) {
+            if (pageEnd < totalPages - 1) {
+              html += '<span class="musicalbum-pagination-ellipsis">...</span>';
+            }
+            html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-page" data-page="' + totalPages + '">' + totalPages + '</button>';
+          }
+          
+          // 下一页按钮
+          if (listViewCurrentPage < totalPages) {
+            html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-next" data-page="' + (listViewCurrentPage + 1) + '">下一页</button>';
+          } else {
+            html += '<button type="button" class="musicalbum-btn-pagination musicalbum-btn-next" disabled>下一页</button>';
+          }
+          
+          html += '</div>';
+          html += '</div>';
+        }
+
         container.html(html);
 
         // 绑定编辑和删除按钮
@@ -1482,6 +1559,18 @@
           }
           
           return false;
+        });
+
+        // 绑定分页按钮
+        $('.musicalbum-btn-pagination').on('click', function() {
+          var page = $(this).data('page');
+          if (page && !$(this).prop('disabled')) {
+            loadListView(page);
+            // 滚动到列表顶部
+            $('html, body').animate({
+              scrollTop: $('#musicalbum-list-container').offset().top - 20
+            }, 300);
+          }
         });
       } else {
         container.html('<div class="musicalbum-empty">暂无记录</div>');
