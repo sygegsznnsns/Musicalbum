@@ -1593,6 +1593,9 @@
       window.viewingCalendar.destroy();
     }
 
+    // 移除已存在的快速导航容器，避免重复创建
+    $('.musicalbum-calendar-nav').remove();
+
     // 创建快速导航容器（使用文本输入框避免浏览器限制）
     var navContainer = $('<div class="musicalbum-calendar-nav"></div>');
     // 使用text类型，避免type="date"的浏览器限制
