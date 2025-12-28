@@ -1923,10 +1923,11 @@
       headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce }
     }).done(function(item) {
       var html = '<h3><a href="' + (item.url || props.url) + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
-      if (item.category || props.category) html += '<p><strong>类别：</strong>' + escapeHtml(item.category || props.category) + '</p>';
-      if (item.theater || props.theater) html += '<p><strong>剧院：</strong>' + escapeHtml(item.theater || props.theater) + '</p>';
-      if (item.cast || props.cast) html += '<p><strong>卡司：</strong>' + escapeHtml(item.cast || props.cast) + '</p>';
-      if (item.price || props.price) html += '<p><strong>票价：</strong>' + escapeHtml(item.price || props.price) + '</p>';
+      html += '<div class="musicalbum-event-details">';
+      if (item.category || props.category) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">🎭 类别</span><span class="musicalbum-detail-value">' + escapeHtml(item.category || props.category) + '</span></div>';
+      if (item.theater || props.theater) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">🏛️ 剧院</span><span class="musicalbum-detail-value">' + escapeHtml(item.theater || props.theater) + '</span></div>';
+      if (item.cast || props.cast) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">👥 卡司</span><span class="musicalbum-detail-value">' + escapeHtml(item.cast || props.cast) + '</span></div>';
+      if (item.price || props.price) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">💰 票价</span><span class="musicalbum-detail-value">' + escapeHtml(item.price || props.price) + '</span></div>';
       if (item.view_date) {
         var dateTimeStr = escapeHtml(item.view_date);
         if (item.view_time_start || item.view_time_end) {
@@ -1942,11 +1943,12 @@
             dateTimeStr += ' ' + timeStr;
           }
         }
-        html += '<p><strong>观演时间：</strong>' + dateTimeStr + '</p>';
+        html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">📅 观演时间</span><span class="musicalbum-detail-value">' + dateTimeStr + '</span></div>';
       }
-      html += '<div class="musicalbum-calendar-actions" style="margin-top:1rem;">';
-      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">编辑</button>';
-      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">删除</button>';
+      html += '</div>';
+      html += '<div class="musicalbum-calendar-actions">';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">✏️ 编辑</button>';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">🗑️ 删除</button>';
       html += '</div>';
       
       modal.find('.musicalbum-modal-body').html(html);
@@ -1966,13 +1968,15 @@
     }).fail(function() {
       // 如果获取失败，使用props中的信息
       var html = '<h3><a href="' + props.url + '" target="_blank">' + escapeHtml(title) + '</a></h3>';
-      if (props.category) html += '<p><strong>类别：</strong>' + escapeHtml(props.category) + '</p>';
-      if (props.theater) html += '<p><strong>剧院：</strong>' + escapeHtml(props.theater) + '</p>';
-      if (props.cast) html += '<p><strong>卡司：</strong>' + escapeHtml(props.cast) + '</p>';
-      if (props.price) html += '<p><strong>票价：</strong>' + escapeHtml(props.price) + '</p>';
-      html += '<div class="musicalbum-calendar-actions" style="margin-top:1rem;">';
-      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">编辑</button>';
-      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">删除</button>';
+      html += '<div class="musicalbum-event-details">';
+      if (props.category) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">🎭 类别</span><span class="musicalbum-detail-value">' + escapeHtml(props.category) + '</span></div>';
+      if (props.theater) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">🏛️ 剧院</span><span class="musicalbum-detail-value">' + escapeHtml(props.theater) + '</span></div>';
+      if (props.cast) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">👥 卡司</span><span class="musicalbum-detail-value">' + escapeHtml(props.cast) + '</span></div>';
+      if (props.price) html += '<div class="musicalbum-detail-item"><span class="musicalbum-detail-label">💰 票价</span><span class="musicalbum-detail-value">' + escapeHtml(props.price) + '</span></div>';
+      html += '</div>';
+      html += '<div class="musicalbum-calendar-actions">';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-edit" data-id="' + id + '">✏️ 编辑</button>';
+      html += '<button type="button" class="musicalbum-btn musicalbum-btn-sm musicalbum-btn-delete" data-id="' + id + '">🗑️ 删除</button>';
       html += '</div>';
       
       modal.find('.musicalbum-modal-body').html(html);
