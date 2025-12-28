@@ -286,13 +286,14 @@
   line-height: 1;
   transition: all 0.2s ease;
   border-radius: 0 16px 0 0;
+  display: inline-block;
+  box-sizing: border-box;
 }
 
 .musicalbum-modal-close:hover,
 .musicalbum-modal-close:focus {
   color: #ff8383;
   background: #fff5f5;
-  transform: scale(1.1);
 }
 
 .musicalbum-modal-title {
