@@ -222,6 +222,7 @@ final class Viewing_Records {
                 'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
                 'overview' => esc_url_raw(rest_url('viewing/v1/overview')),
                 'importCsv' => esc_url_raw(rest_url('viewing/v1/viewings/import-csv')),
+                'batchDelete' => esc_url_raw(rest_url('viewing/v1/viewings/batch-delete')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -795,6 +796,11 @@ final class Viewing_Records {
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_viewings_delete'),
             'args' => array('id' => array('type' => 'integer'))
+        ));
+        register_rest_route('viewing/v1', '/viewings/batch-delete', array(
+            'methods' => 'POST',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_batch_delete')
         ));
         
         // 图片上传端点
@@ -2726,6 +2732,65 @@ final class Viewing_Records {
 
         return rest_ensure_response(array(
             'message' => '记录删除成功'
+        ));
+    }
+    
+    /**
+     * 批量删除观演记录 REST API
+     */
+    public static function rest_viewings_batch_delete($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+
+        $ids = $request->get_param('ids');
+        if (!is_array($ids) || empty($ids)) {
+            return new WP_Error('invalid_params', '请选择要删除的记录', array('status' => 400));
+        }
+
+        $success_count = 0;
+        $error_count = 0;
+        $errors = array();
+
+        foreach ($ids as $post_id) {
+            $post_id = intval($post_id);
+            if ($post_id <= 0) {
+                $error_count++;
+                $errors[] = "无效的记录ID: {$post_id}";
+                continue;
+            }
+
+            $post = get_post($post_id);
+            if (!$post || !in_array($post->post_type, array('viewing_record', 'musicalbum_viewing'))) {
+                $error_count++;
+                $errors[] = "记录不存在: {$post_id}";
+                continue;
+            }
+
+            // 检查权限：只能删除自己的记录，除非是管理员
+            if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+                $error_count++;
+                $errors[] = "无权删除记录: {$post_id}";
+                continue;
+            }
+
+            $result = wp_delete_post($post_id, true);
+            if ($result) {
+                $success_count++;
+            } else {
+                $error_count++;
+                $errors[] = "删除失败: {$post_id}";
+            }
+        }
+
+        return rest_ensure_response(array(
+            'success' => true,
+            'success_count' => $success_count,
+            'error_count' => $error_count,
+            'total_count' => count($ids),
+            'errors' => $errors,
+            'message' => sprintf('批量删除完成：成功 %d 条，失败 %d 条', $success_count, $error_count)
         ));
     }
     

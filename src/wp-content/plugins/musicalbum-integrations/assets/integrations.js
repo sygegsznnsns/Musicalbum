@@ -1525,7 +1525,17 @@
         var startIndex = (listViewCurrentPage - 1) * listViewItemsPerPage;
         var endIndex = Math.min(startIndex + listViewItemsPerPage, totalItems);
 
-        var html = '<div class="musicalbum-list-items">';
+        // 添加批量操作工具栏
+        var html = '<div class="musicalbum-batch-actions" style="margin-bottom:1rem;padding:0.75rem;background:#f9fafb;border-radius:0.5rem;display:flex;align-items:center;gap:1rem;">';
+        html += '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">';
+        html += '<input type="checkbox" id="musicalbum-select-all" style="cursor:pointer;">';
+        html += '<span>全选</span>';
+        html += '</label>';
+        html += '<button type="button" id="musicalbum-batch-delete-btn" class="musicalbum-btn" style="background:#dc2626;color:#fff;padding:0.5rem 1rem;border:none;border-radius:0.25rem;cursor:pointer;display:none;" disabled>批量删除</button>';
+        html += '<span id="musicalbum-selected-count" style="color:#6b7280;font-size:0.875rem;"></span>';
+        html += '</div>';
+        
+        html += '<div class="musicalbum-list-items">';
         data.forEach(function(item, index) {
           // 检查是否有票面图片
           var hasTicketImage = item.ticket_image && item.ticket_image.url;
@@ -1549,8 +1559,9 @@
           
           // 主要信息区域（默认显示：标题和类型）
           html += '<div class="musicalbum-item-main">';
-          html += '<div class="musicalbum-item-title-row">';
-          html += '<h4><a href="' + item.url + '" target="_blank">' + escapeHtml(item.title) + '</a></h4>';
+          html += '<div class="musicalbum-item-title-row" style="display:flex;align-items:center;gap:0.75rem;">';
+          html += '<input type="checkbox" class="musicalbum-item-checkbox" data-id="' + item.id + '" style="cursor:pointer;flex-shrink:0;">';
+          html += '<h4 style="margin:0;flex:1;"><a href="' + item.url + '" target="_blank">' + escapeHtml(item.title) + '</a></h4>';
           if (item.category) {
             html += '<span class="musicalbum-meta-tag">' + escapeHtml(item.category) + '</span>';
           }
@@ -1698,8 +1709,73 @@
             }, 300);
           }
         });
+        
+        // 更新批量删除按钮状态
+        function updateBatchDeleteButton() {
+          var selectedCount = $('.musicalbum-item-checkbox:checked').length;
+          var $btn = $('#musicalbum-batch-delete-btn');
+          var $count = $('#musicalbum-selected-count');
+          
+          if (selectedCount > 0) {
+            $btn.show().prop('disabled', false);
+            $count.text('已选择 ' + selectedCount + ' 条记录');
+          } else {
+            $btn.hide().prop('disabled', true);
+            $count.text('');
+          }
+        }
+        
+        // 重置选择状态
+        $('#musicalbum-select-all').prop('checked', false);
+        updateBatchDeleteButton();
+        
+        // 绑定批量选择功能
+        // 全选/取消全选（使用off先移除旧绑定，避免重复绑定）
+        $('#musicalbum-select-all').off('change').on('change', function() {
+          var isChecked = $(this).prop('checked');
+          $('.musicalbum-item-checkbox').prop('checked', isChecked);
+          updateBatchDeleteButton();
+        });
+        
+        // 单个复选框变化（使用off先移除旧绑定，避免重复绑定）
+        $('.musicalbum-item-checkbox').off('change').on('change', function() {
+          updateBatchDeleteButton();
+          // 更新全选复选框状态
+          var totalCheckboxes = $('.musicalbum-item-checkbox:visible').length;
+          var checkedCheckboxes = $('.musicalbum-item-checkbox:visible:checked').length;
+          $('#musicalbum-select-all').prop('checked', totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
+        });
+        
+        // 批量删除按钮（使用off先移除旧绑定，避免重复绑定）
+        $('#musicalbum-batch-delete-btn').off('click').on('click', function() {
+          var selectedIds = [];
+          $('.musicalbum-item-checkbox:checked').each(function() {
+            selectedIds.push($(this).data('id'));
+          });
+          
+          if (selectedIds.length === 0) {
+            alert('请选择要删除的记录');
+            return;
+          }
+          
+          if (!confirm('确定要删除选中的 ' + selectedIds.length + ' 条记录吗？此操作不可恢复！')) {
+            return;
+          }
+          
+          batchDeleteViewings(selectedIds);
+        });
       } else {
-        container.html('<div class="musicalbum-empty">暂无记录</div>');
+        // 即使没有数据，也显示批量操作工具栏（但按钮会被禁用）
+        var html = '<div class="musicalbum-batch-actions" style="margin-bottom:1rem;padding:0.75rem;background:#f9fafb;border-radius:0.5rem;display:flex;align-items:center;gap:1rem;">';
+        html += '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">';
+        html += '<input type="checkbox" id="musicalbum-select-all" disabled style="cursor:pointer;">';
+        html += '<span>全选</span>';
+        html += '</label>';
+        html += '<button type="button" id="musicalbum-batch-delete-btn" class="musicalbum-btn" style="background:#dc2626;color:#fff;padding:0.5rem 1rem;border:none;border-radius:0.25rem;cursor:pointer;display:none;" disabled>批量删除</button>';
+        html += '<span id="musicalbum-selected-count" style="color:#6b7280;font-size:0.875rem;"></span>';
+        html += '</div>';
+        html += '<div class="musicalbum-empty">暂无记录</div>';
+        container.html(html);
       }
     }).fail(function() {
       container.html('<div class="musicalbum-error">加载失败，请稍后重试</div>');
@@ -2411,6 +2487,55 @@
       }
     }).fail(function() {
       alert('删除失败，请稍后重试');
+    });
+  }
+  
+  // 批量删除观演记录
+  function batchDeleteViewings(ids) {
+    if (!ids || ids.length === 0) {
+      alert('请选择要删除的记录');
+      return;
+    }
+    
+    var $btn = $('#musicalbum-batch-delete-btn');
+    var originalText = $btn.text();
+    $btn.prop('disabled', true).text('删除中...');
+    
+    $.ajax({
+      url: ViewingRecords.rest.batchDelete,
+      method: 'POST',
+      headers: { 'X-WP-Nonce': ViewingRecords.rest.nonce },
+      data: JSON.stringify({ ids: ids }),
+      contentType: 'application/json'
+    }).done(function(res) {
+      $btn.prop('disabled', false).text(originalText);
+      
+      if (res && res.success) {
+        var message = res.message || '批量删除完成';
+        if (res.error_count > 0) {
+          message += '\n成功：' + res.success_count + ' 条\n失败：' + res.error_count + ' 条';
+          if (res.errors && res.errors.length > 0) {
+            message += '\n\n错误详情：\n' + res.errors.join('\n');
+          }
+        }
+        alert(message);
+        
+        // 刷新列表
+        loadListView();
+        if (window.viewingCalendar) {
+          window.viewingCalendar.refetchEvents();
+        }
+      } else {
+        var errorMsg = res && res.message ? res.message : '批量删除失败';
+        alert(errorMsg);
+      }
+    }).fail(function(xhr) {
+      $btn.prop('disabled', false).text(originalText);
+      var errorMsg = '批量删除失败';
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        errorMsg = xhr.responseJSON.message;
+      }
+      alert(errorMsg);
     });
   }
 
