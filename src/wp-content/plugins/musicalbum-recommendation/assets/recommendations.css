@@ -8,41 +8,34 @@
 .musicalbum-ocr { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
 .musicalbum-viewings-list .item { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eee; }
 
-/* ==================== 推荐模块样式 ==================== */
-.musicalbum-recommendation-block {
-    margin: 1.5em 0;
+/* recommendations.css */
+/* 自定义推荐内容样式 */
+.musicalbum-recommendations {
+    border: 1px solid #ddd;
+    padding: 15px;
+    background-color: #f9f9f9;
 }
 
-.musicalbum-recs-loading {
-    color: #666;
-    font-size: 14px;
+.musicalbum-recommendations h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
 }
 
-.musicalbum-recs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
-    margin-top: 12px;
+.musicalbum-recommendations ul {
+    list-style-type: none;
+    padding: 0;
 }
 
-.rec-item {
-    padding: 10px;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    background: #fafafa;
+.musicalbum-recommendations li {
+    margin-bottom: 10px;
 }
 
-.rec-item a {
+.musicalbum-recommendations li a {
+    color: #0073aa;
     text-decoration: none;
-    color: #333;
 }
 
-.rec-item a:hover {
+.musicalbum-recommendations li a:hover {
     text-decoration: underline;
 }
 
-.rec-empty,
-.musicalbum-recs-error {
-    color: #999;
-    font-size: 13px;
-}
