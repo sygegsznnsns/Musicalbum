@@ -3041,6 +3041,11 @@ final class Viewing_Records {
                 $category = '戏曲';
             }
             
+            // 如果没有匹配到类别，默认设置为"音乐剧"
+            if (empty($category)) {
+                $category = '音乐剧';
+            }
+            
             // 创建观演记录
             $post_id = wp_insert_post(array(
                 'post_type' => 'viewing_record',
@@ -3056,9 +3061,7 @@ final class Viewing_Records {
             }
             
             // 保存ACF字段
-            if (!empty($category)) {
-                update_field('category', $category, $post_id);
-            }
+            update_field('category', $category, $post_id);
             if (!empty($theater)) {
                 update_field('theater', sanitize_text_field($theater), $post_id);
             }
