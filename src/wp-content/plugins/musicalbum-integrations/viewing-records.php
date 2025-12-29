@@ -2879,7 +2879,8 @@ final class Viewing_Records {
             }
         }
         
-        if (empty($header_map['time']) || empty($header_map['title'])) {
+        // 使用isset检查，因为索引0会被empty()误判为空
+        if (!isset($header_map['time']) || !isset($header_map['title'])) {
             fclose($handle);
             // 返回更详细的错误信息
             $debug_info = '读取到的表头：' . implode(', ', $cleaned_headers);
