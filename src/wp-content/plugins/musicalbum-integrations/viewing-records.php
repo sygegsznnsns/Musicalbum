@@ -2738,23 +2738,44 @@ final class Viewing_Records {
             return new WP_Error('unauthorized', '未授权', array('status' => 401));
         }
         
-        // 检查文件上传
-        if (empty($_FILES['csv_file'])) {
-            return new WP_Error('no_file', '未选择CSV文件', array('status' => 400));
+        // WordPress REST API文件上传需要使用get_file_params()或$_FILES
+        // 优先使用$_FILES（更可靠）
+        $file = null;
+        
+        if (isset($_FILES['csv_file']) && !empty($_FILES['csv_file']['tmp_name'])) {
+            $file = $_FILES['csv_file'];
+        } elseif (method_exists($request, 'get_file_params')) {
+            $files = $request->get_file_params();
+            if (!empty($files) && isset($files['csv_file']) && !empty($files['csv_file']['tmp_name'])) {
+                $file = $files['csv_file'];
+            }
         }
         
-        $file = $_FILES['csv_file'];
-        
-        // 验证文件类型
-        $file_type = wp_check_filetype($file['name']);
-        if ($file_type['ext'] !== 'csv' && $file['type'] !== 'text/csv') {
-            return new WP_Error('invalid_file_type', '请上传CSV格式的文件', array('status' => 400));
+        // 检查文件上传
+        if (empty($file) || !isset($file['tmp_name']) || empty($file['tmp_name'])) {
+            return new WP_Error('no_file', '未选择CSV文件或文件上传失败', array('status' => 400));
         }
         
         // 读取CSV文件
         $file_path = $file['tmp_name'];
         if (!file_exists($file_path)) {
             return new WP_Error('file_not_found', '文件不存在', array('status' => 400));
+        }
+        
+        // 验证文件类型（更宽松的验证）
+        $file_type = wp_check_filetype($file['name']);
+        $file_ext = strtolower($file_type['ext']);
+        $file_mime = isset($file['type']) ? strtolower($file['type']) : '';
+        
+        // 允许的扩展名和MIME类型
+        $allowed_exts = array('csv', 'txt');
+        $allowed_mimes = array('text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel');
+        
+        if (!in_array($file_ext, $allowed_exts) && !in_array($file_mime, $allowed_mimes)) {
+            // 如果扩展名和MIME都不匹配，但文件名以.csv结尾，也允许
+            if (substr(strtolower($file['name']), -4) !== '.csv') {
+                return new WP_Error('invalid_file_type', '请上传CSV格式的文件（.csv）', array('status' => 400));
+            }
         }
         
         // 打开文件并读取内容
