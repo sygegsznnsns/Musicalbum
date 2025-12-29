@@ -221,6 +221,7 @@ final class Viewing_Records {
                 'viewings' => esc_url_raw(rest_url('viewing/v1/viewings')),
                 'uploadImage' => esc_url_raw(rest_url('viewing/v1/upload-image')),
                 'overview' => esc_url_raw(rest_url('viewing/v1/overview')),
+                'importCsv' => esc_url_raw(rest_url('viewing/v1/viewings/import-csv')),
                 'nonce' => wp_create_nonce('wp_rest')
             )
         ));
@@ -813,6 +814,11 @@ final class Viewing_Records {
             'methods' => 'GET',
             'permission_callback' => function($req){ return is_user_logged_in(); },
             'callback' => array(__CLASS__, 'rest_theaters_export')
+        ));
+        register_rest_route('viewing/v1', '/viewings/import-csv', array(
+            'methods' => 'POST',
+            'permission_callback' => function($req){ return is_user_logged_in(); },
+            'callback' => array(__CLASS__, 'rest_viewings_import_csv')
         ));
     }
 
@@ -2114,6 +2120,7 @@ final class Viewing_Records {
                         <div class="musicalbum-form-tabs">
                             <button type="button" class="musicalbum-tab-btn active" data-tab="manual">手动录入</button>
                             <button type="button" class="musicalbum-tab-btn" data-tab="ocr">OCR识别</button>
+                            <button type="button" class="musicalbum-tab-btn" data-tab="csv">CSV导入</button>
                         </div>
                         
                         <!-- 手动录入表单 -->
@@ -2264,6 +2271,35 @@ final class Viewing_Records {
                                     <button type="submit" class="musicalbum-btn musicalbum-btn-primary">保存</button>
                                 </div>
                             </form>
+                        </div>
+                        
+                        <!-- CSV导入表单 -->
+                        <div id="musicalbum-tab-csv" class="musicalbum-tab-content">
+                            <div class="musicalbum-csv-import">
+                                <div class="musicalbum-form-group">
+                                    <label for="musicalbum-csv-file">选择CSV文件 <span class="required">*</span></label>
+                                    <input type="file" id="musicalbum-csv-file" accept=".csv,text/csv" />
+                                    <p class="description" style="margin-top:0.5rem;font-size:0.8125rem;color:#6b7280;">
+                                        CSV文件格式：时间,城市,音乐剧,卡司,剧院<br>
+                                        示例：2024-01-01 11:00,成都,熊猫,,熊猫剧院
+                                    </p>
+                                </div>
+                                <div class="musicalbum-form-group">
+                                    <button type="button" class="musicalbum-btn musicalbum-btn-primary" id="musicalbum-csv-import-btn">开始导入</button>
+                                </div>
+                                <div id="musicalbum-csv-progress" style="display:none;margin-top:1rem;">
+                                    <div style="background:#f3f4f6;border-radius:0.5rem;padding:1rem;">
+                                        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+                                            <span>导入进度：</span>
+                                            <span id="musicalbum-csv-progress-text">0/0</span>
+                                        </div>
+                                        <div style="background:#e5e7eb;border-radius:0.25rem;height:0.5rem;overflow:hidden;">
+                                            <div id="musicalbum-csv-progress-bar" style="background:#3b82f6;height:100%;width:0%;transition:width 0.3s;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="musicalbum-csv-result" style="display:none;margin-top:1rem;padding:1rem;border-radius:0.5rem;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2690,6 +2726,198 @@ final class Viewing_Records {
 
         return rest_ensure_response(array(
             'message' => '记录删除成功'
+        ));
+    }
+    
+    /**
+     * CSV批量导入观演记录 REST API
+     */
+    public static function rest_viewings_import_csv($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        }
+        
+        // 检查文件上传
+        if (empty($_FILES['csv_file'])) {
+            return new WP_Error('no_file', '未选择CSV文件', array('status' => 400));
+        }
+        
+        $file = $_FILES['csv_file'];
+        
+        // 验证文件类型
+        $file_type = wp_check_filetype($file['name']);
+        if ($file_type['ext'] !== 'csv' && $file['type'] !== 'text/csv') {
+            return new WP_Error('invalid_file_type', '请上传CSV格式的文件', array('status' => 400));
+        }
+        
+        // 读取CSV文件
+        $file_path = $file['tmp_name'];
+        if (!file_exists($file_path)) {
+            return new WP_Error('file_not_found', '文件不存在', array('status' => 400));
+        }
+        
+        // 打开文件并读取内容
+        $handle = fopen($file_path, 'r');
+        if ($handle === false) {
+            return new WP_Error('file_read_error', '无法读取文件', array('status' => 500));
+        }
+        
+        // 读取表头
+        $headers = fgetcsv($handle);
+        if ($headers === false) {
+            fclose($handle);
+            return new WP_Error('invalid_csv', 'CSV文件格式错误：无法读取表头', array('status' => 400));
+        }
+        
+        // 验证表头（支持中英文表头）
+        $header_map = array();
+        foreach ($headers as $index => $header) {
+            $header = trim($header);
+            if (in_array($header, array('时间', 'time', 'Time'))) {
+                $header_map['time'] = $index;
+            } elseif (in_array($header, array('城市', 'city', 'City'))) {
+                $header_map['city'] = $index;
+            } elseif (in_array($header, array('音乐剧', 'musical', 'Musical', '剧目', 'title', 'Title'))) {
+                $header_map['title'] = $index;
+            } elseif (in_array($header, array('卡司', 'cast', 'Cast', '演员'))) {
+                $header_map['cast'] = $index;
+            } elseif (in_array($header, array('剧院', 'theater', 'Theater', '剧场'))) {
+                $header_map['theater'] = $index;
+            }
+        }
+        
+        if (empty($header_map['time']) || empty($header_map['title'])) {
+            fclose($handle);
+            return new WP_Error('invalid_csv', 'CSV文件必须包含"时间"和"音乐剧"列', array('status' => 400));
+        }
+        
+        $success_count = 0;
+        $error_count = 0;
+        $errors = array();
+        $line_number = 1; // 表头是第1行
+        
+        // 读取数据行
+        while (($row = fgetcsv($handle)) !== false) {
+            $line_number++;
+            
+            // 跳过空行
+            if (empty(array_filter($row))) {
+                continue;
+            }
+            
+            // 解析时间字段（格式：2024-01-01 11:00）
+            $time_str = isset($row[$header_map['time']]) ? trim($row[$header_map['time']]) : '';
+            if (empty($time_str)) {
+                $error_count++;
+                $errors[] = "第{$line_number}行：时间字段为空";
+                continue;
+            }
+            
+            // 解析日期和时间
+            $datetime = explode(' ', $time_str);
+            $view_date = '';
+            $view_time_start = '';
+            
+            if (count($datetime) >= 1) {
+                $view_date = trim($datetime[0]);
+                // 验证日期格式
+                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $view_date)) {
+                    $error_count++;
+                    $errors[] = "第{$line_number}行：日期格式错误（应为YYYY-MM-DD）";
+                    continue;
+                }
+            }
+            
+            if (count($datetime) >= 2) {
+                $view_time_start = trim($datetime[1]);
+                // 验证时间格式
+                if (!preg_match('/^\d{2}:\d{2}$/', $view_time_start)) {
+                    $view_time_start = ''; // 如果格式不对，只使用日期
+                }
+            }
+            
+            // 获取剧目名称（标题）
+            $title = isset($row[$header_map['title']]) ? trim($row[$header_map['title']]) : '';
+            if (empty($title)) {
+                $error_count++;
+                $errors[] = "第{$line_number}行：剧目名称不能为空";
+                continue;
+            }
+            
+            // 获取其他字段
+            $theater = isset($row[$header_map['theater']]) ? trim($row[$header_map['theater']]) : '';
+            $cast = isset($row[$header_map['cast']]) ? trim($row[$header_map['cast']]) : '';
+            $city = isset($row[$header_map['city']]) ? trim($row[$header_map['city']]) : '';
+            
+            // 如果城市字段有值，可以添加到备注中
+            $notes = '';
+            if (!empty($city)) {
+                $notes = '城市：' . $city;
+            }
+            
+            // 尝试从剧目名称推断类别（如果名称包含"音乐剧"等关键词）
+            $category = '';
+            if (stripos($title, '音乐剧') !== false || stripos($title, 'musical') !== false) {
+                $category = '音乐剧';
+            } elseif (stripos($title, '话剧') !== false) {
+                $category = '话剧';
+            } elseif (stripos($title, '歌剧') !== false) {
+                $category = '歌剧';
+            } elseif (stripos($title, '舞剧') !== false) {
+                $category = '舞剧';
+            } elseif (stripos($title, '音乐会') !== false) {
+                $category = '音乐会';
+            } elseif (stripos($title, '戏曲') !== false) {
+                $category = '戏曲';
+            }
+            
+            // 创建观演记录
+            $post_id = wp_insert_post(array(
+                'post_type' => 'viewing_record',
+                'post_title' => sanitize_text_field($title),
+                'post_status' => 'publish',
+                'post_author' => $user_id
+            ));
+            
+            if (is_wp_error($post_id)) {
+                $error_count++;
+                $errors[] = "第{$line_number}行：创建记录失败 - " . $post_id->get_error_message();
+                continue;
+            }
+            
+            // 保存ACF字段
+            if (!empty($category)) {
+                update_field('category', $category, $post_id);
+            }
+            if (!empty($theater)) {
+                update_field('theater', sanitize_text_field($theater), $post_id);
+            }
+            if (!empty($cast)) {
+                update_field('cast', sanitize_text_field($cast), $post_id);
+            }
+            if (!empty($view_date)) {
+                update_field('view_date', $view_date, $post_id);
+            }
+            if (!empty($view_time_start)) {
+                update_field('view_time_start', $view_time_start, $post_id);
+            }
+            if (!empty($notes)) {
+                update_field('notes', sanitize_textarea_field($notes), $post_id);
+            }
+            
+            $success_count++;
+        }
+        
+        fclose($handle);
+        
+        return rest_ensure_response(array(
+            'success' => true,
+            'success_count' => $success_count,
+            'error_count' => $error_count,
+            'total_count' => $success_count + $error_count,
+            'errors' => $errors,
+            'message' => sprintf('导入完成：成功 %d 条，失败 %d 条', $success_count, $error_count)
         ));
     }
     
