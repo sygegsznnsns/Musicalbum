@@ -2778,7 +2778,7 @@ final class Viewing_Records {
             }
         }
         
-        // 打开文件并读取内容（处理UTF-8 BOM）
+        // 打开文件并读取内容（处理UTF-8 BOM和编码）
         // 先读取文件内容，检测并移除BOM
         $file_content = file_get_contents($file_path);
         if ($file_content === false) {
@@ -2790,6 +2790,18 @@ final class Viewing_Records {
             $file_content = substr($file_content, 3);
         }
         
+        // 检测并转换编码（如果不是UTF-8，尝试转换为UTF-8）
+        if (!mb_check_encoding($file_content, 'UTF-8')) {
+            // 尝试检测编码
+            $detected_encoding = mb_detect_encoding($file_content, array('UTF-8', 'GBK', 'GB2312', 'ISO-8859-1'), true);
+            if ($detected_encoding && $detected_encoding !== 'UTF-8') {
+                $file_content = mb_convert_encoding($file_content, 'UTF-8', $detected_encoding);
+            }
+        }
+        
+        // 规范化换行符（统一为\n）
+        $file_content = str_replace(array("\r\n", "\r"), "\n", $file_content);
+        
         // 使用临时文件或内存流处理
         $handle = fopen('php://temp', 'r+');
         if ($handle === false) {
@@ -2798,11 +2810,28 @@ final class Viewing_Records {
         fwrite($handle, $file_content);
         rewind($handle);
         
-        // 读取表头
-        $headers = fgetcsv($handle);
+        // 读取表头（明确指定分隔符为逗号）
+        $headers = fgetcsv($handle, 0, ',');
         if ($headers === false || empty($headers)) {
             fclose($handle);
             return new WP_Error('invalid_csv', 'CSV文件格式错误：无法读取表头', array('status' => 400));
+        }
+        
+        // 调试：检查读取到的原始表头
+        // 如果表头都是空的，可能是分隔符问题，尝试其他方法
+        if (count(array_filter($headers, function($h) { return trim($h) !== ''; })) === 0) {
+            // 尝试手动解析第一行
+            rewind($handle);
+            $first_line = fgets($handle);
+            if ($first_line !== false) {
+                $first_line = trim($first_line);
+                // 尝试用逗号分割
+                $headers = str_getcsv($first_line, ',');
+                // 如果还是空的，尝试其他分隔符
+                if (count(array_filter($headers, function($h) { return trim($h) !== ''; })) === 0) {
+                    $headers = preg_split('/[,，]/u', $first_line); // 支持中文逗号
+                }
+            }
         }
         
         // 清理表头：移除BOM、空白字符和特殊字符
@@ -2810,8 +2839,8 @@ final class Viewing_Records {
         foreach ($headers as $index => $header) {
             // 移除BOM（如果存在）
             $header = str_replace(chr(0xEF) . chr(0xBB) . chr(0xBF), '', $header);
-            // 移除其他不可见字符
-            $header = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $header);
+            // 移除控制字符（但保留中文字符）
+            $header = preg_replace('/[\x00-\x08\x0B-\x0C\x0E-\x1F]/', '', $header);
             // 去除首尾空白
             $header = trim($header);
             $cleaned_headers[$index] = $header;
@@ -2870,8 +2899,8 @@ final class Viewing_Records {
         $errors = array();
         $line_number = 1; // 表头是第1行
         
-        // 读取数据行
-        while (($row = fgetcsv($handle)) !== false) {
+        // 读取数据行（明确指定分隔符为逗号）
+        while (($row = fgetcsv($handle, 0, ',')) !== false) {
             $line_number++;
             
             // 跳过空行
