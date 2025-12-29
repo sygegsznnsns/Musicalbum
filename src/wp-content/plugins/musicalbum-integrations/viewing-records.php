@@ -2287,7 +2287,7 @@ final class Viewing_Records {
                                     <input type="file" id="musicalbum-csv-file" accept=".csv,text/csv" />
                                     <p class="description" style="margin-top:0.5rem;font-size:0.8125rem;color:#6b7280;">
                                         CSV文件格式：时间,城市,音乐剧,卡司,剧院<br>
-                                        示例：2024-01-01 11:00,成都,熊猫,,熊猫剧院
+                                        示例：2026-01-07 11:00,成都,熊猫,,熊猫剧院
                                     </p>
                                 </div>
                                 <div class="musicalbum-form-group">
