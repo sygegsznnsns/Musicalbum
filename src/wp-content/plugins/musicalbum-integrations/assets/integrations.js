@@ -1106,6 +1106,14 @@
             if (e.lengthComputable) {
               var percentComplete = (e.loaded / e.total) * 100;
               $('#musicalbum-csv-progress-bar').css('width', percentComplete + '%');
+              // 更新进度文本：显示上传进度
+              $('#musicalbum-csv-progress-text').text('上传中 ' + Math.round(percentComplete) + '%');
+            }
+          }, false);
+          // 监听下载进度（服务器处理阶段）
+          xhr.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+              $('#musicalbum-csv-progress-text').text('处理中...');
             }
           }, false);
           return xhr;
@@ -1115,6 +1123,13 @@
         
         // 更新进度条到100%
         $('#musicalbum-csv-progress-bar').css('width', '100%');
+        
+        // 更新进度文本为实际结果
+        if (res && res.success && res.total_count !== undefined) {
+          $('#musicalbum-csv-progress-text').text(res.success_count + '/' + res.total_count);
+        } else {
+          $('#musicalbum-csv-progress-text').text('完成');
+        }
         
         if (res && res.success) {
           var resultHtml = '<div style="padding:1rem;border-radius:0.5rem;';
@@ -1150,6 +1165,9 @@
             }, 1000);
           }
         } else {
+          // 更新进度文本为失败状态
+          $('#musicalbum-csv-progress-text').text('失败');
+          
           var errorMsg = res && res.message ? res.message : '导入失败，请检查CSV文件格式';
           $('#musicalbum-csv-result').html(
             '<div style="padding:1rem;border-radius:0.5rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;">' +
@@ -1160,6 +1178,10 @@
         }
       }).fail(function(xhr, status, error) {
         $btn.prop('disabled', false).text(originalText);
+        
+        // 更新进度文本为失败状态
+        $('#musicalbum-csv-progress-text').text('失败');
+        
         var errorMsg = '导入失败';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
