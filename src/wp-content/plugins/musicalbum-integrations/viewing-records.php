@@ -2778,39 +2778,91 @@ final class Viewing_Records {
             }
         }
         
-        // 打开文件并读取内容
-        $handle = fopen($file_path, 'r');
-        if ($handle === false) {
+        // 打开文件并读取内容（处理UTF-8 BOM）
+        // 先读取文件内容，检测并移除BOM
+        $file_content = file_get_contents($file_path);
+        if ($file_content === false) {
             return new WP_Error('file_read_error', '无法读取文件', array('status' => 500));
         }
         
+        // 移除UTF-8 BOM（如果存在）
+        if (substr($file_content, 0, 3) === chr(0xEF) . chr(0xBB) . chr(0xBF)) {
+            $file_content = substr($file_content, 3);
+        }
+        
+        // 使用临时文件或内存流处理
+        $handle = fopen('php://temp', 'r+');
+        if ($handle === false) {
+            return new WP_Error('file_read_error', '无法创建临时流', array('status' => 500));
+        }
+        fwrite($handle, $file_content);
+        rewind($handle);
+        
         // 读取表头
         $headers = fgetcsv($handle);
-        if ($headers === false) {
+        if ($headers === false || empty($headers)) {
             fclose($handle);
             return new WP_Error('invalid_csv', 'CSV文件格式错误：无法读取表头', array('status' => 400));
         }
         
+        // 清理表头：移除BOM、空白字符和特殊字符
+        $cleaned_headers = array();
+        foreach ($headers as $index => $header) {
+            // 移除BOM（如果存在）
+            $header = str_replace(chr(0xEF) . chr(0xBB) . chr(0xBF), '', $header);
+            // 移除其他不可见字符
+            $header = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $header);
+            // 去除首尾空白
+            $header = trim($header);
+            $cleaned_headers[$index] = $header;
+        }
+        
         // 验证表头（支持中英文表头）
         $header_map = array();
-        foreach ($headers as $index => $header) {
-            $header = trim($header);
-            if (in_array($header, array('时间', 'time', 'Time'))) {
+        foreach ($cleaned_headers as $index => $header) {
+            $header_lower = mb_strtolower($header, 'UTF-8');
+            
+            // 匹配"时间"列
+            if (in_array($header, array('时间', 'time', 'Time')) || 
+                $header_lower === 'time' || 
+                mb_strpos($header, '时间') !== false) {
                 $header_map['time'] = $index;
-            } elseif (in_array($header, array('城市', 'city', 'City'))) {
+            }
+            // 匹配"城市"列
+            elseif (in_array($header, array('城市', 'city', 'City')) || 
+                    $header_lower === 'city' || 
+                    mb_strpos($header, '城市') !== false) {
                 $header_map['city'] = $index;
-            } elseif (in_array($header, array('音乐剧', 'musical', 'Musical', '剧目', 'title', 'Title'))) {
+            }
+            // 匹配"音乐剧"列（剧目名称）
+            elseif (in_array($header, array('音乐剧', 'musical', 'Musical', '剧目', 'title', 'Title')) || 
+                    $header_lower === 'musical' || 
+                    $header_lower === 'title' || 
+                    mb_strpos($header, '音乐剧') !== false || 
+                    mb_strpos($header, '剧目') !== false) {
                 $header_map['title'] = $index;
-            } elseif (in_array($header, array('卡司', 'cast', 'Cast', '演员'))) {
+            }
+            // 匹配"卡司"列
+            elseif (in_array($header, array('卡司', 'cast', 'Cast', '演员')) || 
+                    $header_lower === 'cast' || 
+                    mb_strpos($header, '卡司') !== false || 
+                    mb_strpos($header, '演员') !== false) {
                 $header_map['cast'] = $index;
-            } elseif (in_array($header, array('剧院', 'theater', 'Theater', '剧场'))) {
+            }
+            // 匹配"剧院"列
+            elseif (in_array($header, array('剧院', 'theater', 'Theater', '剧场')) || 
+                    $header_lower === 'theater' || 
+                    mb_strpos($header, '剧院') !== false || 
+                    mb_strpos($header, '剧场') !== false) {
                 $header_map['theater'] = $index;
             }
         }
         
         if (empty($header_map['time']) || empty($header_map['title'])) {
             fclose($handle);
-            return new WP_Error('invalid_csv', 'CSV文件必须包含"时间"和"音乐剧"列', array('status' => 400));
+            // 返回更详细的错误信息，包含实际读取到的表头
+            $debug_info = '读取到的表头：' . implode(', ', $cleaned_headers);
+            return new WP_Error('invalid_csv', 'CSV文件必须包含"时间"和"音乐剧"列。' . $debug_info, array('status' => 400));
         }
         
         $success_count = 0;
