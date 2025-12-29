@@ -2849,48 +2849,42 @@ final class Viewing_Records {
         // 验证表头（支持中英文表头）
         $header_map = array();
         foreach ($cleaned_headers as $index => $header) {
+            // 确保header是字符串且去除所有空白
+            $header = trim($header);
+            if (empty($header)) {
+                continue;
+            }
+            
             $header_lower = mb_strtolower($header, 'UTF-8');
             
             // 匹配"时间"列
-            if (in_array($header, array('时间', 'time', 'Time')) || 
-                $header_lower === 'time' || 
-                mb_strpos($header, '时间') !== false) {
+            if ($header === '时间' || $header_lower === 'time') {
                 $header_map['time'] = $index;
             }
             // 匹配"城市"列
-            elseif (in_array($header, array('城市', 'city', 'City')) || 
-                    $header_lower === 'city' || 
-                    mb_strpos($header, '城市') !== false) {
+            elseif ($header === '城市' || $header_lower === 'city') {
                 $header_map['city'] = $index;
             }
             // 匹配"音乐剧"列（剧目名称）
-            elseif (in_array($header, array('音乐剧', 'musical', 'Musical', '剧目', 'title', 'Title')) || 
-                    $header_lower === 'musical' || 
-                    $header_lower === 'title' || 
-                    mb_strpos($header, '音乐剧') !== false || 
-                    mb_strpos($header, '剧目') !== false) {
+            elseif ($header === '音乐剧' || $header_lower === 'musical' || $header_lower === 'title' || $header === '剧目') {
                 $header_map['title'] = $index;
             }
             // 匹配"卡司"列
-            elseif (in_array($header, array('卡司', 'cast', 'Cast', '演员')) || 
-                    $header_lower === 'cast' || 
-                    mb_strpos($header, '卡司') !== false || 
-                    mb_strpos($header, '演员') !== false) {
+            elseif ($header === '卡司' || $header_lower === 'cast' || $header === '演员') {
                 $header_map['cast'] = $index;
             }
             // 匹配"剧院"列
-            elseif (in_array($header, array('剧院', 'theater', 'Theater', '剧场')) || 
-                    $header_lower === 'theater' || 
-                    mb_strpos($header, '剧院') !== false || 
-                    mb_strpos($header, '剧场') !== false) {
+            elseif ($header === '剧院' || $header_lower === 'theater' || $header === '剧场') {
                 $header_map['theater'] = $index;
             }
         }
         
         if (empty($header_map['time']) || empty($header_map['title'])) {
             fclose($handle);
-            // 返回更详细的错误信息，包含实际读取到的表头
+            // 返回更详细的错误信息
             $debug_info = '读取到的表头：' . implode(', ', $cleaned_headers);
+            $debug_info .= ' | 匹配结果：时间=' . (isset($header_map['time']) ? $header_map['time'] : '未找到');
+            $debug_info .= ', 音乐剧=' . (isset($header_map['title']) ? $header_map['title'] : '未找到');
             return new WP_Error('invalid_csv', 'CSV文件必须包含"时间"和"音乐剧"列。' . $debug_info, array('status' => 400));
         }
         
