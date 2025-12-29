@@ -2945,6 +2945,13 @@ final class Viewing_Records {
             // 获取其他字段
             $theater = isset($row[$header_map['theater']]) ? trim($row[$header_map['theater']]) : '';
             $cast = isset($row[$header_map['cast']]) ? trim($row[$header_map['cast']]) : '';
+            // 将空格分隔的卡司转换为逗号分隔（CSV文件中卡司用空格分隔，但系统期望逗号分隔）
+            if (!empty($cast)) {
+                // 将多个连续空格替换为单个空格，然后按空格分割，再过滤空值，最后用逗号连接
+                $cast = preg_replace('/\s+/', ' ', $cast); // 规范化空格
+                $cast_array = array_filter(array_map('trim', explode(' ', $cast))); // 按空格分割并去除空值
+                $cast = implode(', ', $cast_array); // 用逗号和空格连接
+            }
             $city = isset($row[$header_map['city']]) ? trim($row[$header_map['city']]) : '';
             
             // 如果城市字段有值，可以添加到备注中
