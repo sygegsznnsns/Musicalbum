@@ -1192,10 +1192,9 @@
   border: 1px solid #e5e7eb;
   width: 100%;
   max-width: 100%;
-  overflow: visible; /* 允许垂直方向完全显示，但不允许横向溢出 */
+  overflow-x: auto;
   box-sizing: border-box;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  min-height: auto; /* 不限制最小高度，让内容自然展开 */
 }
 
 /* FullCalendar 样式调整 - 确保日历适应容器 */
@@ -1203,55 +1202,21 @@
   width: 100% !important;
   max-width: 100% !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  box-sizing: border-box !important; /* 确保盒模型正确 */
 }
 
 #musicalbum-calendar-container .fc-view-harness {
   width: 100% !important;
   max-width: 100% !important;
-  height: auto !important; /* 自动高度，确保整个月份显示 */
-  box-sizing: border-box !important;
-  overflow: visible !important; /* 允许垂直溢出，但不允许横向溢出 */
 }
 
 #musicalbum-calendar-container .fc-scroller {
-  overflow-x: hidden !important; /* 隐藏横向滚动，防止容器变宽 */
-  overflow-y: visible !important; /* 允许垂直方向显示，确保整个月份可见 */
-  height: auto !important; /* 自动高度，不限制 */
-  width: 100% !important; /* 确保宽度不超过容器 */
-  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
 }
 
 #musicalbum-calendar-container .fc-daygrid-body {
   width: 100% !important;
   min-width: 0 !important;
-  max-width: 100% !important; /* 确保不超过容器宽度 */
-  height: auto !important; /* 自动高度，确保所有行都显示 */
-  box-sizing: border-box !important;
-}
-
-/* 确保日历表格完整显示 */
-#musicalbum-calendar-container .fc-daygrid {
-  height: auto !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* 确保日历视图容器高度自适应 */
-#musicalbum-calendar-container .fc-view {
-  height: auto !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* 确保日历表格行不会导致宽度扩展 */
-#musicalbum-calendar-container .fc-daygrid-table {
-  width: 100% !important;
-  max-width: 100% !important;
-  table-layout: fixed !important; /* 固定表格布局，防止单元格扩展 */
-  box-sizing: border-box !important;
 }
 
 /* 日历头部工具栏美化 */
@@ -1307,10 +1272,8 @@
 /* 星期表头美化 */
 #musicalbum-calendar-container .fc-col-header {
   width: 100% !important;
-  max-width: 100% !important;
   background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
   border-bottom: 2px solid #ffd6d6;
-  box-sizing: border-box !important;
 }
 
 #musicalbum-calendar-container .fc-col-header-cell {
@@ -1322,7 +1285,6 @@
   font-size: 0.875rem !important;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-sizing: border-box !important;
 }
 
 /* 日期单元格美化 */
@@ -1331,9 +1293,6 @@
   flex: 1 1 0% !important;
   border: 1px solid #f3f4f6 !important;
   transition: all 0.2s ease;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  width: auto !important; /* 让表格自动分配宽度 */
 }
 
 #musicalbum-calendar-container .fc-daygrid-day:hover {
@@ -1485,19 +1444,8 @@
 .musicalbum-view-content {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden; /* 隐藏横向滚动，防止容器变宽 */
-  overflow-y: visible; /* 允许垂直方向完全显示 */
+  overflow-x: auto;
   box-sizing: border-box;
-  min-height: auto; /* 不限制最小高度 */
-}
-
-/* 日历视图特殊处理 - 确保完整显示但不改变容器宽度 */
-#musicalbum-calendar-view {
-  overflow: visible !important; /* 确保日历视图不被截断 */
-  overflow-x: hidden !important; /* 防止横向溢出导致容器变宽 */
-  min-height: auto !important;
-  width: 100% !important;
-  max-width: 100% !important;
 }
 
 

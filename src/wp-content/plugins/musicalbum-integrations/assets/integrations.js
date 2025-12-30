@@ -1821,8 +1821,6 @@
       moreLinkText: function(num) {
         return '+ ' + num + ' 条更多';
       }, // 自定义"更多"链接文本为中文
-      height: 'auto', // 自动高度，确保整个月份完整显示
-      contentHeight: 'auto', // 内容高度自动，不限制
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
