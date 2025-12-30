@@ -1,64 +1,49 @@
 <?php
 /**
- * 功能：
- * 根据内容标签 + 用户行为推荐 post 类型文章
- * 推荐为空时自动 fallback
+ * class-recommendation-engine.php
+ * 
+ * 功能：该文件实现推荐引擎，基于用户行为生成个性化推荐内容。
+ * 推荐逻辑：
+ * 1. 根据用户行为（浏览、评论、收藏）推荐文章。
+ * 2. 如果没有推荐结果，推荐最新发布的文章。
  */
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // 禁止直接访问
+}
 
 class Musicalbum_Recommendation_Engine {
 
-    public function get_recommended_posts( $user_id, $limit = 6, $fallback = 'latest' ) {
+    // 获取推荐内容
+    public function get_recommendations($user_id, $limit = 5) {
+        // 获取用户的浏览记录、评论记录和收藏记录
+        $viewed_posts = (new Musicalbum_User_Behavior_Tracker())->get_user_viewed_posts($user_id);
+        $commented_posts = (new Musicalbum_User_Behavior_Tracker())->get_user_commented_posts($user_id);
+        $favorites = (new Musicalbum_User_Behavior_Tracker())->get_user_favorites($user_id);
 
-        $tag_ids = $this->collect_user_interest_tags( $user_id );
+        // 合并所有推荐的帖子
+        $recommended_posts = array_merge($viewed_posts, $commented_posts, $favorites);
+        $recommended_posts = array_unique($recommended_posts);
 
-        if ( ! empty( $tag_ids ) ) {
-            $query = new WP_Query(array(
-                'post_type'      => 'post',
-                'posts_per_page' => $limit,
-                'tag__in'        => $tag_ids,
-                'post_status'    => 'publish',
-                'orderby'        => 'date',
-                'order'          => 'DESC'
-            ));
-
-            if ( $query->have_posts() ) {
-                return $query->posts;
-            }
+        // 如果没有推荐内容，推荐最新的帖子
+        if ( empty($recommended_posts) ) {
+            $args = array(
+                'post_type' => 'post',
+                'posts_per_page' => $limit, // 默认显示最新 5 篇
+                'orderby' => 'date', // 按日期排序
+                'order' => 'DESC'  // 从最新到最旧
+            );
+            return new WP_Query($args);
         }
 
-        // fallback：最新文章
-        return $this->fallback_latest_posts( $limit );
-    }
-
-    /**
-     * 从用户行为中提取兴趣标签
-     */
-    private function collect_user_interest_tags( $user_id ) {
-
-        if ( ! $user_id ) return array();
-
-        $viewed_posts = get_user_meta( $user_id, '_musicalbum_viewed_posts', true );
-        if ( ! is_array( $viewed_posts ) ) return array();
-
-        $tag_ids = array();
-
-        foreach ( $viewed_posts as $post_id ) {
-            $tags = wp_get_post_tags( $post_id );
-            foreach ( $tags as $tag ) {
-                $tag_ids[] = $tag->term_id;
-            }
-        }
-
-        return array_unique( $tag_ids );
-    }
-
-    private function fallback_latest_posts( $limit ) {
-        return get_posts(array(
-            'post_type'      => 'post',
-            'posts_per_page' => $limit,
-            'post_status'    => 'publish'
-        ));
+        // 查询推荐的帖子
+        $args = array(
+            'post_type' => 'post',
+            'post__in' => $recommended_posts,
+            'posts_per_page' => $limit, // 使用传入的 limit
+            'orderby' => 'post_date', // 按日期排序
+            'order' => 'DESC' // 按降序显示
+        );
+        return new WP_Query($args);
     }
 }
