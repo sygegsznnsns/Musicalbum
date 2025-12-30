@@ -1,123 +1,64 @@
 <?php
 /**
- * class-recommendation-engine.php
- * 
- * 功能：该文件实现推荐引擎，基于用户行为生成个性化推荐内容。
+ * 功能：
+ * 根据内容标签 + 用户行为推荐 post 类型文章
+ * 推荐为空时自动 fallback
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit; // 禁止直接访问
-}
-
-
-defined('ABSPATH') || exit;
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Musicalbum_Recommendation_Engine {
 
-    public static function init() {}
+    public function get_recommended_posts( $user_id, $limit = 6, $fallback = 'latest' ) {
 
-    public static function get_recommendations($user_id, $limit = 10) {
+        $tag_ids = $this->collect_user_interest_tags( $user_id );
 
-        $profile = self::build_user_profile($user_id);
+        if ( ! empty( $tag_ids ) ) {
+            $query = new WP_Query(array(
+                'post_type'      => 'post',
+                'posts_per_page' => $limit,
+                'tag__in'        => $tag_ids,
+                'post_status'    => 'publish',
+                'orderby'        => 'date',
+                'order'          => 'DESC'
+            ));
 
-        if (empty($profile)) {
-            return [];
+            if ( $query->have_posts() ) {
+                return $query->posts;
+            }
         }
 
-        $args = [
+        // fallback：最新文章
+        return $this->fallback_latest_posts( $limit );
+    }
+
+    /**
+     * 从用户行为中提取兴趣标签
+     */
+    private function collect_user_interest_tags( $user_id ) {
+
+        if ( ! $user_id ) return array();
+
+        $viewed_posts = get_user_meta( $user_id, '_musicalbum_viewed_posts', true );
+        if ( ! is_array( $viewed_posts ) ) return array();
+
+        $tag_ids = array();
+
+        foreach ( $viewed_posts as $post_id ) {
+            $tags = wp_get_post_tags( $post_id );
+            foreach ( $tags as $tag ) {
+                $tag_ids[] = $tag->term_id;
+            }
+        }
+
+        return array_unique( $tag_ids );
+    }
+
+    private function fallback_latest_posts( $limit ) {
+        return get_posts(array(
             'post_type'      => 'post',
             'posts_per_page' => $limit,
-            'tax_query'      => [
-                [
-                    'taxonomy' => 'musical',
-                    'field'    => 'term_id',
-                    'terms'    => array_keys($profile),
-                ]
-            ]
-        ];
-
-        $query = new WP_Query($args);
-
-        foreach ($query->posts as &$post) {
-            $post->recommend_score = self::calculate_score($post->ID, $profile, $user_id);
-        }
-
-        usort($query->posts, function ($a, $b) {
-            return $b->recommend_score <=> $a->recommend_score;
-        });
-
-        return $query->posts;
-    }
-
-    private static function build_user_profile($user_id) {
-        $views = get_user_meta($user_id, 'musicalbum_viewed_posts', true);
-        // 如果没有浏览历史，使用默认规则
-        if (empty($views) || !is_array($views)) {
-            return self::get_default_profile();
-        }    
-
-        $profile = [];
-
-        foreach ($views as $post_id => $count) {
-            $terms = wp_get_post_terms($post_id, 'musical');
-            foreach ($terms as $term) {
-                $profile[$term->term_id] = ($profile[$term->term_id] ?? 0) + $count;
-            }
-        }
-
-        return $profile;
-    }
-
-    private static function get_default_profile() {
-    // 方法1：获取最热门的标签
-    $popular_terms = get_terms([
-        'taxonomy' => 'musical',
-        'orderby' => 'count',
-        'order' => 'DESC',
-        'number' => 3,
-    ]);
-    
-    $profile = [];
-    foreach ($popular_terms as $term) {
-        $profile[$term->term_id] = 1; // 给热门标签基础权重
-    }
-    
-    return $profile;
-    }
-
-    private static function calculate_score($post_id, $profile, $user_id) {
-
-        $score = 0;
-        $weight_tag       = get_option('musicalbum_recommendation_weight_tag', 5);
-        $weight_behavior  = get_option('musicalbum_recommendation_weight_behavior', 3);
-        $weight_community = get_option('musicalbum_recommendation_weight_community', 2);
-
-        $terms = wp_get_post_terms($post_id, 'musical');
-        foreach ($terms as $term) {
-            if (isset($profile[$term->term_id])) {
-                $score += $profile[$term->term_id] * $weight_tag;
-            }
-        }
-
-        $score += self::get_user_behavior_weight($user_id) * $weight_behavior;
-        $score += self::get_community_weight($user_id) * $weight_community;
-
-        return $score;
-    }
-
-    private static function get_user_behavior_weight($user_id) {
-        return count((array) get_user_meta($user_id, 'musicalbum_viewed_posts', true));
-    }
-
-    private static function get_community_weight($user_id) {
-        if (!class_exists('Musicalbum_Community_Adapter')) {
-            return 0;
-        }
-        return Musicalbum_Community_Adapter::get_user_activity_score($user_id);
-    }
-
-    public static function rest_get_recommendations() {
-        return self::get_recommendations(get_current_user_id());
+            'post_status'    => 'publish'
+        ));
     }
 }
-

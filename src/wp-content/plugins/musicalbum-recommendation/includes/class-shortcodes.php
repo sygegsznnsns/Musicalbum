@@ -1,40 +1,58 @@
 <?php
 /**
- * class-shortcodes.php
- * 
- * 功能：该文件定义短代码功能，用于在前端页面显示推荐内容。
+ * 功能：
+ * 注册并渲染 [musicalbum_smart_recommendations] 短代码
+ * 负责前端安全输出推荐文章列表
  */
 
-
-defined('ABSPATH') || exit;
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Musicalbum_Shortcodes {
 
-    public static function render_recommendations($atts) {
+    public function __construct() {
+        add_shortcode(
+            'musicalbum_smart_recommendations',
+            array( $this, 'render_recommendations' )
+        );
+    }
 
-        if (!is_user_logged_in()) {
-            return '<p>请登录后查看推荐内容。</p>';
-        }
+    public function render_recommendations( $atts ) {
 
-        $atts = shortcode_atts([
-            'limit' => 10
-        ], $atts);
-
-        $posts = Musicalbum_Recommendation_Engine::get_recommendations(
-            get_current_user_id(),
-            intval($atts['limit'])
+        // 解析短代码参数
+        $atts = shortcode_atts(
+            array(
+                'limit'    => 6,
+                'fallback' => 'latest', // latest | popular（预留）
+            ),
+            $atts
         );
 
-        if (empty($posts)) {
+        $engine = new Musicalbum_Recommendation_Engine();
+        $posts  = $engine->get_recommended_posts(
+            get_current_user_id(),
+            intval( $atts['limit'] ),
+            $atts['fallback']
+        );
+
+        if ( empty( $posts ) ) {
             return '<p>暂无推荐内容。</p>';
         }
 
         ob_start();
-        echo '<ul class="musicalbum-recommendations">';
-        foreach ($posts as $post) {
-            echo '<li><a href="' . get_permalink($post) . '">' . esc_html($post->post_title) . '</a></li>';
-        }
-        echo '</ul>';
+        ?>
+        <div class="musicalbum-recommendations">
+            <h3>为你推荐</h3>
+            <ul>
+                <?php foreach ( $posts as $post ) : ?>
+                    <li>
+                        <a href="<?php echo esc_url( get_permalink( $post->ID ) ); ?>">
+                            <?php echo esc_html( get_the_title( $post->ID ) ); ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php
         return ob_get_clean();
     }
 }
