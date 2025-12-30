@@ -1192,7 +1192,9 @@
   border: 1px solid #e5e7eb;
   width: 100%;
   max-width: 100%;
+  max-height: 80vh; /* 限制最大高度为视口高度的80% */
   overflow-x: auto;
+  overflow-y: auto; /* 启用垂直滚动条 */
   box-sizing: border-box;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
@@ -1211,7 +1213,8 @@
 
 #musicalbum-calendar-container .fc-scroller {
   overflow-x: auto !important;
-  overflow-y: hidden !important;
+  overflow-y: auto !important; /* 启用垂直滚动 */
+  max-height: calc(80vh - 200px) !important; /* 减去头部和padding的高度 */
 }
 
 #musicalbum-calendar-container .fc-daygrid-body {
@@ -1446,6 +1449,54 @@
   max-width: 100%;
   overflow-x: auto;
   box-sizing: border-box;
+}
+
+/* 日历视图容器特殊处理 */
+#musicalbum-calendar-view {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible; /* 允许日历容器显示滚动条 */
+}
+
+/* 美化滚动条样式 */
+#musicalbum-calendar-container::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+#musicalbum-calendar-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+#musicalbum-calendar-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+  border: 2px solid #f1f1f1;
+}
+
+#musicalbum-calendar-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 美化滚动条样式 - 针对日历内容区域 */
+#musicalbum-calendar-container .fc-scroller::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+#musicalbum-calendar-container .fc-scroller::-webkit-scrollbar-track {
+  background: #f9fafb;
+  border-radius: 5px;
+}
+
+#musicalbum-calendar-container .fc-scroller::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 5px;
+}
+
+#musicalbum-calendar-container .fc-scroller::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 
