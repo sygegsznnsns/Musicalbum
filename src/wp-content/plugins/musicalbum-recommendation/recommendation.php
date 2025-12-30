@@ -4,42 +4,133 @@
  */
 
 /**
- * 100% 对齐你现有代码的观演记录读取方式
- * 返回：音乐剧 post_id 数组
+ * 获取用户观演过的剧目标题列表
  */
-function musicalbum_get_user_viewing_history($user_id) {
+function musicalbum_get_user_viewing_history_titles($user_id) {
 
     $args = array(
         'post_type'      => 'viewing_record',
         'post_status'    => 'publish',
         'author'         => $user_id,
         'posts_per_page' => -1,
+        'fields'         => 'ids',
     );
 
     $query = new WP_Query($args);
-    $musical_ids = array();
+    $titles = array();
+
+    if ($query->have_posts()) {
+        foreach ($query->posts as $post_id) {
+            $title = get_the_title($post_id);
+            if ($title) {
+                $titles[] = $title;
+            }
+        }
+    }
+
+    return array_unique($titles);
+}
+
+/**
+ * 基于其他用户的观演记录推荐剧目
+ */
+function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
+
+    $viewed_titles = musicalbum_get_user_viewing_history_titles($user_id);
+
+    if (empty($viewed_titles)) {
+        return array();
+    }
+
+    // 查找其他用户的观演记录
+    $args = array(
+        'post_type'      => 'viewing_record',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'author__not_in' => array($user_id),
+    );
+
+    $query = new WP_Query($args);
+    $counter = array();
 
     if ($query->have_posts()) {
         while ($query->have_posts()) {
             $query->the_post();
 
-            // ⚠️ 关键：与你 viewing-records.php 一致的字段读取方式
-            // 这里假设你用的是 musical 字段（ACF 或 meta）
-            if (function_exists('musicalbum_get_field')) {
-                $musical_id = musicalbum_get_field(get_the_ID(), 'musical');
-            } else {
-                $musical_id = get_post_meta(get_the_ID(), 'musical', true);
+            $title = get_the_title();
+
+            // 排除自己已经看过的
+            if (in_array($title, $viewed_titles, true)) {
+                continue;
             }
 
-            if ($musical_id) {
-                $musical_ids[] = intval($musical_id);
+            if (!isset($counter[$title])) {
+                $counter[$title] = 0;
             }
+            $counter[$title]++;
         }
         wp_reset_postdata();
     }
 
-    return array_unique($musical_ids);
+    arsort($counter);
+
+    $results = array();
+    foreach ($counter as $title => $count) {
+        $results[] = array(
+            'musical' => $title,
+            'reason'  => '有 ' . $count . ' 位用户也观看过该剧目',
+        );
+        if (count($results) >= $limit) {
+            break;
+        }
+    }
+
+    return $results;
 }
+
+/**
+ * 近期热门观演剧目（基于观演记录数量）
+ */
+function musicalbum_recommend_trending($limit = 10) {
+
+    $args = array(
+        'post_type'      => 'viewing_record',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+    );
+
+    $query = new WP_Query($args);
+    $counter = array();
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+            $title = get_the_title();
+
+            if (!isset($counter[$title])) {
+                $counter[$title] = 0;
+            }
+            $counter[$title]++;
+        }
+        wp_reset_postdata();
+    }
+
+    arsort($counter);
+
+    $results = array();
+    foreach ($counter as $title => $count) {
+        $results[] = array(
+            'musical' => $title,
+            'reason'  => '近期被记录 ' . $count . ' 次观演',
+        );
+        if (count($results) >= $limit) {
+            break;
+        }
+    }
+
+    return $results;
+}
+
 
 /**
  * 获取用户不感兴趣列表

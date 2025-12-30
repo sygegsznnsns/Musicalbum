@@ -1,7 +1,7 @@
 <?php
 /**
  * page-recommend.php
- * 功能：渲染音乐剧推荐页面
+ * 功能：渲染基于观演记录的音乐剧推荐页面
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,10 +16,13 @@ function msr_render_recommend_page() {
 
     $user_id = get_current_user_id();
 
-    // 使用你已经实现的统一推荐入口
-    $recommendations = musicalbum_get_recommendations( $user_id, 10 );
+    // 1. 基于其他用户的观演记录推荐
+    $personal = musicalbum_recommend_by_crowd( $user_id, 10 );
 
-    if ( empty( $recommendations ) ) {
+    // 2. 热门观演推荐
+    $trending = musicalbum_recommend_trending( 10 );
+
+    if ( empty( $personal ) && empty( $trending ) ) {
         return '<p>暂无推荐内容。</p>';
     }
 
@@ -28,34 +31,47 @@ function msr_render_recommend_page() {
 
     <h2>为你推荐的音乐剧</h2>
 
-    <?php foreach ( $recommendations as $post ) : ?>
-        <article style="margin-bottom: 1em;">
-            <h3><?php echo esc_html( get_the_title( $post ) ); ?></h3>
+    <?php if ( ! empty( $personal ) ) : ?>
+        <h3>基于其他观众的观演记录</h3>
 
-            <p>
-                推荐理由：  
-                <?php
-                if ( in_array( $post->ID, musicalbum_get_user_viewing_history( $user_id ), true ) ) {
-                    echo '与你观演过的音乐剧相关';
-                } else {
-                    echo '近期较受关注的音乐剧';
-                }
-                ?>
-            </p>
+        <?php foreach ( $personal as $item ) : ?>
+            <article style="margin-bottom: 1em;">
+                <h4><?php echo esc_html( $item['musical'] ); ?></h4>
+                <p><?php echo esc_html( $item['reason'] ); ?></p>
 
-            <form method="post">
-                <input type="hidden" name="musical_id" value="<?php echo esc_attr( $post->ID ); ?>">
-                <button type="submit" name="musicalbum_not_interested">
-                    不感兴趣
-                </button>
-            </form>
-        </article>
-        <hr>
-    <?php endforeach; ?>
+                <form method="post">
+                    <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
+                    <button type="submit" name="musicalbum_not_interested">
+                        不感兴趣
+                    </button>
+                </form>
+            </article>
+            <hr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <?php if ( ! empty( $trending ) ) : ?>
+        <h3>近期热门观演</h3>
+
+        <?php foreach ( $trending as $item ) : ?>
+            <article style="margin-bottom: 1em;">
+                <h4><?php echo esc_html( $item['musical'] ); ?></h4>
+                <p><?php echo esc_html( $item['reason'] ); ?></p>
+
+                <form method="post">
+                    <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
+                    <button type="submit" name="musicalbum_not_interested">
+                        不感兴趣
+                    </button>
+                </form>
+            </article>
+            <hr>
+        <?php endforeach; ?>
+    <?php endif; ?>
 
     <?php
     return ob_get_clean();
 }
 
-// 注册简码
+// 注册简码（保持你原来的）
 add_shortcode( 'musical_recommend', 'msr_render_recommend_page' );
