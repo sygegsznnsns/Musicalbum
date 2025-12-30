@@ -51,8 +51,8 @@ final class Musicalbum_User_Access {
      * 仅允许用户看到自己创建的观演记录
      *
      * 适用场景：
-     * - WP 后台列表页
-     * - Profile Builder 前端列表
+     * - WP 后台列表页：管理员可查看所有记录，普通用户只看自己的
+     * - 前端列表：所有用户（包括管理员）只能查看自己的记录
      * - ACF / REST 查询
      */
     public static function limit_viewing_records_to_owner($query) {
@@ -71,7 +71,32 @@ final class Musicalbum_User_Access {
         
         // 处理 post_type 为空或数组的情况
         if (empty($post_type)) {
-            return;
+            // 如果 post_type 为空，需要检查是否真的是针对 viewing CPT 的查询
+            if (is_admin()) {
+                // 后台：检查当前屏幕是否是viewing CPT的列表页
+                $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+                if ($screen && isset($screen->post_type) && in_array($screen->post_type, $viewing_types)) {
+                    // 是viewing CPT的列表页，继续执行限制
+                } else {
+                    // 不是viewing CPT，不限制
+                    return;
+                }
+            } else {
+                // 前端：只有当访问viewing单篇文章时才限制
+                if ($query->is_singular()) {
+                    // 检查当前查询的对象是否是viewing类型
+                    $queried_object = $query->get_queried_object();
+                    if ($queried_object && isset($queried_object->post_type) && in_array($queried_object->post_type, $viewing_types)) {
+                        // 是viewing类型，继续执行限制
+                    } else {
+                        // 不是viewing类型，不限制
+                        return;
+                    }
+                } else {
+                    // 不是单篇文章查询（如页面、文章列表等），不限制
+                    return;
+                }
+            }
         } elseif (is_array($post_type)) {
             // post_type 是数组，检查是否包含viewing类型
             $intersect = array_intersect($post_type, $viewing_types);
@@ -85,11 +110,12 @@ final class Musicalbum_User_Access {
             }
         }
 
-        // 管理员仍可看到全部数据
-        if (current_user_can('edit_others_posts')) {
+        // 在后台，管理员可以查看所有记录
+        if (is_admin() && current_user_can('edit_others_posts')) {
             return;
         }
 
+        // 在前端，即使是管理员，也只能看到自己的记录
         // 普通用户：只能看到自己的记录
         $query->set('author', get_current_user_id());
     }

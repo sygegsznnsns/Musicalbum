@@ -625,10 +625,8 @@ final class Viewing_Records {
             'post_status' => 'publish'
         );
 
-        // 如果不是管理员，只显示当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = get_current_user_id();
-        }
+        // 前端短码：所有用户（包括管理员）只能查看自己的记录
+        $args['author'] = get_current_user_id();
 
         $query = new WP_Query($args);
         
@@ -1602,10 +1600,9 @@ final class Viewing_Records {
             'post_status' => 'publish'
         );
         
-        // 如果不是管理员，只查询当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
+        // 前端 REST API：所有用户（包括管理员）只能查看自己的记录
+        // 这是为了确保前端显示的一致性
+        $args['author'] = $user_id;
         $query = new WP_Query($args);
 
         $category_data = array(); // 剧目类别分布
@@ -1776,10 +1773,9 @@ final class Viewing_Records {
             'post_status' => 'publish'
         );
         
-        // 如果不是管理员，只查询当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
+        // 前端 REST API：所有用户（包括管理员）只能查看自己的记录
+        // 这是为了确保前端显示的一致性
+        $args['author'] = $user_id;
         $query = new WP_Query($args);
 
         $total_count = 0; // 总记录数
@@ -1873,10 +1869,9 @@ final class Viewing_Records {
             'order' => 'DESC'
         );
         
-        // 如果不是管理员，只查询当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
+        // 前端 REST API：所有用户（包括管理员）只能查看自己的记录
+        // 这是为了确保前端显示的一致性
+        $args['author'] = $user_id;
 
         // 根据类型添加meta查询
         if ($type === 'category') {
@@ -2003,10 +1998,8 @@ final class Viewing_Records {
             'order' => 'DESC'
         );
         
-        // 如果不是管理员，只导出当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
+        // 前端 REST API：所有用户（包括管理员）只能导出自己的记录
+        $args['author'] = $user_id;
         $query = new WP_Query($args);
 
         if ($format === 'csv') {
@@ -2073,9 +2066,8 @@ final class Viewing_Records {
             'orderby' => 'date',
             'order' => 'DESC'
         );
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
+        // 前端 REST API：所有用户（包括管理员）只能查看自己的记录
+        $args['author'] = $user_id;
         $query = new WP_Query($args);
         $counts = array();
         while ($query->have_posts()) {
@@ -2375,10 +2367,9 @@ final class Viewing_Records {
             // 排序将在PHP端根据view_date字段进行
         );
 
-        // 如果不是管理员，只查询当前用户的记录
-        if (!current_user_can('manage_options')) {
-            $args['author'] = $user_id;
-        }
+        // 前端 REST API：所有用户（包括管理员）只能查看自己的记录
+        // 这是为了确保前端显示的一致性
+        $args['author'] = $user_id;
 
         // 类别过滤
         $category = $request->get_param('category');
@@ -2536,8 +2527,8 @@ final class Viewing_Records {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
-        // 检查权限：只能查看自己的记录，除非是管理员
-        if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+        // 前端 REST API：所有用户（包括管理员）只能查看自己的记录
+        if (intval($post->post_author) !== $user_id) {
             return new WP_Error('forbidden', '无权查看此记录', array('status' => 403));
         }
 
@@ -2656,8 +2647,8 @@ final class Viewing_Records {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
-        // 检查权限：只能编辑自己的记录，除非是管理员
-        if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+        // 前端 REST API：所有用户（包括管理员）只能编辑自己的记录
+        if (intval($post->post_author) !== $user_id) {
             return new WP_Error('forbidden', '无权编辑此记录', array('status' => 403));
         }
 
@@ -2731,8 +2722,8 @@ final class Viewing_Records {
             return new WP_Error('not_found', '记录不存在', array('status' => 404));
         }
 
-        // 检查权限：只能删除自己的记录，除非是管理员
-        if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+        // 前端 REST API：所有用户（包括管理员）只能删除自己的记录
+        if (intval($post->post_author) !== $user_id) {
             return new WP_Error('forbidden', '无权删除此记录', array('status' => 403));
         }
 
@@ -2781,7 +2772,8 @@ final class Viewing_Records {
             }
 
             // 检查权限：只能删除自己的记录，除非是管理员
-            if (!current_user_can('manage_options') && intval($post->post_author) !== $user_id) {
+            // 前端 REST API：所有用户（包括管理员）只能删除自己的记录
+            if (intval($post->post_author) !== $user_id) {
                 $error_count++;
                 $errors[] = "无权删除记录: {$post_id}";
                 continue;
