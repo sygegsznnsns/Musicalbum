@@ -14,8 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 引入核心文件
  */
 require_once plugin_dir_path( __FILE__ ) . 'saoju-api.php';
+
+// 推荐算法（必须最先）
 require_once plugin_dir_path( __FILE__ ) . 'recommendation.php';
+
+// 不感兴趣 / 反馈
 require_once plugin_dir_path( __FILE__ ) . 'feedback.php';
+
+// 页面 + shortcode
 require_once plugin_dir_path( __FILE__ ) . 'page-recommend.php';
 
 /**
