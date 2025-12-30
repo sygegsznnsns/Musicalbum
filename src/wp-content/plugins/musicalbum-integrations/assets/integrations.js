@@ -1815,6 +1815,12 @@
       initialView: 'dayGridMonth',
       locale: 'zh-cn',
       firstDay: 1, // 周一作为第一天
+      // 限制每天显示的最大事件数量，超出部分显示"+X more"链接
+      dayMaxEvents: 3, // 每天最多显示3个事件
+      moreLinkClick: 'popover', // 点击"更多"时显示弹出窗口
+      moreLinkText: function(num) {
+        return '+ ' + num + ' 条更多';
+      }, // 自定义"更多"链接文本为中文
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
@@ -1947,6 +1953,17 @@
               timeEl.style.display = 'none';
             }
           }
+        }
+        
+        // 确保弹出窗口中的事件也可以点击查看详情
+        // FullCalendar 的 eventClick 已经处理了主视图中的点击
+        // 但弹出窗口中的事件需要额外处理
+        if (arg.isMirror) {
+          arg.el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var item = arg.event.extendedProps;
+            showCalendarEventDetail(arg.event.id, arg.event.title, item);
+          });
         }
       }
     });

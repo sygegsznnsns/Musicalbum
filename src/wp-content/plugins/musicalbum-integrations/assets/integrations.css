@@ -1307,7 +1307,16 @@
 
 #musicalbum-calendar-container .fc-daygrid-day-frame {
   min-height: 100px;
+  max-height: 180px; /* 限制最大高度，避免单元格过长 */
   padding: 0.5rem;
+  overflow: hidden; /* 隐藏超出部分 */
+  position: relative; /* 为"更多"链接定位做准备 */
+}
+
+/* 确保事件容器可以正确滚动 */
+#musicalbum-calendar-container .fc-daygrid-day-events {
+  max-height: calc(180px - 3rem); /* 减去日期数字和padding的高度 */
+  overflow: hidden;
 }
 
 #musicalbum-calendar-container .fc-daygrid-day-number {
@@ -1362,6 +1371,53 @@
   white-space: nowrap !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
   line-height: 1.4 !important;
+}
+
+/* "更多"链接样式优化 */
+#musicalbum-calendar-container .fc-more-link {
+  font-weight: 600 !important;
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  margin-top: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.75rem !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+}
+
+#musicalbum-calendar-container .fc-more-link:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #2563eb !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 弹出窗口样式优化 */
+#musicalbum-calendar-container .fc-popover {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+  overflow: hidden !important;
+}
+
+#musicalbum-calendar-container .fc-popover-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #fff !important;
+  padding: 0.75rem 1rem !important;
+  font-weight: 600 !important;
+  border-bottom: none !important;
+}
+
+#musicalbum-calendar-container .fc-popover-body {
+  padding: 0.5rem !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
+
+#musicalbum-calendar-container .fc-popover-body .fc-daygrid-event {
+  margin: 4px 0 !important;
 }
 
 /* 周视图和日视图的事件样式 */
