@@ -1,34 +1,33 @@
 <?php
 /**
- * 功能：
- * 记录用户浏览文章行为
- * 用于后续推荐分析
+ * class-user-behavior-tracker.php
+ * 
+ * 功能：该文件负责追踪用户的行为，包括浏览文章、发表评论和收藏帖子。
  */
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+
+defined('ABSPATH') || exit;
 
 class Musicalbum_User_Behavior_Tracker {
 
-    public function __construct() {
-        add_action( 'wp', array( $this, 'track_view' ) );
+    public static function init() {
+        add_action('wp', [self::class, 'track_view']);
     }
 
-    public function track_view() {
-        if ( ! is_single() || ! is_user_logged_in() ) return;
-
-        global $post;
-        if ( $post->post_type !== 'post' ) return;
+    public static function track_view() {
+        if (!is_singular('post') || !is_user_logged_in()) {
+            return;
+        }
 
         $user_id = get_current_user_id();
-        $views   = get_user_meta( $user_id, '_musicalbum_viewed_posts', true );
+        $post_id = get_the_ID();
 
-        if ( ! is_array( $views ) ) {
-            $views = array();
+        $views = get_user_meta($user_id, 'musicalbum_viewed_posts', true);
+        if (!is_array($views)) {
+            $views = [];
         }
 
-        if ( ! in_array( $post->ID, $views ) ) {
-            $views[] = $post->ID;
-            update_user_meta( $user_id, '_musicalbum_viewed_posts', $views );
-        }
+        $views[$post_id] = ($views[$post_id] ?? 0) + 1;
+        update_user_meta($user_id, 'musicalbum_viewed_posts', $views);
     }
 }
