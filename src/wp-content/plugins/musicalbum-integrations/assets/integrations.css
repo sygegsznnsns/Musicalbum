@@ -1192,7 +1192,7 @@
   border: 1px solid #e5e7eb;
   width: 100%;
   max-width: 100%;
-  max-height: 80vh; /* 限制最大高度为视口高度的80% */
+  max-height: 95vh; /* 限制最大高度为视口高度的95%，显示更大的初始窗口 */
   overflow-x: auto;
   overflow-y: auto; /* 启用垂直滚动条 */
   box-sizing: border-box;
@@ -1214,7 +1214,7 @@
 #musicalbum-calendar-container .fc-scroller {
   overflow-x: auto !important;
   overflow-y: auto !important; /* 启用垂直滚动 */
-  max-height: calc(80vh - 200px) !important; /* 减去头部和padding的高度 */
+  max-height: calc(95vh - 200px) !important; /* 减去头部和padding的高度，对应容器的95vh */
 }
 
 #musicalbum-calendar-container .fc-daygrid-body {
