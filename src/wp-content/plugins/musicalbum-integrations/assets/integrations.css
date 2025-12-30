@@ -753,6 +753,11 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
+  max-width: 1200px; /* 限制最大宽度，与日历视图保持一致 */
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .musicalbum-list-filters input,
@@ -774,6 +779,10 @@
 
 .musicalbum-list-container {
   min-height: 400px;
+  max-width: 1200px; /* 限制最大宽度，与日历视图保持一致 */
+  margin: 0 auto; /* 居中显示 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .musicalbum-list-items {
@@ -1195,7 +1204,8 @@
   border-radius: 0;
   border: 1px solid #e5e7eb;
   width: 100%;
-  max-width: 100%;
+  max-width: 1200px; /* 限制最大宽度，与列表视图保持一致 */
+  margin: 0 auto; /* 居中显示 */
   box-sizing: border-box;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   min-height: auto; /* 不限制最小高度，让内容自然展开 */
