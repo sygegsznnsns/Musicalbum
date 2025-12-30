@@ -19,10 +19,10 @@ class Musicalbum_BuddyPress_Integration {
         }
         
         // 扩展用户资料页
-        add_action('bp_setup_nav', array(__CLASS__, 'setup_profile_nav'), 100);
+        // add_action('bp_setup_nav', array(__CLASS__, 'setup_profile_nav'), 100);
         
         // 在用户资料页显示观演记录
-        add_action('bp_profile_header_meta', array(__CLASS__, 'display_viewing_stats'));
+        // add_action('bp_profile_header_meta', array(__CLASS__, 'display_viewing_stats'));
         
         // 自定义活动流
         add_action('bp_register_activity_actions', array(__CLASS__, 'register_viewing_activity'));
