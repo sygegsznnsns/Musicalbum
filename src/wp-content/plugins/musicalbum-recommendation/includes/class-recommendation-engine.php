@@ -51,9 +51,10 @@ class Musicalbum_Recommendation_Engine {
 
     private static function build_user_profile($user_id) {
         $views = get_user_meta($user_id, 'musicalbum_viewed_posts', true);
-        if (!is_array($views)) {
-            return [];
-        }
+        // 如果没有浏览历史，使用默认规则
+        if (empty($views) || !is_array($views)) {
+            return self::get_default_profile();
+        }    
 
         $profile = [];
 
@@ -65,6 +66,23 @@ class Musicalbum_Recommendation_Engine {
         }
 
         return $profile;
+    }
+
+    private static function get_default_profile() {
+    // 方法1：获取最热门的标签
+    $popular_terms = get_terms([
+        'taxonomy' => 'musical',
+        'orderby' => 'count',
+        'order' => 'DESC',
+        'number' => 3,
+    ]);
+    
+    $profile = [];
+    foreach ($popular_terms as $term) {
+        $profile[$term->term_id] = 1; // 给热门标签基础权重
+    }
+    
+    return $profile;
     }
 
     private static function calculate_score($post_id, $profile, $user_id) {
