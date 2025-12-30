@@ -61,3 +61,38 @@ function msr_has_recent_show( $musical_name, $days = 60 ) {
 function msr_get_day_shows( $date ) {
     return msr_saoju_get( 'search_day/?date=' . $date );
 }
+
+/**
+ * 根据演员名查询相关演出
+ */
+function musicalbum_saoju_search_by_actor( $actor_name ) {
+
+    $url = 'https://y.saoju.net/yyj/api/search_day/?date=' . date('Y-m-d');
+
+    $response = wp_remote_get( $url );
+    if ( is_wp_error( $response ) ) {
+        return array();
+    }
+
+    $data = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $data['show_list'] ) ) {
+        return array();
+    }
+
+    $results = array();
+
+    foreach ( $data['show_list'] as $show ) {
+        if ( empty( $show['cast'] ) ) {
+            continue;
+        }
+
+        foreach ( $show['cast'] as $cast ) {
+            if ( isset( $cast['artist'] ) && $cast['artist'] === $actor_name ) {
+                $results[] = $show;
+                break;
+            }
+        }
+    }
+
+    return $results;
+}
