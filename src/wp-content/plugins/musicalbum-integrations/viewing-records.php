@@ -565,18 +565,30 @@ final class Viewing_Records {
             'post_type' => array('viewing_record', 'musicalbum_viewing'), // 兼容旧数据
             'posts_per_page' => 20,
             'orderby' => 'date',
-            'order' => 'DESC'
+            'order' => 'DESC',
+            'post_status' => 'publish' // 确保只查询已发布的记录
         );
         // 如果不是管理员，只显示当前用户的记录
         if (!current_user_can('manage_options')) {
             $args['author'] = get_current_user_id();
         }
         $q = new WP_Query($args);
+        
+        // 调试输出：如果当前用户没有记录，输出调试信息（仅管理员可见或通过特定参数开启）
+        if (!$q->have_posts() && isset($_GET['debug_viewing'])) {
+            echo '<!-- Debug Query: ' . print_r($args, true) . ' -->';
+            echo '<!-- Current User: ' . get_current_user_id() . ' -->';
+        }
+        
         ob_start();
         echo '<div class="musicalbum-viewings-list">';
-        while ($q->have_posts()) { $q->the_post();
-            $date = self::safe_get_field('view_date', get_the_ID());
-            echo '<div class="item"><a href="' . esc_url(get_permalink()) . '">' . esc_html(get_the_title()) . '</a><span class="date">' . esc_html($date) . '</span></div>';
+        if ($q->have_posts()) {
+            while ($q->have_posts()) { $q->the_post();
+                $date = self::safe_get_field('view_date', get_the_ID());
+                echo '<div class="item"><a href="' . esc_url(get_permalink()) . '">' . esc_html(get_the_title()) . '</a><span class="date">' . esc_html($date) . '</span></div>';
+            }
+        } else {
+            echo '<p>暂无观演记录。</p>';
         }
         wp_reset_postdata();
         echo '</div>';
