@@ -62,10 +62,6 @@ function msr_render_recommend_page() {
     // 3. 基于关注演员的推荐
     $actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
 
-    if ( empty( $personal ) && empty( $trending ) && empty( $actor_recommend ) ) {
-        return '<p>暂无推荐内容。</p>';
-    }
-
     ob_start();
     ?>
 
@@ -103,7 +99,7 @@ function msr_render_recommend_page() {
     <h3>你关注的演员</h3>
 
     <?php if ( empty( $favorite_actors ) ) : ?>
-        <p>你还没有关注任何演员。</p>
+        <p>你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
     <?php else : ?>
         <ul>
             <?php foreach ( $favorite_actors as $actor ) : ?>
@@ -124,11 +120,20 @@ function msr_render_recommend_page() {
     </form>
 
     <!-- ===================== -->
-    <!-- 演员相关推荐 -->
+    <!-- 演员相关推荐（始终显示） -->
     <!-- ===================== -->
 
-    <?php if ( ! empty( $actor_recommend ) ) : ?>
-        <h3>你可能喜欢的演员相关剧目</h3>
+    <h3>关注演员的相关剧目</h3>
+
+    <?php if ( empty( $favorite_actors ) ) : ?>
+
+        <p>你尚未关注演员，暂无基于演员的推荐。</p>
+
+    <?php elseif ( empty( $actor_recommend ) ) : ?>
+
+        <p>暂未找到与你关注演员相关的音乐剧，可尝试关注更多演员。</p>
+
+    <?php else : ?>
 
         <div class="msr-grid">
             <?php foreach ( $actor_recommend as $item ) : ?>
@@ -138,6 +143,7 @@ function msr_render_recommend_page() {
                 </div>
             <?php endforeach; ?>
         </div>
+
     <?php endif; ?>
 
     <!-- ===================== -->
@@ -145,7 +151,7 @@ function msr_render_recommend_page() {
     <!-- ===================== -->
 
     <?php if ( ! empty( $personal ) ) : ?>
-        <h3>基于其他观众的观演记录</h3>
+        <h3>你的同好都在看：</h3>
 
         <div class="msr-grid">
             <?php foreach ( $personal as $item ) : ?>
