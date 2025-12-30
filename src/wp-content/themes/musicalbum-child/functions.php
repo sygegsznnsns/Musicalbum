@@ -94,7 +94,7 @@ final class Musicalbum_User_Access {
                     }
                 } else {
                     // 不是单篇文章查询（如页面、文章列表等），不限制
-                    return;
+            return;
                 }
             }
         } elseif (is_array($post_type)) {
