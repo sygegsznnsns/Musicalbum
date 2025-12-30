@@ -1193,8 +1193,10 @@
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: visible; /* 允许垂直方向完全显示 */
   box-sizing: border-box;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  min-height: auto; /* 不限制最小高度，让内容自然展开 */
 }
 
 /* FullCalendar 样式调整 - 确保日历适应容器 */
@@ -1207,16 +1209,29 @@
 #musicalbum-calendar-container .fc-view-harness {
   width: 100% !important;
   max-width: 100% !important;
+  height: auto !important; /* 自动高度，确保整个月份显示 */
 }
 
 #musicalbum-calendar-container .fc-scroller {
   overflow-x: auto !important;
-  overflow-y: hidden !important;
+  overflow-y: visible !important; /* 允许垂直方向显示，确保整个月份可见 */
+  height: auto !important; /* 自动高度，不限制 */
 }
 
 #musicalbum-calendar-container .fc-daygrid-body {
   width: 100% !important;
   min-width: 0 !important;
+  height: auto !important; /* 自动高度，确保所有行都显示 */
+}
+
+/* 确保日历表格完整显示 */
+#musicalbum-calendar-container .fc-daygrid {
+  height: auto !important;
+}
+
+/* 确保日历视图容器高度自适应 */
+#musicalbum-calendar-container .fc-view {
+  height: auto !important;
 }
 
 /* 日历头部工具栏美化 */
@@ -1445,7 +1460,15 @@
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: visible; /* 允许垂直方向完全显示 */
   box-sizing: border-box;
+  min-height: auto; /* 不限制最小高度 */
+}
+
+/* 日历视图特殊处理 - 确保完整显示 */
+#musicalbum-calendar-view {
+  overflow: visible !important; /* 确保日历视图不被截断 */
+  min-height: auto !important;
 }
 
 
