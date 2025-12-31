@@ -9,13 +9,67 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * 读取 musical.csv，返回 以“音乐剧名”为 key 的详情数组
+ *
+ * @return array
+ */
+function msr_load_musical_csv_data() {
+
+    static $cache = null;
+    if ( $cache !== null ) {
+        return $cache;
+    }
+
+    $file = plugin_dir_path( __FILE__ ) . 'musical.csv';
+    if ( ! file_exists( $file ) ) {
+        return [];
+    }
+
+    $handle = fopen( $file, 'r' );
+    if ( ! $handle ) {
+        return [];
+    }
+
+    $header = fgetcsv( $handle );
+    $data   = [];
+
+    while ( ( $row = fgetcsv( $handle ) ) !== false ) {
+        if ( empty( $row[0] ) ) {
+            continue;
+        }
+
+        $data[ trim( $row[0] ) ] = [
+            'originality' => $row[1] ?? '',
+            'status'      => $row[2] ?? '',
+            'premiere'    => $row[3] ?? '',
+            'desc'        => $row[4] ?? '',
+            'company'     => $row[5] ?? '',
+            'creators'    => $row[6] ?? '',
+        ];
+    }
+
+    fclose( $handle );
+    $cache = $data;
+
+    return $cache;
+}
+
+
+/**
  * 页面渲染函数
  */
 function msr_render_recommend_page() {
     if ( ! is_user_logged_in() ) {
         return '<p>请先登录查看推荐。</p>';
     }
-    
+
+    // ✅ 新增：加载音乐剧详情数据
+    $musical_csv_data = msr_load_musical_csv_data();
+
+    if ( ! is_array( $musical_csv_data ) ) {
+        $musical_csv_data = [];
+    }
+
     $user_id = get_current_user_id();
     
     /**
