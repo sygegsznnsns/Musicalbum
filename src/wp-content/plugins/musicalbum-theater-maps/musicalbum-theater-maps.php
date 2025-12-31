@@ -1,0 +1,259 @@
+<?php
+/**
+ * Plugin Name: Musicalbum Theater Maps
+ * Description: 剧院地图与周边导航模块，集成 WP Go Maps
+ * Version: 1.0.0
+ * Author: Musicalbum Team
+ * Text Domain: musicalbum-theater-maps
+ */
+
+defined('ABSPATH') || exit;
+
+final class Musicalbum_Theater_Maps {
+
+    /**
+     * WP Go Maps 的 Marker XML 表名（通常是 wp_wpgmza）
+     * 需在初始化时检测
+     */
+    private static $wpgmza_table = 'wpgmza';
+
+    public static function init() {
+        // 注册短码
+        add_shortcode('musicalbum_theater_map', [__CLASS__, 'shortcode_theater_map']);
+        
+        // 注册脚本
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
+
+        // 注册 AJAX 操作：批量地理编码（仅管理员）
+        add_action('wp_ajax_musicalbum_batch_geocode', [__CLASS__, 'ajax_batch_geocode']);
+        
+        // 添加后台菜单：地图管理
+        add_action('admin_menu', [__CLASS__, 'add_admin_menu']);
+        
+        // 注册设置
+        add_action('admin_init', [__CLASS__, 'register_settings']);
+    }
+
+    public static function enqueue_assets() {
+        wp_register_style('musicalbum-theater-maps', plugins_url('assets/maps.css', __FILE__), [], '1.0.0');
+        wp_register_script('musicalbum-theater-maps', plugins_url('assets/maps.js', __FILE__), ['jquery'], '1.0.0', true);
+    }
+
+    public static function add_admin_menu() {
+        add_submenu_page(
+            'edit.php?post_type=viewing_record', // 挂在观演记录菜单下
+            '剧院地图管理',
+            '剧院地图',
+            'manage_options',
+            'musicalbum-theater-maps',
+            [__CLASS__, 'render_admin_page']
+        );
+    }
+
+    public static function register_settings() {
+        register_setting('musicalbum_theater_maps', 'musicalbum_amap_key'); // 高德/百度 Key 用于地理编码
+        register_setting('musicalbum_theater_maps', 'musicalbum_target_map_id'); // WP Go Maps 的目标地图 ID
+    }
+
+    /**
+     * 后台管理页面：触发批量地理编码
+     */
+    public static function render_admin_page() {
+        if (!current_user_can('manage_options')) return;
+        
+        $map_id = get_option('musicalbum_target_map_id', 1);
+        $amap_key = get_option('musicalbum_amap_key', '');
+        
+        ?>
+        <div class="wrap">
+            <h1>剧院地图集成管理</h1>
+            <p>将观演记录中的“剧院”字段自动转换为坐标，并添加到 WP Go Maps 地图中。</p>
+            
+            <form method="post" action="options.php">
+                <?php settings_fields('musicalbum_theater_maps'); ?>
+                <?php do_settings_sections('musicalbum_theater_maps'); ?>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">目标地图 ID</th>
+                        <td><input type="number" name="musicalbum_target_map_id" value="<?php echo esc_attr($map_id); ?>" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">高德地图 Web服务 Key</th>
+                        <td>
+                            <input type="text" name="musicalbum_amap_key" value="<?php echo esc_attr($amap_key); ?>" class="regular-text" />
+                            <p class="description">用于将剧院名称转换为经纬度（地理编码）。请前往高德开放平台申请。</p>
+                        </td>
+                    </tr>
+                </table>
+                <?php submit_button(); ?>
+            </form>
+            
+            <hr />
+            
+            <h2>批量处理</h2>
+            <p>点击下方按钮，扫描所有已发布观演记录的剧院，调用接口获取坐标，并写入 WP Go Maps。</p>
+            <button id="musicalbum-sync-markers" class="button button-primary">同步剧院到地图</button>
+            <div id="musicalbum-sync-result" style="margin-top:10px; padding:10px; background:#fff; border:1px solid #ccd0d4; display:none;"></div>
+
+            <script>
+            jQuery(document).ready(function($) {
+                $('#musicalbum-sync-markers').click(function() {
+                    var btn = $(this);
+                    btn.prop('disabled', true).text('正在同步...');
+                    $('#musicalbum-sync-result').show().html('正在扫描剧院数据...');
+                    
+                    $.post(ajaxurl, {
+                        action: 'musicalbum_batch_geocode',
+                        nonce: '<?php echo wp_create_nonce('musicalbum_maps_sync'); ?>'
+                    }, function(res) {
+                        btn.prop('disabled', false).text('同步剧院到地图');
+                        if (res.success) {
+                            $('#musicalbum-sync-result').html(
+                                '<p style="color:green">同步完成！</p>' + 
+                                '<ul>' +
+                                '<li>发现剧院：' + res.data.total + ' 个</li>' +
+                                '<li>成功编码：' + res.data.success + ' 个</li>' +
+                                '<li>跳过/失败：' + res.data.skipped + ' 个</li>' +
+                                '</ul>'
+                            );
+                        } else {
+                            $('#musicalbum-sync-result').html('<p style="color:red">错误：' + res.data + '</p>');
+                        }
+                    }).fail(function() {
+                        btn.prop('disabled', false).text('同步剧院到地图');
+                        $('#musicalbum-sync-result').html('<p style="color:red">请求失败，请检查网络或服务器日志。</p>');
+                    });
+                });
+            });
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * AJAX 处理：批量地理编码与标记写入
+     */
+    public static function ajax_batch_geocode() {
+        if (!current_user_can('manage_options')) wp_send_json_error('权限不足');
+        check_ajax_referer('musicalbum_maps_sync', 'nonce');
+        
+        global $wpdb;
+        $map_id = get_option('musicalbum_target_map_id', 1);
+        $amap_key = get_option('musicalbum_amap_key', '');
+        
+        if (empty($amap_key)) wp_send_json_error('请先配置高德地图 Key');
+        
+        // 1. 获取所有唯一剧院名称
+        // 这里假设 'theater' 是 ACF 字段，存储在 postmeta 中
+        // 为了兼容性，先查所有 view_record / musicalbum_viewing
+        $theaters = $wpdb->get_col("
+            SELECT DISTINCT meta_value 
+            FROM {$wpdb->postmeta} pm
+            JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE p.post_type IN ('viewing_record', 'musicalbum_viewing') 
+            AND p.post_status = 'publish'
+            AND pm.meta_key = 'theater'
+            AND pm.meta_value != ''
+        ");
+        
+        if (empty($theaters)) wp_send_json_error('未找到任何剧院数据');
+        
+        // WP Go Maps 表名 (通常是 wp_wpgmza)
+        $table_name = $wpdb->prefix . 'wpgmza';
+        
+        // 检查表是否存在
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+            wp_send_json_error("WP Go Maps 数据表 ($table_name) 不存在，请确认插件已激活");
+        }
+        
+        $stats = ['total' => count($theaters), 'success' => 0, 'skipped' => 0];
+        
+        foreach ($theaters as $theater) {
+            // 检查是否已存在该名称的标记（避免重复）
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table_name WHERE map_id = %d AND title = %s", $map_id, $theater));
+            if ($exists) {
+                $stats['skipped']++;
+                continue;
+            }
+            
+            // 调用高德 API 进行地理编码
+            $geo = self::geocode_amap($theater, $amap_key);
+            if ($geo) {
+                // 写入 WP Go Maps 表
+                $wpdb->insert(
+                    $table_name,
+                    [
+                        'map_id' => $map_id,
+                        'address' => $theater, // 地址直接用剧院名
+                        'lat' => $geo['lat'],
+                        'lng' => $geo['lng'],
+                        'title' => $theater,
+                        'description' => '我的观演足迹',
+                        'link' => '', // 可选：链接到剧院归档页
+                        'anim' => 0,
+                        'infoopen' => 0,
+                        'category' => 0,
+                        'approved' => 1,
+                        'retina' => 0,
+                        'type' => 0,
+                        'did' => '',
+                        'sticky' => 0,
+                        'other_data' => ''
+                    ]
+                );
+                $stats['success']++;
+            } else {
+                $stats['skipped']++;
+            }
+            
+            // 避免 API 速率限制
+            usleep(200000); // 0.2s
+        }
+        
+        wp_send_json_success($stats);
+    }
+    
+    /**
+     * 高德地图地理编码
+     */
+    private static function geocode_amap($address, $key) {
+        $url = 'https://restapi.amap.com/v3/geocode/geo?key=' . $key . '&address=' . urlencode($address);
+        $resp = wp_remote_get($url);
+        if (is_wp_error($resp)) return false;
+        
+        $body = wp_remote_retrieve_body($resp);
+        $data = json_decode($body, true);
+        
+        if (isset($data['status']) && $data['status'] == '1' && !empty($data['geocodes'])) {
+            $location = $data['geocodes'][0]['location'];
+            list($lng, $lat) = explode(',', $location);
+            return ['lat' => $lat, 'lng' => $lng];
+        }
+        
+        return false;
+    }
+
+    /**
+     * 前端短码：显示地图
+     * 实际上是 WP Go Maps 短码的包装，但可以添加自定义容器或样式
+     */
+    public static function shortcode_theater_map($atts) {
+        $atts = shortcode_atts(['map_id' => get_option('musicalbum_target_map_id', 1)], $atts);
+        $map_id = $atts['map_id'];
+        
+        wp_enqueue_style('musicalbum-theater-maps');
+        wp_enqueue_script('musicalbum-theater-maps');
+        
+        ob_start();
+        echo '<div class="musicalbum-theater-map-container">';
+        echo '<h2>剧院足迹地图</h2>';
+        echo do_shortcode('[wpgmza id="' . esc_attr($map_id) . '"]');
+        echo '<div class="musicalbum-map-controls">';
+        echo '<button class="musicalbum-nearby-btn" onclick="MusicalbumMap.findNearby()">查找我附近的剧院</button>';
+        echo '</div>';
+        echo '</div>';
+        return ob_get_clean();
+    }
+}
+
+Musicalbum_Theater_Maps::init();

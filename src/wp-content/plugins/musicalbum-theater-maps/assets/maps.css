@@ -1,0 +1,41 @@
+.musicalbum-theater-map-container {
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.musicalbum-theater-map-container h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    color: #333;
+}
+
+.musicalbum-map-controls {
+    margin-top: 15px;
+    text-align: right;
+}
+
+.musicalbum-nearby-btn {
+    padding: 8px 16px;
+    background-color: #0073aa;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.musicalbum-nearby-btn:hover {
+    background-color: #005177;
+}
+
+/* 适配 WP Go Maps 的容器高度 */
+.wpgmza_map {
+    width: 100% !important;
+    min-height: 400px;
+}
