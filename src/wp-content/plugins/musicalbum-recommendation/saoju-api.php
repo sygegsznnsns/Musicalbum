@@ -239,3 +239,48 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     return $results;
 }
 
+/**
+ * 读取 musical.csv，返回 以“音乐剧名”为 key 的详情数组
+ *
+ * @return array
+ */
+function msr_load_musical_csv_data() {
+
+    static $cache = null;
+    if ( $cache !== null ) {
+        return $cache;
+    }
+
+    $file = plugin_dir_path( __FILE__ ) . 'musical.csv';
+    if ( ! file_exists( $file ) ) {
+        return [];
+    }
+
+    $handle = fopen( $file, 'r' );
+    if ( ! $handle ) {
+        return [];
+    }
+
+    $header = fgetcsv( $handle );
+    $data   = [];
+
+    while ( ( $row = fgetcsv( $handle ) ) !== false ) {
+        if ( empty( $row[0] ) ) {
+            continue;
+        }
+
+        $data[ trim( $row[0] ) ] = [
+            'originality' => $row[1] ?? '',
+            'status'      => $row[2] ?? '',
+            'premiere'    => $row[3] ?? '',
+            'desc'        => $row[4] ?? '',
+            'company'     => $row[5] ?? '',
+            'creators'    => $row[6] ?? '',
+        ];
+    }
+
+    fclose( $handle );
+    $cache = $data;
+
+    return $cache;
+}

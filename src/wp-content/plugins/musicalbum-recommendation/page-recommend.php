@@ -135,7 +135,13 @@ function msr_render_recommend_page() {
     <div class="msr-grid">
         <?php foreach ( $musicals as $item ) : ?>
             <div class="msr-item">
-                <h5><?php echo esc_html( $item['musical'] ); ?></h5>
+                <h5>
+    <a href="javascript:void(0);" 
+       class="msr-musical-link" 
+       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+        <?php echo esc_html( $item['musical'] ); ?>
+    </a>
+</h5>
                 <p><?php echo esc_html( $item['reason'] ); ?></p>
             </div>
         <?php endforeach; ?>
@@ -154,7 +160,14 @@ function msr_render_recommend_page() {
         <div class="msr-grid">
             <?php foreach ( $personal as $item ) : ?>
                 <div class="msr-item">
-                    <h4><?php echo esc_html( $item['musical'] ); ?></h4>
+                    <h4>
+    <a href="javascript:void(0);" 
+       class="msr-musical-link" 
+       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+        <?php echo esc_html( $item['musical'] ); ?>
+    </a>
+</h4>
+
                     <p><?php echo esc_html( $item['reason'] ); ?></p>
                     <form method="post">
                         <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
@@ -173,7 +186,14 @@ function msr_render_recommend_page() {
         <div class="msr-grid">
             <?php foreach ( $trending as $item ) : ?>
                 <div class="msr-item">
-                    <h4><?php echo esc_html( $item['musical'] ); ?></h4>
+                    <h4>
+    <a href="javascript:void(0);" 
+       class="msr-musical-link" 
+       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+        <?php echo esc_html( $item['musical'] ); ?>
+    </a>
+</h4>
+
                     <p><?php echo esc_html( $item['reason'] ); ?></p>
                     <form method="post">
                         <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
@@ -183,6 +203,45 @@ function msr_render_recommend_page() {
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
+
+    <hr>
+
+<h3>音乐剧详情</h3>
+<div id="msr-musical-detail">
+    <p>点击上方音乐剧名称查看详情。</p>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const musicalData = <?php echo json_encode( $musical_csv_data, JSON_UNESCAPED_UNICODE ); ?>;
+    const detailBox = document.getElementById('msr-musical-detail');
+
+    document.querySelectorAll('.msr-musical-link').forEach(function (link) {
+        link.addEventListener('click', function () {
+            const name = this.dataset.musical;
+
+            if (!musicalData[name]) {
+                detailBox.innerHTML = '<p>未找到该音乐剧的详细信息。</p>';
+                return;
+            }
+
+            const m = musicalData[name];
+
+            detailBox.innerHTML = `
+                <h4>${name}</h4>
+                <p><strong>原创性：</strong>${m.original}</p>
+                <p><strong>进度：</strong>${m.status}</p>
+                <p><strong>首演日期：</strong>${m.premiere_date}</p>
+                <p><strong>制作公司：</strong>${m.company}</p>
+                <p><strong>简介：</strong>${m.description}</p>
+                <pre style="white-space:pre-wrap;"><strong>主创信息：</strong>\n${m.creators}</pre>
+            `;
+        });
+    });
+
+});
+</script>
+
 <?php
     return ob_get_clean();
 }
