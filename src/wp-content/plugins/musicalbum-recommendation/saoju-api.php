@@ -54,35 +54,6 @@ function msr_get_day_shows( $date ) {
     return msr_saoju_get( 'search_day/?date=' . $date );
 }
 
-/**
- * 基于用户关注演员，推荐相关音乐剧（按演员分组）
- *
- * @param int $user_id
- * @return array
- */
-function musicalbum_recommend_by_favorite_actors( $user_id ) {
-
-    $actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
-
-    if ( empty( $actors ) || ! is_array( $actors ) ) {
-        return [];
-    }
-
-    $results = [];
-
-    foreach ( $actors as $actor_name ) {
-
-        $musicals = msr_get_musicals_by_actor_name( $actor_name );
-
-        if ( empty( $musicals ) ) {
-            continue;
-        }
-
-        $results[ $actor_name ] = $musicals;
-    }
-
-    return $results;
-}
 
 /**
  * 根据演员名字，查询该演员参与的所有音乐剧
