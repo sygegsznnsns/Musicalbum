@@ -17,7 +17,7 @@ define( 'SAOJU_API_BASE', 'https://y.saoju.net/yyj/api/' );
  * @param int    $cache_ttl 缓存秒数，默认 1 小时
  * @return array
  */
-function msr_saoju_get( $endpoint, $cache_ttl = 3600 ) {
+function msr_saoju_get( $endpoint, $cache_ttl = 36000 ) {
 
     $cache_key = 'msr_saoju_' . md5( $endpoint );
     $cached = get_transient( $cache_key );
@@ -64,12 +64,37 @@ function msr_get_all_musical_cast() {
  * 查询某音乐剧在时间范围内是否有演出
  */
 function msr_has_recent_show( $musical_name, $days = 60 ) {
+
+    if ( empty( $musical_name ) ) {
+        return false;
+    }
+
     $begin = date( 'Y-m-d', strtotime( "-{$days} days" ) );
-    $end = date( 'Y-m-d', strtotime( "+{$days} days" ) );
-    $endpoint = 'search_musical_show/?musical=' . urlencode( $musical_name ) . "&begin_date={$begin}&end_date={$end}";
+    $end   = date( 'Y-m-d', strtotime( "+{$days} days" ) );
+
+    $endpoint = 'search_musical_show/?musical=' . urlencode( $musical_name )
+        . "&begin_date={$begin}&end_date={$end}";
+
     $data = msr_saoju_get( $endpoint );
-    return ! empty( $data['show_list'] );
+
+    // ✅ 关键修复点：不要假设 show_list 一定存在
+    if ( empty( $data ) || ! is_array( $data ) ) {
+        return false;
+    }
+
+    // 情况 1：标准 results 结构
+    if ( isset( $data['results'] ) && ! empty( $data['results'] ) ) {
+        return true;
+    }
+
+    // 情况 2：直接是列表数组
+    if ( isset( $data[0] ) ) {
+        return true;
+    }
+
+    return false;
 }
+
 
 /**
  * 获取某一天的演出（用于 Trending）
