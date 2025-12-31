@@ -37,7 +37,7 @@ final class Musicalbum_Theater_Maps {
     }
 
     public static function enqueue_assets() {
-        $version = '1.0.2-' . time(); // 强制刷新缓存
+        $version = '1.0.3-' . time(); // 强制刷新缓存
         wp_register_style('musicalbum-theater-maps', plugins_url('assets/maps.css', __FILE__), [], $version);
         wp_register_script('musicalbum-theater-maps', plugins_url('assets/maps.js', __FILE__), ['jquery'], $version, true);
         

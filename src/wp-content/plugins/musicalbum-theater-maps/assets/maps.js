@@ -129,7 +129,9 @@ var MusicalbumMap = {
                 // 标记地图
                 MusicalbumMap.addTempMarkers(res.data);
             } else {
-                jQuery(resultsContainerId).html('未找到结果');
+                var errMsg = res.data || '未知错误';
+                jQuery(resultsContainerId).html('<p style="color:red; padding:10px; background:#ffebeb;">搜索失败: ' + errMsg + '</p>');
+                console.error('Map Search Error:', errMsg);
             }
             if (callback) callback();
         });
