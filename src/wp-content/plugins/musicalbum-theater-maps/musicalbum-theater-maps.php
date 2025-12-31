@@ -333,7 +333,7 @@ final class Musicalbum_Theater_Maps {
             }
             wp_send_json_success($pois);
         } else {
-            wp_send_json_error('搜索无结果或 API 错误');
+            wp_send_json_error('API返回错误: ' . (isset($data['info']) ? $data['info'] : '未知错误'));
         }
     }
 
