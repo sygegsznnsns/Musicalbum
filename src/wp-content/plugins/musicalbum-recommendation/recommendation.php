@@ -151,6 +151,13 @@ function musicalbum_get_recommendations($user_id, $limit = 10) {
  */
 function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3 ) {
 
+    $cache_key = 'msr_actor_recommend_' . $user_id;
+    $cached = get_transient( $cache_key );
+
+    if ( $cached !== false && is_array( $cached ) ) {
+        return $cached;
+    }
+
     $favorite_actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
     if ( empty( $favorite_actors ) || ! is_array( $favorite_actors ) ) {
         return [];
@@ -259,5 +266,7 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
         }
     }
 
+    set_transient( $cache_key, $results, DAY_IN_SECONDS );
     return $results;
+
 }

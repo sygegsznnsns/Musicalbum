@@ -17,7 +17,7 @@ define( 'SAOJU_API_BASE', 'https://y.saoju.net/yyj/api/' );
  * @param int    $cache_ttl 缓存秒数，默认 1 小时
  * @return array
  */
-function msr_saoju_get( $endpoint, $cache_ttl = 36000 ) {
+function msr_saoju_get( $endpoint, $cache_ttl = 3600 ) {
 
     $cache_key = 'msr_saoju_' . md5( $endpoint );
     $cached = get_transient( $cache_key );

@@ -34,6 +34,8 @@ function msr_render_recommend_page() {
         if ( ! in_array( $new_actor, $favorite_actors, true ) ) {
             $favorite_actors[] = $new_actor;
             update_user_meta( $user_id, 'musicalbum_favorite_actors', $favorite_actors );
+            delete_transient( 'msr_actor_recommend_' . $user_id );
+
         }
     }
     
@@ -42,6 +44,7 @@ function msr_render_recommend_page() {
         $remove_actor = sanitize_text_field( $_POST['remove_actor'] );
         $favorite_actors = array_values( array_diff( $favorite_actors, [ $remove_actor ] ) );
         update_user_meta( $user_id, 'musicalbum_favorite_actors', $favorite_actors );
+        delete_transient( 'msr_actor_recommend_' . $user_id );
     }
     
     /**
