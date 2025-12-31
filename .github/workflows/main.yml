@@ -84,7 +84,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: "2121"
           protocol: ftp
-          local-dir: "src/wp-content/plugins/musicalbum-community-integration/"
-          server-dir: "wp-content/plugins/musicalbum-community-integration/"
+          local-dir: "src/wp-content/plugins/musicalbum-theater-maps/"
+          server-dir: "wp-content/plugins/musicalbum-theater-maps/"
           timeout: 60000
           log-level: verbose
