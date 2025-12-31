@@ -174,17 +174,13 @@ function musicalbum_get_recommendations($user_id, $limit = 10) {
 
 
 /**
- * 基于用户关注演员（saoju API）
- * 返回结构：按演员分组
+ * 基于用户关注演员推荐音乐剧
  *
- * [
- *   '演员名' => [
- *      [ 'name' => '剧名1' ],
- *      [ 'name' => '剧名2' ]
- *   ]
- * ]
+ * @param int $user_id
+ * @param int $limit
+ * @return array
  */
-function musicalbum_recommend_by_favorite_actors( $user_id ) {
+function musicalbum_recommend_by_favorite_actors( $user_id, $limit = 10 ) {
 
     $actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
     if ( empty( $actors ) || ! is_array( $actors ) ) {
@@ -194,12 +190,23 @@ function musicalbum_recommend_by_favorite_actors( $user_id ) {
     $results = [];
 
     foreach ( $actors as $actor_name ) {
-        $musicals = msr_get_musicals_by_actor_name( $actor_name );
 
-        if ( ! empty( $musicals ) ) {
-            $results[ $actor_name ] = $musicals;
+        // 👉 用 saoju API 查演员相关音乐剧
+        $musicals = msr_saoju_get_musicals_by_actor_name( $actor_name );
+
+        foreach ( $musicals as $musical_name ) {
+            $results[] = [
+                'musical' => $musical_name,
+                'reason'  => '包含你关注的演员：' . $actor_name,
+            ];
         }
     }
 
-    return $results;
+    // 去重
+    $results = array_map(
+        'unserialize',
+        array_unique( array_map( 'serialize', $results ) )
+    );
+
+    return array_slice( $results, 0, $limit );
 }
