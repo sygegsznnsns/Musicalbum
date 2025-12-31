@@ -175,25 +175,39 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     }
 
     /**
-     * Step 4：获取音乐剧名称
+     * Step 4：获取音乐剧信息 + 是否近期有演出
      */
     $musicals = msr_saoju_get( 'musical/' );
-    $results = [];
+    $results  = [];
 
     foreach ( $musicals as $item ) {
-        if (
-            isset( $item['pk'], $item['fields']['name'] ) &&
-            in_array( $item['pk'], $musical_ids, true )
-        ) {
+        if ( in_array( $item['pk'], $musical_ids, true ) ) {
+
+            $musical_name = $item['fields']['name'];
+
+            // 🔴 核心新增：判断近期是否有演出
+            $has_recent_show = msr_has_recent_show( $musical_name );
+
             $results[] = [
-                'musical_id'   => $item['pk'],
-                'musical_name' => $item['fields']['name'],
+                'musical_id'        => $item['pk'],
+                'musical_name'      => $musical_name,
+                'has_recent_show'   => $has_recent_show,
             ];
         }
     }
 
     /**
-     * Step 5：写入缓存
+     * Step 5：按「近期有演出」优先排序
+     */
+    usort( $results, function ( $a, $b ) {
+        if ( $a['has_recent_show'] === $b['has_recent_show'] ) {
+            return 0;
+        }
+        return $a['has_recent_show'] ? -1 : 1;
+    });
+
+    /**
+     * Step 6：写入缓存
      */
     set_transient( $cache_key, $results, 12 * HOUR_IN_SECONDS );
 
