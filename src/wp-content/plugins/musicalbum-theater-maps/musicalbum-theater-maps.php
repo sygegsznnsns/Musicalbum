@@ -250,17 +250,27 @@ final class Musicalbum_Theater_Maps {
         $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : 0;
         $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : 0;
         $radius = isset($_POST['radius']) ? intval($_POST['radius']) : 5000; // 默认5公里
+        $keyword = isset($_POST['keyword']) ? sanitize_text_field($_POST['keyword']) : '';
         
         $amap_key = get_option('musicalbum_amap_key', '');
         if (empty($amap_key)) wp_send_json_error('服务端未配置高德 Key');
         
-        // 调用高德周边搜索 API (search around)
-        // types=140000 (文体服务), 也可以更精确 140100 (体育馆/剧场)
-        $url = 'https://restapi.amap.com/v3/place/around?key=' . $amap_key . 
-               '&location=' . $lng . ',' . $lat . 
-               '&radius=' . $radius . 
-               '&types=140100|140000' . 
-               '&offset=20&page=1&extensions=all';
+        // 如果有关键词，调用关键词搜索；否则调用周边搜索
+        if (!empty($keyword)) {
+            // 关键词周边搜索
+            $url = 'https://restapi.amap.com/v3/place/around?key=' . $amap_key . 
+                   '&location=' . $lng . ',' . $lat . 
+                   '&radius=' . $radius . 
+                   '&keywords=' . urlencode($keyword) .
+                   '&offset=20&page=1&extensions=all';
+        } else {
+            // 纯周边搜索（剧院）
+            $url = 'https://restapi.amap.com/v3/place/around?key=' . $amap_key . 
+                   '&location=' . $lng . ',' . $lat . 
+                   '&radius=' . $radius . 
+                   '&types=140100|140000' . 
+                   '&offset=20&page=1&extensions=all';
+        }
                
         $resp = wp_remote_get($url);
         if (is_wp_error($resp)) wp_send_json_error('高德 API 请求失败');
@@ -302,12 +312,59 @@ final class Musicalbum_Theater_Maps {
         
         ob_start();
         echo '<div class="musicalbum-theater-map-container">';
-        echo '<h2>剧院足迹地图</h2>';
+        echo '<h2>剧院服务地图</h2>';
+        
+        // 功能导航栏
+        echo '<div class="musicalbum-map-nav">';
+        echo '<button class="musicalbum-map-tab active" data-tab="footprints" onclick="MusicalbumMap.switchTab(\'footprints\')">观演足迹</button>';
+        echo '<button class="musicalbum-map-tab" data-tab="nearby" onclick="MusicalbumMap.switchTab(\'nearby\')">查找附近剧院</button>';
+        echo '<button class="musicalbum-map-tab" data-tab="services" onclick="MusicalbumMap.switchTab(\'services\')">剧院周边服务</button>';
+        echo '<button class="musicalbum-map-tab" data-tab="navigation" onclick="MusicalbumMap.switchTab(\'navigation\')">路线导航</button>';
+        echo '</div>';
+        
+        echo '<div class="musicalbum-map-wrapper">';
         echo do_shortcode('[wpgmza id="' . esc_attr($map_id) . '"]');
-        echo '<div class="musicalbum-map-controls">';
-        echo '<button class="musicalbum-nearby-btn" onclick="MusicalbumMap.findNearby()">查找我附近的剧院</button>';
         echo '</div>';
+        
+        // 控制面板区域
+        echo '<div class="musicalbum-map-controls-panel">';
+        
+        // 1. 观演足迹面板
+        echo '<div id="panel-footprints" class="musicalbum-map-panel active">';
+        echo '<p>展示您所有观演记录中的剧院分布。点击标记可查看剧院详情。</p>';
+        echo '<button class="musicalbum-btn" onclick="MusicalbumMap.showAllMarkers()">显示所有足迹</button>';
         echo '</div>';
+        
+        // 2. 查找附近剧院面板
+        echo '<div id="panel-nearby" class="musicalbum-map-panel" style="display:none;">';
+        echo '<p>查找您当前位置周边的真实剧院。</p>';
+        echo '<button class="musicalbum-btn musicalbum-nearby-btn" onclick="MusicalbumMap.findNearby()">开始搜索周边剧院</button>';
+        echo '<div id="nearby-results-list" class="musicalbum-results-list"></div>';
+        echo '</div>';
+        
+        // 3. 剧院周边服务面板
+        echo '<div id="panel-services" class="musicalbum-map-panel" style="display:none;">';
+        echo '<p>选择一个剧院，查找周边的餐饮、交通设施。</p>';
+        echo '<div class="musicalbum-form-inline">';
+        echo '<input type="text" id="service-search-keyword" placeholder="例如：咖啡、地铁站、停车场" />';
+        echo '<button class="musicalbum-btn" onclick="MusicalbumMap.searchServices()">搜索周边</button>';
+        echo '</div>';
+        echo '<div id="services-results-list" class="musicalbum-results-list"></div>';
+        echo '</div>';
+        
+        // 4. 路线导航面板
+        echo '<div id="panel-navigation" class="musicalbum-map-panel" style="display:none;">';
+        echo '<p>规划前往目标剧院的路线。</p>';
+        echo '<div class="musicalbum-nav-form">';
+        echo '<div class="form-row"><label>起点：</label><span id="nav-start">我的位置</span></div>';
+        echo '<div class="form-row"><label>终点：</label><input type="text" id="nav-end" placeholder="点击地图选择或输入剧院名" /></div>';
+        echo '<button class="musicalbum-btn" onclick="MusicalbumMap.startNavigation()">开始导航</button>';
+        echo '</div>';
+        echo '<div id="nav-instructions" class="musicalbum-nav-instructions"></div>';
+        echo '</div>';
+        
+        echo '</div>'; // end controls panel
+        echo '</div>'; // end container
         return ob_get_clean();
     }
 }

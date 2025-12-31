@@ -14,12 +14,45 @@
     color: #333;
 }
 
-.musicalbum-map-controls {
-    margin-top: 15px;
-    text-align: right;
+.musicalbum-map-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #eee;
 }
 
-.musicalbum-nearby-btn {
+.musicalbum-map-tab {
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.musicalbum-map-tab.active {
+    color: #0073aa;
+    border-bottom-color: #0073aa;
+}
+
+.musicalbum-map-wrapper {
+    margin-bottom: 15px;
+}
+
+.musicalbum-map-controls-panel {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.musicalbum-map-panel h3 {
+    margin-top: 0;
+}
+
+.musicalbum-btn {
     padding: 8px 16px;
     background-color: #0073aa;
     color: #fff;
@@ -30,8 +63,44 @@
     transition: background-color 0.2s;
 }
 
-.musicalbum-nearby-btn:hover {
+.musicalbum-btn:hover {
     background-color: #005177;
+}
+
+.musicalbum-form-inline {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.musicalbum-form-inline input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.musicalbum-results-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.musicalbum-results-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.musicalbum-nav-form .form-row {
+    margin-bottom: 10px;
+}
+
+.musicalbum-nav-form label {
+    display: inline-block;
+    width: 60px;
 }
 
 /* 适配 WP Go Maps 的容器高度 */
