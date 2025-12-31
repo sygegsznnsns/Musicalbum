@@ -37,8 +37,9 @@ final class Musicalbum_Theater_Maps {
     }
 
     public static function enqueue_assets() {
-        wp_register_style('musicalbum-theater-maps', plugins_url('assets/maps.css', __FILE__), [], '1.0.0');
-        wp_register_script('musicalbum-theater-maps', plugins_url('assets/maps.js', __FILE__), ['jquery'], '1.0.0', true);
+        $version = '1.0.1-' . time(); // 强制使用时间戳作为版本号，避免缓存
+        wp_register_style('musicalbum-theater-maps', plugins_url('assets/maps.css', __FILE__), [], $version);
+        wp_register_script('musicalbum-theater-maps', plugins_url('assets/maps.js', __FILE__), ['jquery'], $version, true);
         
         // 注入 AJAX URL
         wp_localize_script('musicalbum-theater-maps', 'MusicalbumMapConfig', [
