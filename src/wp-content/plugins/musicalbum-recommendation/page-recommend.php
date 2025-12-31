@@ -34,18 +34,18 @@ function msr_load_musical_csv_data() {
     $data   = [];
 
     while ( ( $row = fgetcsv( $handle ) ) !== false ) {
-        if ( empty( $row[0] ) ) {
-            continue;
-        }
+    if ( empty($row[0]) ) continue;
 
-        $data[ trim( $row[0] ) ] = [
-            'originality' => $row[1] ?? '',
-            'status'      => $row[2] ?? '',
-            'premiere'    => $row[3] ?? '',
-            'desc'        => $row[4] ?? '',
-            'company'     => $row[5] ?? '',
-            'creators'    => $row[6] ?? '',
-        ];
+    $data[ trim($row[0]) ] = [
+        'originality' => $row[1] ?? '',
+        'status'      => $row[2] ?? '',
+        'premiere'    => $row[3] ?? '',
+        'desc'        => $row[4] ?? '',
+        'company'     => $row[5] ?? '',
+        'creators'    => $row[6] ?? '',
+    ];
+}
+
     }
 
     fclose( $handle );
@@ -264,18 +264,26 @@ function msr_render_recommend_page() {
 <div id="msr-musical-detail">
     <p>点击上方音乐剧名称查看详情。</p>
 </div>
+<div id="msr-musical-detail" data-clicked="false">
+    <p>点击上方音乐剧名称查看详情。</p>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
     const musicalData = <?php echo json_encode( $musical_csv_data, JSON_UNESCAPED_UNICODE ); ?>;
     const detailBox = document.getElementById('msr-musical-detail');
 
+    // 初始状态：未点击
+    detailBox.dataset.clicked = 'false';
+
     document.querySelectorAll('.msr-musical-link').forEach(function (link) {
         link.addEventListener('click', function () {
-            const name = this.dataset.musical;
+            const name = this.dataset.musical.trim();  // 去掉前后空格
+            detailBox.dataset.clicked = 'true';
 
             if (!musicalData[name]) {
-                detailBox.innerHTML = '<p>未找到该音乐剧的详细信息。</p>';
+                detailBox.innerHTML = '<p>该音乐剧的详细信息待完善。</p>';
                 return;
             }
 
@@ -283,11 +291,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             detailBox.innerHTML = `
                 <h4>${name}</h4>
-                <p><strong>原创性：</strong>${m.original}</p>
-                <p><strong>进度：</strong>${m.status}</p>
-                <p><strong>首演日期：</strong>${m.premiere_date}</p>
-                <p><strong>制作公司：</strong>${m.company}</p>
-                <p><strong>简介：</strong>${m.description}</p>
+                <p><strong>原创性：</strong> ${m.originality}</p>
+                <p><strong>进度：</strong> ${m.status}</p>
+                <p><strong>首演日期：</strong> ${m.premiere}</p>
+                <p><strong>制作公司：</strong> ${m.company}</p>
+                <p><strong>简介：</strong> ${m.desc}</p>
                 <pre style="white-space:pre-wrap;"><strong>主创信息：</strong>\n${m.creators}</pre>
             `;
         });
@@ -295,6 +303,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
 
 <?php
     return ob_get_clean();
