@@ -1,7 +1,7 @@
 <?php
 /**
  * saoju-api.php
- * 功能：封装 y.saoju.net 的音乐剧数据接口
+ * 功能：封装 y.saoju.net 的音乐剧数据接口（演员 → 剧目完整链路）
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,75 +22,79 @@ function msr_saoju_get( $endpoint ) {
         return [];
     }
 
-    $body = wp_remote_retrieve_body( $response );
-    return json_decode( $body, true );
+    return json_decode( wp_remote_retrieve_body( $response ), true );
 }
 
 /**
- * 获取全部音乐剧
+ * ========
+ * 演员 → 音乐剧（核心方法）
+ * ========
+ *
+ * @param string $actor_name
+ * @return array 音乐剧数组
  */
-function msr_get_all_musicals() {
-    return msr_saoju_get( 'musical/' );
-}
+function msr_get_musicals_by_actor_name( $actor_name ) {
 
-/**
- * 获取全部卡司信息
- */
-function msr_get_all_musical_cast() {
-    return msr_saoju_get( 'musicalcast/' );
-}
-
-/**
- * 查询某音乐剧在时间范围内是否有演出
- */
-function msr_has_recent_show( $musical_name, $days = 60 ) {
-    $begin = date( 'Y-m-d', strtotime( "-{$days} days" ) );
-    $end   = date( 'Y-m-d', strtotime( "+{$days} days" ) );
-
-    $endpoint = 'search_musical_show/?musical=' . urlencode( $musical_name )
-        . "&begin_date={$begin}&end_date={$end}";
-
-    $data = msr_saoju_get( $endpoint );
-
-    return ! empty( $data['show_list'] );
-}
-
-/**
- * 获取某一天的演出（用于 Trending）
- */
-function msr_get_day_shows( $date ) {
-    return msr_saoju_get( 'search_day/?date=' . $date );
-}
-
-/**
- * 根据演员名查询相关演出
- */
-function musicalbum_saoju_search_by_actor( $actor_name ) {
-
-    $url = 'https://y.saoju.net/yyj/api/search_day/?date=' . date('Y-m-d');
-
-    $response = wp_remote_get( $url );
-    if ( is_wp_error( $response ) ) {
-        return array();
+    // 1. 找演员 ID
+    $artists = msr_saoju_get( 'artist/' );
+    if ( empty( $artists ) ) {
+        return [];
     }
 
-    $data = json_decode( wp_remote_retrieve_body( $response ), true );
-    if ( empty( $data['show_list'] ) ) {
-        return array();
-    }
-
-    $results = array();
-
-    foreach ( $data['show_list'] as $show ) {
-        if ( empty( $show['cast'] ) ) {
-            continue;
+    $artist_id = null;
+    foreach ( $artists as $artist ) {
+        if ( isset( $artist['fields']['name'] ) && $artist['fields']['name'] === $actor_name ) {
+            $artist_id = $artist['pk'];
+            break;
         }
+    }
 
-        foreach ( $show['cast'] as $cast ) {
-            if ( isset( $cast['artist'] ) && $cast['artist'] === $actor_name ) {
-                $results[] = $show;
-                break;
-            }
+    if ( ! $artist_id ) {
+        return [];
+    }
+
+    // 2. 找该演员参与的角色 ID
+    $casts = msr_saoju_get( 'musicalcast/' );
+    if ( empty( $casts ) ) {
+        return [];
+    }
+
+    $role_ids = [];
+    foreach ( $casts as $cast ) {
+        if ( isset( $cast['fields']['artist'] ) && $cast['fields']['artist'] == $artist_id ) {
+            $role_ids[] = $cast['fields']['role'];
+        }
+    }
+
+    if ( empty( $role_ids ) ) {
+        return [];
+    }
+
+    // 3. 角色 → 音乐剧 ID
+    $roles = msr_saoju_get( 'role/' );
+    $musical_ids = [];
+
+    foreach ( $roles as $role ) {
+        if ( in_array( $role['pk'], $role_ids, true ) ) {
+            $musical_ids[] = $role['fields']['musical'];
+        }
+    }
+
+    $musical_ids = array_unique( $musical_ids );
+    if ( empty( $musical_ids ) ) {
+        return [];
+    }
+
+    // 4. 音乐剧 ID → 音乐剧信息
+    $musicals = msr_saoju_get( 'musical/' );
+    $results = [];
+
+    foreach ( $musicals as $musical ) {
+        if ( in_array( $musical['pk'], $musical_ids, true ) ) {
+            $results[] = [
+                'id'   => $musical['pk'],
+                'name' => $musical['fields']['name'],
+            ];
         }
     }
 

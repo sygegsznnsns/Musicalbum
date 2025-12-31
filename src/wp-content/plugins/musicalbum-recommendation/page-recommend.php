@@ -95,8 +95,7 @@ function msr_render_recommend_page() {
     <!-- ===================== -->
     <!-- 喜欢的演员管理 -->
     <!-- ===================== -->
-
-    <h3>你关注的演员</h3>
+    <h2>你关注的演员</h2>
 
     <?php if ( empty( $favorite_actors ) ) : ?>
         <p>你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
@@ -114,16 +113,18 @@ function msr_render_recommend_page() {
         </ul>
     <?php endif; ?>
 
-    <form method="post" style="margin-bottom:24px;">
+    <form method="post">
         <input type="text" name="new_actor" placeholder="输入演员姓名">
         <button type="submit">关注演员</button>
     </form>
+
+    <hr>
 
     <!-- ===================== -->
     <!-- 演员相关推荐（始终显示） -->
     <!-- ===================== -->
 
-    <h3>关注演员的相关剧目</h3>
+    <h2>关注演员的相关剧目</h2>
 
     <?php if ( empty( $favorite_actors ) ) : ?>
 
@@ -134,17 +135,18 @@ function msr_render_recommend_page() {
         <p>暂未找到与你关注演员相关的音乐剧，可尝试关注更多演员。</p>
 
     <?php else : ?>
-
-        <div class="msr-grid">
-            <?php foreach ( $actor_recommend as $item ) : ?>
-                <div class="msr-item">
-                    <h4><?php echo esc_html( $item['musical'] ); ?></h4>
-                    <p><?php echo esc_html( $item['reason'] ); ?></p>
-                </div>
-            <?php endforeach; ?>
-        </div>
-
+        <?php foreach ( $actor_recommend as $actor_name => $musicals ) : ?>
+            <h3><?php echo esc_html( $actor_name ); ?></h3>
+            <div class="msr-grid">
+                <?php foreach ( $musicals as $musical ) : ?>
+                    <div class="msr-item">
+                        <strong><?php echo esc_html( $musical['name'] ); ?></strong>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endforeach; ?>
     <?php endif; ?>
+
 
     <!-- ===================== -->
     <!-- 协同过滤推荐 -->

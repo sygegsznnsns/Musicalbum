@@ -172,14 +172,19 @@ function musicalbum_get_recommendations($user_id, $limit = 10) {
     return get_posts($args);
 }
 
+
 /**
- * 基于用户关注演员推荐音乐剧
+ * 基于用户关注演员（saoju API）
+ * 返回结构：按演员分组
  *
- * @param int $user_id
- * @param int $limit
- * @return array
+ * [
+ *   '演员名' => [
+ *      [ 'name' => '剧名1' ],
+ *      [ 'name' => '剧名2' ]
+ *   ]
+ * ]
  */
-function musicalbum_recommend_by_favorite_actors( $user_id, $limit = 10 ) {
+function musicalbum_recommend_by_favorite_actors( $user_id ) {
 
     $actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
     if ( empty( $actors ) || ! is_array( $actors ) ) {
@@ -189,39 +194,12 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $limit = 10 ) {
     $results = [];
 
     foreach ( $actors as $actor_name ) {
+        $musicals = msr_get_musicals_by_actor_name( $actor_name );
 
-        // 假设“演员”是 taxonomy（你目前的最安全结构）
-        $query = new WP_Query( [
-            'post_type'      => 'musical',
-            'posts_per_page' => $limit,
-            'tax_query'      => [
-                [
-                    'taxonomy' => 'actor',
-                    'field'    => 'name',
-                    'terms'    => $actor_name,
-                ],
-            ],
-        ] );
-
-        if ( $query->have_posts() ) {
-            while ( $query->have_posts() ) {
-                $query->the_post();
-
-                $results[] = [
-                    'musical' => get_the_title(),
-                    'reason'  => '包含你关注的演员：' . $actor_name,
-                ];
-            }
+        if ( ! empty( $musicals ) ) {
+            $results[ $actor_name ] = $musicals;
         }
-
-        wp_reset_postdata();
     }
 
-    // 去重（同一剧目被多个演员命中）
-    $results = array_map(
-        'unserialize',
-        array_unique( array_map( 'serialize', $results ) )
-    );
-
-    return array_slice( $results, 0, $limit );
+    return $results;
 }
