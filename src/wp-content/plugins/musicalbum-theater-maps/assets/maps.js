@@ -140,7 +140,12 @@ var MusicalbumMap = {
             var map = WPGMZA.maps[0];
             if (map.getCenter) {
                 var c = map.getCenter();
-                return {lat: c.lat(), lng: c.lng()};
+                // 兼容 OpenLayers 与 Google Maps
+                // Google Maps: c.lat(), c.lng() 是函数
+                // OpenLayers (WPGMZA): c.lat, c.lng 是属性
+                var lat = (typeof c.lat === 'function') ? c.lat() : c.lat;
+                var lng = (typeof c.lng === 'function') ? c.lng() : c.lng;
+                return {lat: lat, lng: lng};
             }
         }
         return null;
