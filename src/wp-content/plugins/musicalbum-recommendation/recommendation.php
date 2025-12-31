@@ -7,18 +7,15 @@
  * 获取用户观演过的剧目标题列表
  */
 function musicalbum_get_user_viewing_history_titles($user_id) {
-
     $args = array(
-        'post_type'      => 'viewing_record',
-        'post_status'    => 'publish',
-        'author'         => $user_id,
+        'post_type' => 'viewing_record',
+        'post_status' => 'publish',
+        'author' => $user_id,
         'posts_per_page' => -1,
-        'fields'         => 'ids',
+        'fields' => 'ids',
     );
-
     $query = new WP_Query($args);
     $titles = array();
-
     if ($query->have_posts()) {
         foreach ($query->posts as $post_id) {
             $title = get_the_title($post_id);
@@ -27,7 +24,6 @@ function musicalbum_get_user_viewing_history_titles($user_id) {
             }
         }
     }
-
     return array_unique($titles);
 }
 
@@ -35,35 +31,25 @@ function musicalbum_get_user_viewing_history_titles($user_id) {
  * 基于其他用户的观演记录推荐剧目
  */
 function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
-
     $viewed_titles = musicalbum_get_user_viewing_history_titles($user_id);
-
     if (empty($viewed_titles)) {
         return array();
     }
-
-    // 查找其他用户的观演记录
     $args = array(
-        'post_type'      => 'viewing_record',
-        'post_status'    => 'publish',
+        'post_type' => 'viewing_record',
+        'post_status' => 'publish',
         'posts_per_page' => -1,
         'author__not_in' => array($user_id),
     );
-
     $query = new WP_Query($args);
     $counter = array();
-
     if ($query->have_posts()) {
         while ($query->have_posts()) {
             $query->the_post();
-
             $title = get_the_title();
-
-            // 排除自己已经看过的
             if (in_array($title, $viewed_titles, true)) {
                 continue;
             }
-
             if (!isset($counter[$title])) {
                 $counter[$title] = 0;
             }
@@ -71,20 +57,17 @@ function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
         }
         wp_reset_postdata();
     }
-
     arsort($counter);
-
     $results = array();
     foreach ($counter as $title => $count) {
         $results[] = array(
             'musical' => $title,
-            'reason'  => '有 ' . $count . ' 位用户也观看过该剧目',
+            'reason' => '有 ' . $count . ' 位用户也观看过该剧目',
         );
         if (count($results) >= $limit) {
             break;
         }
     }
-
     return $results;
 }
 
@@ -92,21 +75,17 @@ function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
  * 近期热门观演剧目（基于观演记录数量）
  */
 function musicalbum_recommend_trending($limit = 10) {
-
     $args = array(
-        'post_type'      => 'viewing_record',
-        'post_status'    => 'publish',
+        'post_type' => 'viewing_record',
+        'post_status' => 'publish',
         'posts_per_page' => -1,
     );
-
     $query = new WP_Query($args);
     $counter = array();
-
     if ($query->have_posts()) {
         while ($query->have_posts()) {
             $query->the_post();
             $title = get_the_title();
-
             if (!isset($counter[$title])) {
                 $counter[$title] = 0;
             }
@@ -114,23 +93,19 @@ function musicalbum_recommend_trending($limit = 10) {
         }
         wp_reset_postdata();
     }
-
     arsort($counter);
-
     $results = array();
     foreach ($counter as $title => $count) {
         $results[] = array(
             'musical' => $title,
-            'reason'  => '近期被记录 ' . $count . ' 次观演',
+            'reason' => '近期被记录 ' . $count . ' 次观演',
         );
         if (count($results) >= $limit) {
             break;
         }
     }
-
     return $results;
 }
-
 
 /**
  * 获取用户不感兴趣列表
@@ -144,69 +119,145 @@ function musicalbum_get_not_interested($user_id) {
  * 推荐音乐剧（最终统一入口）
  */
 function musicalbum_get_recommendations($user_id, $limit = 10) {
-
     $viewed = musicalbum_get_user_viewing_history($user_id);
     $excluded = musicalbum_get_not_interested($user_id);
-
     $exclude_ids = array_merge($viewed, $excluded);
-
-    // 1. 基于演员关联
     $actor_terms = wp_get_object_terms($viewed, 'actor', array('fields' => 'ids'));
-
     $args = array(
-        'post_type'      => 'musical',
-        'post_status'    => 'publish',
+        'post_type' => 'musical',
+        'post_status' => 'publish',
         'posts_per_page' => $limit,
-        'post__not_in'   => $exclude_ids,
-        'tax_query'      => !empty($actor_terms) ? array(
+        'post__not_in' => $exclude_ids,
+        'tax_query' => !empty($actor_terms) ? array(
             array(
                 'taxonomy' => 'actor',
-                'field'    => 'term_id',
-                'terms'    => $actor_terms,
+                'field' => 'term_id',
+                'terms' => $actor_terms,
             )
         ) : array(),
         'orderby' => 'comment_count',
-        'order'   => 'DESC',
+        'order' => 'DESC',
     );
-
     return get_posts($args);
 }
 
-
 /**
- * 基于用户关注演员推荐音乐剧
+ * 基于用户关注演员，通过 saoju API 推荐相关音乐剧
+ * 数据链路：演员 → 卡司 → 角色 → 音乐剧
  *
  * @param int $user_id
- * @param int $limit
+ * @param int $per_actor_limit 每个演员最多推荐数量
  * @return array
  */
-function musicalbum_recommend_by_favorite_actors( $user_id, $limit = 10 ) {
+function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3 ) {
 
-    $actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
-    if ( empty( $actors ) || ! is_array( $actors ) ) {
+    $favorite_actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
+    if ( empty( $favorite_actors ) || ! is_array( $favorite_actors ) ) {
         return [];
     }
 
+    /**
+     * =========
+     * Step 0：请求全部 API（每个只请求一次）
+     * =========
+     */
+    $artist_data       = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/artist/' ) );
+    $musicalcast_data  = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/musicalcast/' ) );
+    $role_data         = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/role/' ) );
+    $musical_data      = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/musical/' ) );
+
+    $artists      = json_decode( $artist_data, true );
+    $musicalcasts = json_decode( $musicalcast_data, true );
+    $roles        = json_decode( $role_data, true );
+    $musicals     = json_decode( $musical_data, true );
+
+    if ( ! is_array( $artists ) || ! is_array( $musicalcasts ) || ! is_array( $roles ) || ! is_array( $musicals ) ) {
+        return [];
+    }
+
+    /**
+     * =========
+     * Step 1：建立索引表（提升查找效率）
+     * =========
+     */
+
+    // artist_name => artist_id
+    $artist_index = [];
+    foreach ( $artists as $item ) {
+        $artist_index[ $item['fields']['name'] ] = $item['pk'];
+    }
+
+    // role_id => musical_id
+    $role_to_musical = [];
+    foreach ( $roles as $item ) {
+        $role_to_musical[ $item['pk'] ] = $item['fields']['musical'];
+    }
+
+    // musical_id => musical_name
+    $musical_index = [];
+    foreach ( $musicals as $item ) {
+        $musical_index[ $item['pk'] ] = $item['fields']['name'];
+    }
+
+    /**
+     * =========
+     * Step 2：按演员生成推荐结果
+     * =========
+     */
     $results = [];
 
-    foreach ( $actors as $actor_name ) {
+    foreach ( $favorite_actors as $actor_name ) {
 
-        // 👉 用 saoju API 查演员相关音乐剧
-        $musicals = msr_saoju_get_musicals_by_actor_name( $actor_name );
+        if ( ! isset( $artist_index[ $actor_name ] ) ) {
+            continue;
+        }
 
-        foreach ( $musicals as $musical_name ) {
-            $results[] = [
-                'musical' => $musical_name,
-                'reason'  => '包含你关注的演员：' . $actor_name,
+        $actor_id = $artist_index[ $actor_name ];
+
+        // 找到该演员参与的角色 ID
+        $role_ids = [];
+        foreach ( $musicalcasts as $cast ) {
+            if ( intval( $cast['fields']['artist'] ) === intval( $actor_id ) ) {
+                $role_ids[] = $cast['fields']['role'];
+            }
+        }
+
+        if ( empty( $role_ids ) ) {
+            continue;
+        }
+
+        // 通过角色找到音乐剧 ID
+        $musical_ids = [];
+        foreach ( $role_ids as $role_id ) {
+            if ( isset( $role_to_musical[ $role_id ] ) ) {
+                $musical_ids[] = $role_to_musical[ $role_id ];
+            }
+        }
+
+        $musical_ids = array_unique( $musical_ids );
+        if ( empty( $musical_ids ) ) {
+            continue;
+        }
+
+        $results[ $actor_name ] = [];
+
+        foreach ( $musical_ids as $musical_id ) {
+
+            if ( ! isset( $musical_index[ $musical_id ] ) ) {
+                continue;
+            }
+
+            $results[ $actor_name ][] = [
+                'musical_id' => $musical_id,
+                'musical'    => $musical_index[ $musical_id ],
+                'reason'     => '该音乐剧包含你关注的演员：' . $actor_name,
             ];
+
+            if ( count( $results[ $actor_name ] ) >= $per_actor_limit ) {
+                break;
+            }
         }
     }
 
-    // 去重
-    $results = array_map(
-        'unserialize',
-        array_unique( array_map( 'serialize', $results ) )
-    );
-
-    return array_slice( $results, 0, $limit );
+    return $results;
 }

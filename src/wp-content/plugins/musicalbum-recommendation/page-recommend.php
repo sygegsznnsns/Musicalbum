@@ -12,13 +12,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 页面渲染函数
  */
 function msr_render_recommend_page() {
-
     if ( ! is_user_logged_in() ) {
         return '<p>请先登录查看推荐。</p>';
     }
-
+    
     $user_id = get_current_user_id();
-
+    
     /**
      * =========
      * 处理演员关注 / 取消关注（POST）
@@ -28,7 +27,7 @@ function msr_render_recommend_page() {
     if ( ! is_array( $favorite_actors ) ) {
         $favorite_actors = [];
     }
-
+    
     // 新增关注演员
     if ( isset( $_POST['new_actor'] ) && ! empty( $_POST['new_actor'] ) ) {
         $new_actor = sanitize_text_field( $_POST['new_actor'] );
@@ -37,34 +36,30 @@ function msr_render_recommend_page() {
             update_user_meta( $user_id, 'musicalbum_favorite_actors', $favorite_actors );
         }
     }
-
+    
     // 取消关注演员
     if ( isset( $_POST['remove_actor'] ) ) {
         $remove_actor = sanitize_text_field( $_POST['remove_actor'] );
-        $favorite_actors = array_values(
-            array_diff( $favorite_actors, [ $remove_actor ] )
-        );
+        $favorite_actors = array_values( array_diff( $favorite_actors, [ $remove_actor ] ) );
         update_user_meta( $user_id, 'musicalbum_favorite_actors', $favorite_actors );
     }
-
+    
     /**
      * =========
      * 获取推荐结果
      * =========
      */
-
     // 1. 基于其他用户的观演记录
     $personal = musicalbum_recommend_by_crowd( $user_id, 10 );
-
+    
     // 2. 热门观演
     $trending = musicalbum_recommend_trending( 10 );
-
+    
     // 3. 基于关注演员的推荐
     $actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
-
+    
     ob_start();
-    ?>
-
+?>
     <style>
         .msr-grid {
             display: grid;
@@ -72,31 +67,31 @@ function msr_render_recommend_page() {
             gap: 16px;
             margin-bottom: 32px;
         }
-
+        
         .msr-item {
             border: 1px solid #ddd;
             padding: 12px;
             background: #fff;
             box-sizing: border-box;
         }
-
+        
         .msr-item h4 {
             margin: 0 0 8px 0;
             font-size: 16px;
         }
-
+        
         .msr-item form {
             margin-top: 8px;
         }
     </style>
-
+    
     <h2>为你推荐的音乐剧</h2>
-
+    
     <!-- ===================== -->
     <!-- 喜欢的演员管理 -->
     <!-- ===================== -->
-    <h2>你关注的演员</h2>
-
+    <h3>你关注的演员</h3>
+    
     <?php if ( empty( $favorite_actors ) ) : ?>
         <p>你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
     <?php else : ?>
@@ -112,55 +107,52 @@ function msr_render_recommend_page() {
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
-
-    <form method="post">
+    
+    <form method="post" style="margin-bottom:24px;">
         <input type="text" name="new_actor" placeholder="输入演员姓名">
         <button type="submit">关注演员</button>
     </form>
-
-    <hr>
-
+    
     <!-- ===================== -->
     <!-- 演员相关推荐（始终显示） -->
     <!-- ===================== -->
-
-    <h2>关注演员的相关剧目</h2>
-
+    <h3>关注演员的相关剧目</h3>
+    
     <?php if ( empty( $favorite_actors ) ) : ?>
-
         <p>你尚未关注演员，暂无基于演员的推荐。</p>
-
     <?php elseif ( empty( $actor_recommend ) ) : ?>
-
         <p>暂未找到与你关注演员相关的音乐剧，可尝试关注更多演员。</p>
-
     <?php else : ?>
-        <?php foreach ( $actor_recommend as $actor_name => $musicals ) : ?>
-            <h3><?php echo esc_html( $actor_name ); ?></h3>
-            <div class="msr-grid">
-                <?php foreach ( $musicals as $musical ) : ?>
-                    <div class="msr-item">
-                        <strong><?php echo esc_html( $musical['name'] ); ?></strong>
-                    </div>
-                <?php endforeach; ?>
+<?php foreach ( $actor_recommend as $actor_name => $musicals ) : ?>
+    
+    <h4 style="margin-top:24px;">
+        <?php echo esc_html( $actor_name ); ?> 参演的音乐剧
+    </h4>
+
+    <div class="msr-grid">
+        <?php foreach ( $musicals as $item ) : ?>
+            <div class="msr-item">
+                <h5><?php echo esc_html( $item['musical'] ); ?></h5>
+                <p><?php echo esc_html( $item['reason'] ); ?></p>
             </div>
         <?php endforeach; ?>
+    </div>
+
+<?php endforeach; ?>
+
     <?php endif; ?>
-
-
+    
+    
     <!-- ===================== -->
     <!-- 协同过滤推荐 -->
     <!-- ===================== -->
-
     <?php if ( ! empty( $personal ) ) : ?>
         <h3>你的同好都在看：</h3>
-
         <div class="msr-grid">
             <?php foreach ( $personal as $item ) : ?>
                 <div class="msr-item">
                     <h4><?php echo esc_html( $item['musical'] ); ?></h4>
                     <p><?php echo esc_html( $item['reason'] ); ?></p>
-
                     <form method="post">
                         <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
                         <button type="submit" name="musicalbum_not_interested">不感兴趣</button>
@@ -169,20 +161,17 @@ function msr_render_recommend_page() {
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-
+    
     <!-- ===================== -->
     <!-- 热门推荐 -->
     <!-- ===================== -->
-
     <?php if ( ! empty( $trending ) ) : ?>
         <h3>近期热门观演</h3>
-
         <div class="msr-grid">
             <?php foreach ( $trending as $item ) : ?>
                 <div class="msr-item">
                     <h4><?php echo esc_html( $item['musical'] ); ?></h4>
                     <p><?php echo esc_html( $item['reason'] ); ?></p>
-
                     <form method="post">
                         <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
                         <button type="submit" name="musicalbum_not_interested">不感兴趣</button>
@@ -191,8 +180,7 @@ function msr_render_recommend_page() {
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-
-    <?php
+<?php
     return ob_get_clean();
 }
 
