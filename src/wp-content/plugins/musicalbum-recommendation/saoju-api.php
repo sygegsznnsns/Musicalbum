@@ -11,16 +11,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'SAOJU_API_BASE', 'https://y.saoju.net/yyj/api/' );
 
 /**
- * 通用 GET 请求
+ * 通用 GET 请求（带缓存）
+ *
+ * @param string $endpoint
+ * @param int    $cache_ttl 缓存秒数，默认 1 小时
+ * @return array
  */
-function msr_saoju_get( $endpoint ) {
-    $response = wp_remote_get( SAOJU_API_BASE . $endpoint, [ 'timeout' => 15 ] );
+function msr_saoju_get( $endpoint, $cache_ttl = 3600 ) {
+
+    $cache_key = 'msr_saoju_' . md5( $endpoint );
+    $cached = get_transient( $cache_key );
+
+    if ( $cached !== false ) {
+        return $cached;
+    }
+
+    $response = wp_remote_get(
+        SAOJU_API_BASE . $endpoint,
+        [ 'timeout' => 15 ]
+    );
+
     if ( is_wp_error( $response ) ) {
         return [];
     }
+
     $body = wp_remote_retrieve_body( $response );
-    return json_decode( $body, true );
+    $data = json_decode( $body, true );
+
+    if ( is_array( $data ) ) {
+        set_transient( $cache_key, $data, $cache_ttl );
+    }
+
+    return is_array( $data ) ? $data : [];
 }
+
 
 /**
  * 获取全部音乐剧
@@ -55,8 +79,9 @@ function msr_get_day_shows( $date ) {
 }
 
 
+
 /**
- * 根据演员名字，查询该演员参与的所有音乐剧
+ * 根据演员名字，查询该演员参与的所有音乐剧（带缓存）
  *
  * 数据链路：
  * artist.name → artist.pk
@@ -66,12 +91,22 @@ function msr_get_day_shows( $date ) {
  * musical.pk → musical.name
  *
  * @param string $actor_name
- * @return array 音乐剧数组，每项包含 musical_id + musical_name
+ * @return array
  */
 function msr_get_musicals_by_actor_name( $actor_name ) {
 
     if ( empty( $actor_name ) ) {
         return [];
+    }
+
+    /**
+     * Step 0：结果缓存（演员维度）
+     */
+    $cache_key = 'msr_actor_musicals_' . md5( $actor_name );
+    $cached = get_transient( $cache_key );
+
+    if ( $cached !== false ) {
+        return $cached;
     }
 
     /**
@@ -81,24 +116,31 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     $actor_id = null;
 
     foreach ( $artists as $item ) {
-        if ( isset( $item['fields']['name'] ) && $item['fields']['name'] === $actor_name ) {
+        if (
+            isset( $item['fields']['name'], $item['pk'] ) &&
+            $item['fields']['name'] === $actor_name
+        ) {
             $actor_id = $item['pk'];
             break;
         }
     }
 
     if ( ! $actor_id ) {
+        set_transient( $cache_key, [], 12 * HOUR_IN_SECONDS );
         return [];
     }
 
     /**
-     * Step 2：获取该演员参与的角色 ID 列表
+     * Step 2：获取该演员参与的角色 ID
      */
     $casts = msr_saoju_get( 'musicalcast/' );
     $role_ids = [];
 
     foreach ( $casts as $item ) {
-        if ( isset( $item['fields']['artist'] ) && intval( $item['fields']['artist'] ) === intval( $actor_id ) ) {
+        if (
+            isset( $item['fields']['artist'], $item['fields']['role'] ) &&
+            intval( $item['fields']['artist'] ) === intval( $actor_id )
+        ) {
             $role_ids[] = $item['fields']['role'];
         }
     }
@@ -106,6 +148,7 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     $role_ids = array_unique( $role_ids );
 
     if ( empty( $role_ids ) ) {
+        set_transient( $cache_key, [], 12 * HOUR_IN_SECONDS );
         return [];
     }
 
@@ -116,7 +159,10 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     $musical_ids = [];
 
     foreach ( $roles as $item ) {
-        if ( in_array( $item['pk'], $role_ids, true ) ) {
+        if (
+            isset( $item['pk'], $item['fields']['musical'] ) &&
+            in_array( $item['pk'], $role_ids, true )
+        ) {
             $musical_ids[] = $item['fields']['musical'];
         }
     }
@@ -124,6 +170,7 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     $musical_ids = array_unique( $musical_ids );
 
     if ( empty( $musical_ids ) ) {
+        set_transient( $cache_key, [], 12 * HOUR_IN_SECONDS );
         return [];
     }
 
@@ -134,7 +181,10 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     $results = [];
 
     foreach ( $musicals as $item ) {
-        if ( in_array( $item['pk'], $musical_ids, true ) ) {
+        if (
+            isset( $item['pk'], $item['fields']['name'] ) &&
+            in_array( $item['pk'], $musical_ids, true )
+        ) {
             $results[] = [
                 'musical_id'   => $item['pk'],
                 'musical_name' => $item['fields']['name'],
@@ -142,5 +192,11 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
         }
     }
 
+    /**
+     * Step 5：写入缓存
+     */
+    set_transient( $cache_key, $results, 12 * HOUR_IN_SECONDS );
+
     return $results;
 }
+
