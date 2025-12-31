@@ -104,6 +104,39 @@ final class Musicalbum_Theater_Maps {
             <button id="musicalbum-sync-markers" class="button button-primary">同步剧院到地图</button>
             <div id="musicalbum-sync-result" style="margin-top:10px; padding:10px; background:#fff; border:1px solid #ccd0d4; display:none;"></div>
 
+            <hr />
+            <h2>已同步的剧院标记</h2>
+            <p>以下是当前地图（ID: <?php echo esc_html($map_id); ?>）中已存在的标记。如果这里有数据但前台不显示，请尝试点击 WP Go Maps 的“Save Map”以刷新缓存。</p>
+            <div id="musicalbum-markers-list">
+                <?php 
+                global $wpdb;
+                $table_name = $wpdb->prefix . 'wpgmza';
+                // 检查表是否存在
+                if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) {
+                    $markers = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE map_id = %d ORDER BY id DESC LIMIT 50", $map_id));
+                    if ($markers) {
+                        echo '<table class="widefat fixed striped">';
+                        echo '<thead><tr><th>ID</th><th>标题 (剧院名)</th><th>地址</th><th>经纬度</th></tr></thead>';
+                        echo '<tbody>';
+                        foreach ($markers as $marker) {
+                            echo '<tr>';
+                            echo '<td>' . esc_html($marker->id) . '</td>';
+                            echo '<td>' . esc_html($marker->title) . '</td>';
+                            echo '<td>' . esc_html($marker->address) . '</td>';
+                            echo '<td>' . esc_html($marker->lat) . ', ' . esc_html($marker->lng) . '</td>';
+                            echo '</tr>';
+                        }
+                        echo '</tbody></table>';
+                        if (count($markers) >= 50) echo '<p><em>仅显示最近 50 条...</em></p>';
+                    } else {
+                        echo '<p>当前地图没有标记。</p>';
+                    }
+                } else {
+                    echo '<p style="color:red">WP Go Maps 数据表不存在。</p>';
+                }
+                ?>
+            </div>
+
             <script>
             jQuery(document).ready(function($) {
                 $('#musicalbum-sync-markers').click(function() {
@@ -123,7 +156,8 @@ final class Musicalbum_Theater_Maps {
                                 '<li>发现剧院：' + res.data.total + ' 个</li>' +
                                 '<li>成功编码：' + res.data.success + ' 个</li>' +
                                 '<li>跳过/失败：' + res.data.skipped + ' 个</li>' +
-                                '</ul>'
+                                '</ul>' + 
+                                '<p><strong>重要：</strong>请刷新本页查看下方已同步列表。如果列表中有数据但前台不显示，请务必去 Maps -> Edit -> Save Map 刷新缓存。</p>'
                             );
                         } else {
                             $('#musicalbum-sync-result').html('<p style="color:red">错误：' + res.data + '</p>');
@@ -266,10 +300,13 @@ final class Musicalbum_Theater_Maps {
                    '&offset=20&page=1&extensions=all';
         } else {
             // 纯周边搜索（剧院）
+            // 优化：使用关键词搜索 "剧院|剧场|音乐厅|大剧院" 替代纯分类搜索
+            // 因为 types=140000 包含了很多非剧院的文体设施（如健身房、彩票店）
             $url = 'https://restapi.amap.com/v3/place/around?key=' . $amap_key . 
                    '&location=' . $lng . ',' . $lat . 
                    '&radius=' . $radius . 
-                   '&types=140100|140000' . 
+                   '&keywords=' . urlencode('剧院|剧场|音乐厅|大剧院|演艺中心') . 
+                   '&types=140100' . // 配合分类限制
                    '&offset=20&page=1&extensions=all';
         }
                

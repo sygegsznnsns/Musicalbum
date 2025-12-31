@@ -19,11 +19,23 @@ var MusicalbumMap = {
     
     // 显示所有足迹（恢复默认视图）
     showAllMarkers: function() {
-        // WP Go Maps 默认就是显示所有标记，这里可能需要重置缩放
-        if (typeof WPGMZA !== 'undefined' && WPGMZA.maps && WPGMZA.maps.length > 0) {
-            var map = WPGMZA.maps[0];
-            // 简单重置，具体 API 看版本
-            // map.setZoom(10);
+        // 尝试强制刷新 WPGMZA 标记
+        if (typeof WPGMZA !== 'undefined') {
+            // 方法1: 如果有 reset 接口
+            if (WPGMZA.maps && WPGMZA.maps.length > 0) {
+                var map = WPGMZA.maps[0];
+                if (map.markers) {
+                    map.markers.forEach(function(marker) {
+                        if (marker.setVisible) marker.setVisible(true);
+                    });
+                }
+                // 重新调整视野以包含所有标记
+                if (map.fitBoundsToMarkers) {
+                    map.fitBoundsToMarkers();
+                }
+            }
+        } else {
+            console.warn('WPGMZA not ready');
         }
     },
     
