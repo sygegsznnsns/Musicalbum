@@ -24,8 +24,10 @@ final class Musicalbum_Theater_Maps {
         // 注册脚本
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
 
-        // 注册 AJAX 操作：批量地理编码（仅管理员）
+        // 注册 AJAX 操作
         add_action('wp_ajax_musicalbum_batch_geocode', [__CLASS__, 'ajax_batch_geocode']);
+        add_action('wp_ajax_musicalbum_search_nearby_theaters', [__CLASS__, 'ajax_search_nearby_theaters']); // 开放给前端（登录用户）
+        add_action('wp_ajax_nopriv_musicalbum_search_nearby_theaters', [__CLASS__, 'ajax_search_nearby_theaters']); // 开放给前端（未登录用户）
         
         // 添加后台菜单：地图管理
         add_action('admin_menu', [__CLASS__, 'add_admin_menu']);
@@ -37,6 +39,12 @@ final class Musicalbum_Theater_Maps {
     public static function enqueue_assets() {
         wp_register_style('musicalbum-theater-maps', plugins_url('assets/maps.css', __FILE__), [], '1.0.0');
         wp_register_script('musicalbum-theater-maps', plugins_url('assets/maps.js', __FILE__), ['jquery'], '1.0.0', true);
+        
+        // 注入 AJAX URL
+        wp_localize_script('musicalbum-theater-maps', 'MusicalbumMapConfig', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('musicalbum_maps_frontend')
+        ]);
     }
 
     public static function add_admin_menu() {
@@ -231,6 +239,54 @@ final class Musicalbum_Theater_Maps {
         }
         
         return false;
+    }
+    
+    /**
+     * AJAX: 调用高德周边搜索 API
+     */
+    public static function ajax_search_nearby_theaters() {
+        check_ajax_referer('musicalbum_maps_frontend', 'nonce');
+        
+        $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : 0;
+        $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : 0;
+        $radius = isset($_POST['radius']) ? intval($_POST['radius']) : 5000; // 默认5公里
+        
+        $amap_key = get_option('musicalbum_amap_key', '');
+        if (empty($amap_key)) wp_send_json_error('服务端未配置高德 Key');
+        
+        // 调用高德周边搜索 API (search around)
+        // types=140000 (文体服务), 也可以更精确 140100 (体育馆/剧场)
+        $url = 'https://restapi.amap.com/v3/place/around?key=' . $amap_key . 
+               '&location=' . $lng . ',' . $lat . 
+               '&radius=' . $radius . 
+               '&types=140100|140000' . 
+               '&offset=20&page=1&extensions=all';
+               
+        $resp = wp_remote_get($url);
+        if (is_wp_error($resp)) wp_send_json_error('高德 API 请求失败');
+        
+        $body = wp_remote_retrieve_body($resp);
+        $data = json_decode($body, true);
+        
+        if (isset($data['status']) && $data['status'] == '1') {
+            $pois = [];
+            if (!empty($data['pois'])) {
+                foreach ($data['pois'] as $poi) {
+                    $location = explode(',', $poi['location']);
+                    $pois[] = [
+                        'name' => $poi['name'],
+                        'address' => isset($poi['address']) ? $poi['address'] : '',
+                        'lat' => $location[1],
+                        'lng' => $location[0],
+                        'distance' => isset($poi['distance']) ? $poi['distance'] : 0,
+                        'photos' => isset($poi['photos']) ? $poi['photos'] : []
+                    ];
+                }
+            }
+            wp_send_json_success($pois);
+        } else {
+            wp_send_json_error('搜索无结果或 API 错误');
+        }
     }
 
     /**
