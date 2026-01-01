@@ -169,8 +169,12 @@ var MusicalbumMap = {
     
     // 添加临时标记（需适配 WP Go Maps API）
     addTempMarkers: function(pois) {
+        // 先清除旧的临时标记
+        this.clearTempMarkers();
+
         if (typeof WPGMZA === 'undefined' || !WPGMZA.maps || WPGMZA.maps.length === 0) return;
         var map = WPGMZA.maps[0];
+        var self = this;
         
         pois.forEach(function(poi) {
             // 创建标记数据
@@ -185,15 +189,32 @@ var MusicalbumMap = {
             };
             
             // 调用 WPGMZA 的添加标记方法
-            // 注意：API 随版本变动，尝试通用方法
+            var marker;
+            if (typeof WPGMZA.Marker !== 'undefined') {
+                marker = new WPGMZA.Marker(markerData);
+            } else {
+                return; 
+            }
+            
+            marker.isTemp = true; // 标记为临时
+
             if (map.addMarker) {
-                map.addMarker(markerData);
-            } else if (typeof WPGMZA.Marker !== 'undefined') {
-                var marker = new WPGMZA.Marker(markerData);
+                map.addMarker(marker);
+            } else {
                 map.markers.push(marker);
                 marker.map = map;
             }
+            
+            self.tempMarkers.push(marker);
         });
+
+        // 自动缩放以显示新标记
+        // 简单的自动缩放逻辑：收集所有点，计算 bounds
+        // 由于 WPGMZA API 差异，这里暂时不做复杂的 bounds 计算，或者依赖 fitBoundsToMarkers 但那会包含隐藏的 native markers
+        // 尝试只聚焦到第一个结果
+        if (pois.length > 0) {
+            this.centerMap(pois[0].lat, pois[0].lng);
+        }
     }
 };
 
