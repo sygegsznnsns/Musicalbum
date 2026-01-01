@@ -423,7 +423,7 @@ final class Viewing_Records {
             'public' => true,
             'has_archive' => true,
             'show_in_rest' => true,
-            'supports' => array('title'),
+            'supports' => array('title', 'author'),
             'menu_position' => 20,
             'menu_icon' => 'dashicons-calendar-alt'
         ));
@@ -521,13 +521,6 @@ final class Viewing_Records {
                         'param' => 'post_type',
                         'operator' => '==',
                         'value' => 'viewing_record'
-                    )
-                ),
-                array(
-                    array(
-                        'param' => 'post_type',
-                        'operator' => '==',
-                        'value' => 'musicalbum_viewing'
                     )
                 )
             ),

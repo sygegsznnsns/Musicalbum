@@ -209,6 +209,10 @@ final class Musicalbum_Theater_Maps {
             wp_send_json_error("WP Go Maps 数据表 ($table_name) 不存在，请确认插件已激活");
         }
         
+        // 关键修正：在同步前，先清理该地图ID下的所有旧标记
+        // 避免“加州默认标记”或重复旧数据干扰
+        $wpdb->delete($table_name, ['map_id' => $map_id]);
+        
         $stats = ['total' => count($theaters), 'success' => 0, 'skipped' => 0];
         
         foreach ($theaters as $theater) {
