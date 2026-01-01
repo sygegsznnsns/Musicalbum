@@ -244,6 +244,29 @@ var MusicalbumMap = {
         }
     },
     
+    // 清除临时标记
+    clearTempMarkers: function() {
+        if (typeof WPGMZA !== 'undefined' && WPGMZA.maps && WPGMZA.maps.length > 0) {
+            var map = WPGMZA.maps[0];
+            // 确保 tempMarkers 已初始化
+            if (!this.tempMarkers) this.tempMarkers = [];
+            
+            this.tempMarkers.forEach(function(marker) {
+                if (map.removeMarker) {
+                    map.removeMarker(marker);
+                } else if (marker.setMap) {
+                    marker.setMap(null);
+                }
+                
+                // OL Style Hide
+                if (marker.feature && marker.feature.setStyle && typeof ol !== 'undefined') {
+                    marker.feature.setStyle(new ol.style.Style({}));
+                }
+            });
+        }
+        this.tempMarkers = [];
+    },
+
     // 添加临时标记（需适配 WP Go Maps API）
     addTempMarkers: function(pois) {
         // 先清除旧的临时标记
