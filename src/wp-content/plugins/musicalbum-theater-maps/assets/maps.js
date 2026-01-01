@@ -167,48 +167,80 @@ var MusicalbumMap = {
         }
     },
     
+    nativeMarkers: [], // 缓存原生标记
+
     // 切换原生（数据库）标记的可见性
     toggleNativeMarkers: function(visible) {
         if (typeof WPGMZA !== 'undefined' && WPGMZA.maps && WPGMZA.maps.length > 0) {
             var map = WPGMZA.maps[0];
-            if (map.markers) {
-                map.markers.forEach(function(marker) {
-                    // 仅操作非临时标记
-                    if (!marker.isTemp) {
-                        // 1. 尝试标准 setVisible
-                        if (marker.setVisible) {
-                            marker.setVisible(visible);
-                        }
-                        
-                        // 2. 尝试 setMap (适用于 Google Maps 和部分 OpenLayers 封装)
-                        // 如果是要隐藏，且 setMap 存在，则移除
-                        if (!visible && marker.setMap) {
-                            marker.setMap(null);
-                        }
-                        // 如果是要显示，且 setMap 存在，则添加回地图
-                        if (visible && marker.setMap) {
-                            marker.setMap(map);
-                        }
-                        
-                        // 3. 尝试 setOpacity (适用于某些基于 Canvas 的渲染)
-                        if (marker.setOpacity) {
-                            marker.setOpacity(visible ? 1 : 0);
-                        }
-
-                        // 4. 针对 OpenLayers 的底层 Feature 处理 (如果是 WPGMZA.OLMarker)
-                        if (marker.feature && marker.feature.setStyle && typeof ol !== 'undefined') {
-                            if (!visible) {
-                                // 创建一个空的样式来隐藏
-                                marker.feature.setStyle(new ol.style.Style({}));
-                            } else {
-                                // 恢复默认样式 (null 会使用 layer 的默认样式，或者 marker 自身的 style)
-                                // 这里比较冒险，先尝试 null
-                                marker.feature.setStyle(null); 
-                            }
-                        }
+            
+            // 首次运行时，缓存当前地图上的所有非临时标记
+            if (this.nativeMarkers.length === 0 && map.markers && map.markers.length > 0) {
+                var self = this;
+                map.markers.forEach(function(m) {
+                    if (!m.isTemp) {
+                        self.nativeMarkers.push(m);
+                    }
+                });
+                console.log('MusicalbumMap: Cached ' + this.nativeMarkers.length + ' native markers.');
+            }
+            
+            // 如果缓存为空，尝试重新获取（应对异步加载情况）
+            if (this.nativeMarkers.length === 0 && map.markers) {
+                 var self = this;
+                 map.markers.forEach(function(m) {
+                    if (!m.isTemp && self.nativeMarkers.indexOf(m) === -1) {
+                        self.nativeMarkers.push(m);
                     }
                 });
             }
+
+            console.log('MusicalbumMap: Toggling native markers to ' + visible);
+
+            this.nativeMarkers.forEach(function(marker) {
+                if (visible) {
+                    // === 显示逻辑 ===
+                    if (marker.setVisible) marker.setVisible(true);
+                    
+                    // 如果被移除了，加回来
+                    // Google Maps check
+                    if (marker.getMap && !marker.getMap()) {
+                        if (marker.setMap) marker.setMap(map);
+                    }
+                    // OpenLayers check (hacky)
+                    else if (map.markers.indexOf(marker) === -1) {
+                        if (map.addMarker) map.addMarker(marker);
+                    }
+                    
+                    // OL Style Restore
+                    if (marker.feature && marker.feature.setStyle && typeof ol !== 'undefined') {
+                        marker.feature.setStyle(null);
+                    }
+                    
+                    // Opacity
+                    if (marker.setOpacity) marker.setOpacity(1);
+
+                } else {
+                    // === 隐藏逻辑 ===
+                    if (marker.setVisible) marker.setVisible(false);
+                    
+                    // 彻底移除 (OpenLayers 有时 setVisible 不起作用)
+                    if (map.removeMarker) {
+                         // 注意：removeMarker 会从 map.markers 移除，但不销毁对象
+                         map.removeMarker(marker);
+                    } else if (marker.setMap) {
+                        marker.setMap(null);
+                    }
+
+                    // OL Style Hide
+                    if (marker.feature && marker.feature.setStyle && typeof ol !== 'undefined') {
+                        marker.feature.setStyle(new ol.style.Style({}));
+                    }
+                    
+                    // Opacity
+                    if (marker.setOpacity) marker.setOpacity(0);
+                }
+            });
         }
     },
     
