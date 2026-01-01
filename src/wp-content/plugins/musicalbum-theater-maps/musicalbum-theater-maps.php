@@ -150,6 +150,11 @@ final class Musicalbum_Theater_Maps {
                     }, function(res) {
                         btn.prop('disabled', false).text('同步剧院到地图');
                         if (res.success) {
+                            var errorHtml = '';
+                            if (res.data.errors && res.data.errors.length > 0) {
+                                errorHtml = '<div style="margin-top:10px; color:red; max-height:100px; overflow-y:auto; background:#fff0f0; padding:5px; border:1px solid red;"><strong>错误详情：</strong><br/>' + res.data.errors.join('<br/>') + '</div>';
+                            }
+                            
                             $('#musicalbum-sync-result').html(
                                 '<p style="color:green">同步完成！</p>' + 
                                 '<ul>' +
@@ -157,6 +162,7 @@ final class Musicalbum_Theater_Maps {
                                 '<li>成功编码：' + res.data.success + ' 个</li>' +
                                 '<li>跳过/失败：' + res.data.skipped + ' 个</li>' +
                                 '</ul>' + 
+                                errorHtml +
                                 '<p><strong>重要：</strong>请刷新本页查看下方已同步列表。如果列表中有数据但前台不显示，请务必去 Maps -> Edit -> Save Map 刷新缓存。</p>'
                             );
                         } else {
@@ -213,7 +219,7 @@ final class Musicalbum_Theater_Maps {
         // 避免“加州默认标记”或重复旧数据干扰
         $wpdb->delete($table_name, ['map_id' => $map_id]);
         
-        $stats = ['total' => count($theaters), 'success' => 0, 'skipped' => 0];
+        $stats = ['total' => count($theaters), 'success' => 0, 'skipped' => 0, 'errors' => []];
         
         foreach ($theaters as $theater) {
             // 检查是否已存在该名称的标记（避免重复）
@@ -253,11 +259,12 @@ final class Musicalbum_Theater_Maps {
                     $stats['success']++;
                 } else {
                     $stats['skipped']++;
-                    // 记录插入失败原因（可选）
-                    error_log('WP Go Maps Insert Failed: ' . $wpdb->last_error);
+                    // 记录插入失败原因
+                    $stats['errors'][] = "Insert failed for $theater: " . $wpdb->last_error;
                 }
             } else {
                 $stats['skipped']++;
+                $stats['errors'][] = "Geocoding failed for $theater";
             }
             
             // 避免 API 速率限制
