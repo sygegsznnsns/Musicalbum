@@ -79,60 +79,96 @@ var MusicalbumMap = {
         }
 
         var btn = document.querySelector('.musicalbum-nearby-btn');
-        var originalText = btn.innerText;
-        btn.innerText = '定位中...';
-        btn.disabled = true;
+        if (!btn) btn = jQuery('.musicalbum-nearby-btn')[0]; // Fallback
+        
+        var originalText = btn ? btn.innerText : '开始搜索';
+        if (btn) {
+            btn.innerText = '定位中...';
+            btn.disabled = true;
+        }
+
+        console.log('MusicalbumMap: Starting geolocation...');
 
         navigator.geolocation.getCurrentPosition(function(position) {
             var lat = position.coords.latitude;
             var lng = position.coords.longitude;
             
+            console.log('MusicalbumMap: Got coordinates', lat, lng);
+
             // 1. 移动地图中心
             MusicalbumMap.centerMap(lat, lng);
             
             // 2. 调用后端 API 搜索周边真实剧院
-            btn.innerText = '搜索周边剧院...';
+            if (btn) btn.innerText = '搜索周边剧院...';
             
             MusicalbumMap.performSearch(lat, lng, '', '#nearby-results-list', function() {
-                 btn.disabled = false;
-                 btn.innerText = originalText;
+                 if (btn) {
+                     btn.disabled = false;
+                     btn.innerText = originalText;
+                 }
             });
 
         }, function(error) {
-            alert('定位失败：' + error.message);
-            btn.disabled = false;
-            btn.innerText = originalText;
+            console.error('MusicalbumMap: Geolocation error', error);
+            var errMsg = '定位失败';
+            switch(error.code) {
+                case error.PERMISSION_DENIED: errMsg = '用户拒绝了定位请求'; break;
+                case error.POSITION_UNAVAILABLE: errMsg = '位置信息不可用'; break;
+                case error.TIMEOUT: errMsg = '定位超时'; break;
+                default: errMsg = '定位发生未知错误: ' + error.message;
+            }
+            alert(errMsg);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         });
     },
     
     // 通用搜索逻辑
     performSearch: function(lat, lng, keyword, resultsContainerId, callback) {
-        jQuery(resultsContainerId).html('加载中...');
+        console.log('MusicalbumMap: Performing search...', {lat: lat, lng: lng, keyword: keyword});
+        jQuery(resultsContainerId).html('<div style="padding:10px; color:#666;">正在连接高德数据...</div>');
         
         jQuery.post(MusicalbumMapConfig.ajaxurl, {
             action: 'musicalbum_search_nearby_theaters',
             nonce: MusicalbumMapConfig.nonce,
             lat: lat,
             lng: lng,
-            radius: 3000, // 3km
+            radius: 5000, // 扩大到5km
             keyword: keyword // 传空则搜索剧院，传词则搜索服务
         }, function(res) {
+            console.log('MusicalbumMap: Search response', res);
             if (res.success) {
-                var html = '<ul>';
-                res.data.forEach(function(poi) {
-                    html += '<li><strong>' + poi.name + '</strong><br/>' + 
-                            '<small>' + poi.address + ' (距此' + poi.distance + '米)</small></li>';
-                });
-                html += '</ul>';
-                jQuery(resultsContainerId).html(html);
-                
-                // 标记地图
-                MusicalbumMap.addTempMarkers(res.data);
+                if (res.data && res.data.length > 0) {
+                    var html = '<ul>';
+                    res.data.forEach(function(poi) {
+                        html += '<li><strong>' + poi.name + '</strong><br/>' + 
+                                '<small>' + poi.address + ' (距此' + poi.distance + '米)</small></li>';
+                    });
+                    html += '</ul>';
+                    jQuery(resultsContainerId).html(html);
+                    
+                    // 标记地图
+                    MusicalbumMap.addTempMarkers(res.data);
+                } else {
+                    jQuery(resultsContainerId).html('<p style="padding:10px; color:#f60;">附近 5公里 内未找到相关结果。</p>');
+                    // 清除标记，以免误导
+                    MusicalbumMap.clearTempMarkers();
+                }
             } else {
                 var errMsg = res.data || '未知错误';
                 jQuery(resultsContainerId).html('<p style="color:red; padding:10px; background:#ffebeb;">搜索失败: ' + errMsg + '</p>');
                 console.error('Map Search Error:', errMsg);
             }
+        }).fail(function(xhr, status, error) {
+            console.error('MusicalbumMap: AJAX Request Failed', status, error);
+            jQuery(resultsContainerId).html('<p style="color:red; padding:10px;">网络请求失败，请检查控制台日志。</p>');
+        }).always(function() {
             if (callback) callback();
         });
     },

@@ -340,7 +340,13 @@ final class Musicalbum_Theater_Maps {
         $keyword = isset($_POST['keyword']) ? sanitize_text_field($_POST['keyword']) : '';
         
         $amap_key = get_option('musicalbum_amap_key', '');
-        if (empty($amap_key)) wp_send_json_error('服务端未配置高德 Key');
+        if (empty($amap_key)) {
+            error_log('Musicalbum Maps Error: Amap Key is empty.');
+            wp_send_json_error('服务端未配置高德 Key');
+        }
+        
+        // 记录请求参数以便调试
+        error_log("Musicalbum Maps Search: Lat=$lat, Lng=$lng, Radius=$radius, Keyword=$keyword");
         
         // 如果有关键词，调用关键词搜索；否则调用周边搜索
         if (!empty($keyword)) {
@@ -352,18 +358,21 @@ final class Musicalbum_Theater_Maps {
                    '&offset=20&page=1&extensions=all';
         } else {
             // 纯周边搜索（剧院）
-            // 优化：使用关键词搜索 "剧院|剧场|音乐厅|大剧院" 替代纯分类搜索
-            // 因为 types=140000 包含了很多非剧院的文体设施（如健身房、彩票店）
+            // 移除 types 限制，因为有时分类代码会变更或不准确，仅依赖关键词
             $url = 'https://restapi.amap.com/v3/place/around?key=' . $amap_key . 
                    '&location=' . $lng . ',' . $lat . 
                    '&radius=' . $radius . 
-                   '&keywords=' . urlencode('剧院|剧场|音乐厅|大剧院|演艺中心') . 
-                   '&types=140100' . // 配合分类限制
+                   '&keywords=' . urlencode('剧院|剧场|音乐厅|大剧院|演艺中心|Livehouse') . 
                    '&offset=20&page=1&extensions=all';
         }
+        
+        error_log("Musicalbum Maps API URL: " . preg_replace('/key=[^&]+/', 'key=***', $url)); // 隐藏 key 记录日志
                
         $resp = wp_remote_get($url);
-        if (is_wp_error($resp)) wp_send_json_error('高德 API 请求失败');
+        if (is_wp_error($resp)) {
+            error_log('Musicalbum Maps API Request Failed: ' . $resp->get_error_message());
+            wp_send_json_error('高德 API 请求失败');
+        }
         
         $body = wp_remote_retrieve_body($resp);
         $data = json_decode($body, true);
@@ -382,9 +391,12 @@ final class Musicalbum_Theater_Maps {
                         'photos' => isset($poi['photos']) ? $poi['photos'] : []
                     ];
                 }
+            } else {
+                error_log('Musicalbum Maps API: No POIs found. Raw response info: ' . $data['info']);
             }
             wp_send_json_success($pois);
         } else {
+            error_log('Musicalbum Maps API Error: ' . print_r($data, true));
             wp_send_json_error('API返回错误: ' . (isset($data['info']) ? $data['info'] : '未知错误'));
         }
     }
