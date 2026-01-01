@@ -150,9 +150,13 @@ final class Musicalbum_Theater_Maps {
                     }, function(res) {
                         btn.prop('disabled', false).text('同步剧院到地图');
                         if (res.success) {
+                            console.log('Sync response:', res); // Debug log
                             var errorHtml = '';
                             if (res.data.errors && res.data.errors.length > 0) {
                                 errorHtml = '<div style="margin-top:10px; color:red; max-height:100px; overflow-y:auto; background:#fff0f0; padding:5px; border:1px solid red;"><strong>错误详情：</strong><br/>' + res.data.errors.join('<br/>') + '</div>';
+                            } else {
+                                // 如果没有 errors 字段，可能是旧结构，强制显示
+                                errorHtml = '<div style="margin-top:10px; color:blue; background:#f0f8ff; padding:5px;"><strong>调试信息：</strong><br/>Total: ' + res.data.total + '<br/>Success: ' + res.data.success + '<br/>Skipped: ' + res.data.skipped + '</div>';
                             }
                             
                             $('#musicalbum-sync-result').html(
