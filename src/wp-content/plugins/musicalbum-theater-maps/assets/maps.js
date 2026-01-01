@@ -1,4 +1,26 @@
 var MusicalbumMap = {
+    // 处理搜索结果标记点击
+    onMarkerClick: function(poi) {
+        // 弹窗或信息窗口
+        // 这里简单起见，直接自动填入“周边服务”搜索框，并切换标签
+        var confirmMsg = "您选择了：" + poi.name + "\n要查看该剧院周边的服务吗？";
+        if (confirm(confirmMsg)) {
+            // 切换到服务标签
+            this.switchTab('services');
+            
+            // 填入剧院名称作为提示，或者在逻辑上关联
+            // 更好的做法是把地图中心设为该剧院，并清空服务搜索框等待用户输入关键词
+            this.centerMap(poi.lat, poi.lng);
+            
+            // 提示用户
+            jQuery('#service-search-keyword').attr('placeholder', '搜索 ' + poi.name + ' 附近的...');
+            jQuery('#service-search-keyword').focus();
+            
+            // 可选：同时也填入导航终点
+            jQuery('#nav-end').val(poi.name);
+        }
+    },
+    
     // 切换标签页
     switchTab: function(tabName) {
         // 更新按钮状态
@@ -326,10 +348,27 @@ var MusicalbumMap = {
             
             // 调用 WPGMZA 的添加标记方法
             var marker;
-            if (typeof WPGMZA.Marker !== 'undefined') {
-                marker = new WPGMZA.Marker(markerData);
-            } else {
-                return; 
+            
+            // 修复: WP Go Maps 9.x+ 使用工厂模式创建 Marker，不能直接 new WPGMZA.Marker
+            // Uncaught Error: Object must be an instance of OLMarker
+            if (typeof WPGMZA.Marker.createInstance !== 'undefined') {
+                marker = WPGMZA.Marker.createInstance(markerData);
+            } else if (typeof WPGMZA.Marker !== 'undefined') {
+                // 尝试旧版构造函数，但捕获错误
+                try {
+                    marker = new WPGMZA.Marker(markerData);
+                } catch(e) {
+                    console.error('WPGMZA Marker creation failed:', e);
+                    // 尝试针对 OpenLayers 引擎的特定构造函数
+                    if (typeof WPGMZA.OLMarker !== 'undefined') {
+                        marker = new WPGMZA.OLMarker(markerData);
+                    }
+                }
+            }
+            
+            if (!marker) {
+                 console.error('Could not create marker instance');
+                 return;
             }
             
             marker.isTemp = true; // 标记为临时
@@ -339,6 +378,18 @@ var MusicalbumMap = {
             } else {
                 map.markers.push(marker);
                 marker.map = map;
+            }
+            
+            // 为新标记添加点击事件，以支持“查看周边服务”
+            // WP Go Maps 的事件绑定方式
+            if (marker.on) {
+                marker.on('click', function() {
+                    MusicalbumMap.onMarkerClick(poi);
+                });
+            } else {
+                // Fallback for native DOM events or older API
+                // 这是一个简化处理，如果 marker.on 不存在可能很难绑定
+                console.log('Marker created but cannot bind click event via .on()');
             }
             
             self.tempMarkers.push(marker);
