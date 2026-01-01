@@ -237,34 +237,64 @@ final class Musicalbum_Theater_Maps {
             $geo = self::geocode_amap($theater, $amap_key);
             if ($geo) {
                 // 写入 WP Go Maps 表
-                $inserted = $wpdb->insert(
-                    $table_name,
-                    [
-                        'map_id' => $map_id,
-                        'address' => $theater, // 地址直接用剧院名
-                        'lat' => $geo['lat'],
-                        'lng' => $geo['lng'],
-                        'title' => $theater,
-                        'description' => '我的观演足迹',
-                        'link' => '', // 可选：链接到剧院归档页
-                        'anim' => 0,
-                        'infoopen' => 0,
-                        'category' => 0,
-                        'approved' => 1,
-                        'retina' => 0,
-                        'type' => 0,
-                        'did' => '',
-                        'sticky' => 0,
-                        'other_data' => ''
-                    ]
+                // 注意：新版 WP Go Maps (9.x+) 使用 Spatial 字段 (latlng/geom)，需要使用 ST_GeomFromText
+                // 但直接使用 $wpdb->insert 不支持 MySQL 函数
+                // 所以需要改用 $wpdb->query
+                
+                // 1. 尝试检测是否存在 'latlng' 或 'geom' 字段
+                // 简单起见，直接使用 raw SQL 插入，兼容 Spatial 字段
+                
+                $sql = $wpdb->prepare(
+                    "INSERT INTO $table_name 
+                    (map_id, address, lat, lng, title, description, link, anim, infoopen, category, approved, retina, type, did, sticky, other_data, latlng) 
+                    VALUES 
+                    (%d, %s, %f, %f, %s, %s, %s, %d, %d, %d, %d, %d, %d, %s, %d, %s, ST_GeomFromText(%s))",
+                    $map_id,
+                    $theater,
+                    $geo['lat'],
+                    $geo['lng'],
+                    $theater,
+                    '我的观演足迹',
+                    '',
+                    0, 0, 0, 1, 0, 0, '', 0, '',
+                    "POINT(" . $geo['lat'] . " " . $geo['lng'] . ")" // 注意：WPGMZA 可能期望 POINT(lat lng) 或 POINT(lng lat)，通常是 POINT(lat lng)
                 );
+                
+                $inserted = $wpdb->query($sql);
                 
                 if ($inserted) {
                     $stats['success']++;
                 } else {
-                    $stats['skipped']++;
-                    // 记录插入失败原因
-                    $stats['errors'][] = "Insert failed for $theater: " . $wpdb->last_error;
+                    // 如果第一次插入失败（可能是因为没有 latlng 字段，即旧版本），则尝试普通插入
+                    $wpdb->last_error = ''; // 清除错误
+                    $inserted_fallback = $wpdb->insert(
+                        $table_name,
+                        [
+                            'map_id' => $map_id,
+                            'address' => $theater,
+                            'lat' => $geo['lat'],
+                            'lng' => $geo['lng'],
+                            'title' => $theater,
+                            'description' => '我的观演足迹',
+                            'link' => '',
+                            'anim' => 0,
+                            'infoopen' => 0,
+                            'category' => 0,
+                            'approved' => 1,
+                            'retina' => 0,
+                            'type' => 0,
+                            'did' => '',
+                            'sticky' => 0,
+                            'other_data' => ''
+                        ]
+                    );
+                    
+                    if ($inserted_fallback) {
+                        $stats['success']++;
+                    } else {
+                        $stats['skipped']++;
+                        $stats['errors'][] = "Insert failed for $theater: " . $wpdb->last_error;
+                    }
                 }
             } else {
                 $stats['skipped']++;
