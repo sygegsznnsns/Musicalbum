@@ -227,7 +227,7 @@ final class Musicalbum_Theater_Maps {
             $geo = self::geocode_amap($theater, $amap_key);
             if ($geo) {
                 // 写入 WP Go Maps 表
-                $wpdb->insert(
+                $inserted = $wpdb->insert(
                     $table_name,
                     [
                         'map_id' => $map_id,
@@ -248,7 +248,14 @@ final class Musicalbum_Theater_Maps {
                         'other_data' => ''
                     ]
                 );
-                $stats['success']++;
+                
+                if ($inserted) {
+                    $stats['success']++;
+                } else {
+                    $stats['skipped']++;
+                    // 记录插入失败原因（可选）
+                    error_log('WP Go Maps Insert Failed: ' . $wpdb->last_error);
+                }
             } else {
                 $stats['skipped']++;
             }
