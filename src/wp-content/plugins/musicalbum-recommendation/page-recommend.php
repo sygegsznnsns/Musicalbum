@@ -123,30 +123,34 @@ function msr_render_recommend_page() {
     <!-- ===================== -->
     <!-- 喜欢的演员管理 -->
     <!-- ===================== -->
+    <!-- 左侧：演员管理 -->
     <div class="msr-actor-container">
-    <h3 class="msr-section-title">你关注的演员</h3>
+        <h3 class="msr-section-title">你关注的演员</h3>
 
-    <?php if ( empty( $favorite_actors ) ) : ?>
-        <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
-    <?php else : ?>
-        <ul class="msr-actor-list">
-            <?php foreach ( $favorite_actors as $actor ) : ?>
-                <li class="msr-actor-item">
-                    <span class="msr-actor-name"><?php echo esc_html( $actor ); ?></span>
-                    <form method="post" class="msr-inline-form">
-                        <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
-                        <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
-                    </form>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+        <?php if ( empty( $favorite_actors ) ) : ?>
+            <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
+        <?php else : ?>
+            <ul class="msr-actor-list">
+                <?php foreach ( $favorite_actors as $actor ) : ?>
+                    <li class="msr-actor-item">
+                        <span class="msr-actor-name"><?php echo esc_html( $actor ); ?></span>
+                        <form method="post" class="msr-inline-form">
+                            <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
+                            <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
+                        </form>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
 
-    <form method="post" class="msr-actor-form">
-        <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
-        <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
-    </form>
+        <form method="post" class="msr-actor-form">
+            <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
+            <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
+        </form>
     </div>
+
+    <!-- 右侧：推荐模块 -->
+    <div class="msr-recommend-container">
 
     <!-- ===================== -->
     <!-- 演员相关推荐 -->
@@ -249,7 +253,7 @@ function msr_render_recommend_page() {
     <div id="msr-musical-detail" class="msr-card msr-detail-box">
         <p class="msr-empty-text">点击上方音乐剧名称查看详情。</p>
     </div>
-
+    </div><!-- /.msr-recommend-container -->
 </div><!-- /.msr-page -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
