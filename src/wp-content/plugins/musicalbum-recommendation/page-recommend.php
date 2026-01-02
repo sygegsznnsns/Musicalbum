@@ -145,7 +145,7 @@ function msr_render_recommend_page() {
             <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
             <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
         </form>
-    </div>
+
 
     <!-- AI 推荐 -->
     <div class="msr-ai-container">
@@ -164,7 +164,8 @@ function msr_render_recommend_page() {
             </ul>
         <?php endif; ?>
     </div>
-
+    
+    </div><!-- /.msr-actor-container -->
 
     <!-- 右侧：推荐模块 -->
     <div class="msr-recommend-container">
