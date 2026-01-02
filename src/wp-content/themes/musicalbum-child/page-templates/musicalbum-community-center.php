@@ -30,7 +30,7 @@ get_header();
   </section>
   
   <hr />
-  
+  <?php /*
   <!-- 用户活动区域 -->
   <section class="community-section activity-section">
     <h2>社区动态</h2>
@@ -49,7 +49,7 @@ get_header();
   </section>
   
   <hr />
-  
+  */ ?>
   <!-- 资源库区域 -->
   <section class="community-section resource-section">
     <h2>共享资源</h2>
