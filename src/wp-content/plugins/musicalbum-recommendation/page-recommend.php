@@ -117,30 +117,6 @@ function msr_render_recommend_page() {
     
     ob_start();
 ?>
-    <style>
-        .msr-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-        
-        .msr-item {
-            border: 1px solid #ddd;
-            padding: 12px;
-            background: #fff;
-            box-sizing: border-box;
-        }
-        
-        .msr-item h4 {
-            margin: 0 0 8px 0;
-            font-size: 16px;
-        }
-        
-        .msr-item form {
-            margin-top: 8px;
-        }
-    </style>
     
     <h2>为你推荐的音乐剧</h2>
     

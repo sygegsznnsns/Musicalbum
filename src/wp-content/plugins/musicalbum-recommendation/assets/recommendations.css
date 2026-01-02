@@ -1,57 +1,27 @@
-.musicalbum-hello {
-  padding: 8px 12px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+/* =========================
+   基础推荐页布局
+   ========================= */
+
+.msr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
-.musicalbum-viewing-form {
-  max-width: 720px;
-  margin: 0 auto;
-}
-.musicalbum-ocr {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.musicalbum-viewings-list .item {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-}
-
-/* recommendations.css */
-/* 自定义推荐内容样式 */
-.musicalbum-recommendations {
+.msr-item {
   border: 1px solid #ddd;
-  padding: 15px;
-  background-color: #f9f9f9;
+  padding: 12px;
+  background: #fff;
+  box-sizing: border-box;
 }
 
-.musicalbum-recommendations h3 {
-  font-size: 18px;
-  margin-bottom: 10px;
+.msr-item h4,
+.msr-item h5 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
 }
 
-.musicalbum-recommendations ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.musicalbum-recommendations li {
-  margin-bottom: 10px;
-}
-
-.musicalbum-recommendations li a {
-  color: #0073aa;
-  text-decoration: none;
-}
-
-.musicalbum-recommendations li a:hover {
-  text-decoration: underline;
-}
-
-body {
-  background: red !important;
+.msr-item form {
+  margin-top: 8px;
 }
