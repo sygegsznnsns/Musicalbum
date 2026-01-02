@@ -33,9 +33,16 @@ var MusicalbumMap = {
         
         // 根据不同标签页执行特定逻辑
         if (tabName === 'footprints') {
+            this.toggleNativeMarkers(true);
+            this.clearTempMarkers();
             this.showAllMarkers();
-        } else if (tabName === 'nearby') {
-            // 自动触发定位？可选，这里先让用户手动点
+        } else {
+            // 切换到其他标签页时，隐藏观演足迹标记
+            this.toggleNativeMarkers(false);
+            
+            if (tabName === 'nearby') {
+                // 可选：如果已有搜索结果，保留显示；否则等待用户操作
+            }
         }
     },
     
