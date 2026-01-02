@@ -113,8 +113,10 @@ function msr_render_recommend_page() {
 ?>
 <div class="msr-page">
 
-    <!-- 左侧：演员管理 -->
+    <!-- 左侧 -->
     <div class="msr-section-wrapper">
+
+        <!-- 关注演员模块 -->
         <div class="msr-actor-container">
             <h3 class="msr-section-title">你关注的演员</h3>
             <?php if ( empty( $favorite_actors ) ) : ?>
@@ -138,7 +140,7 @@ function msr_render_recommend_page() {
             </form>
         </div>
 
-        <!-- 右侧：AI 推荐 -->
+        <!-- AI 推荐 -->
         <div class="msr-ai-container">
             <h3 class="msr-section-title">AI 为你推荐</h3>
             <?php if ( empty( $ai_recommend ) ) : ?>

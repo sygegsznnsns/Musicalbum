@@ -234,6 +234,16 @@
   flex: 0 0 200px; /* 固定宽度 */
   text-align: left; /* 保证内部文本左对齐 */
 }
+/* AI推荐容器 - 相同UI风格 */
+.msr-ai-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 0 0 200px;
+  text-align: left;
+  max-width: 400px;
+  margin-bottom: 32px;
+}
 
 /* 右侧：推荐模块，占剩余空间 */
 .msr-recommend-container {
@@ -260,6 +270,9 @@
   gap: 20px; /* 间距 */
 }
 
+/* =========================
+   弹窗样式
+   ========================= */
 /* 弹窗整体背景 */
 .msr-modal {
   display: none; /* 默认隐藏 */
