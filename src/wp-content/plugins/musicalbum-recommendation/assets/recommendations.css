@@ -160,3 +160,55 @@
   border-color: #ff8383;
   box-shadow: 0 0 0 1px rgba(255, 131, 131, 0.4);
 }
+
+/* =========================
+   喜欢的演员模块
+   ========================= */
+.msr-actor-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* 整体靠左 */
+  max-width: 400px; /* 可以控制宽度，不占满主体 */
+  margin-bottom: 32px;
+}
+
+.msr-actor-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.msr-actor-item {
+  display: flex;
+  align-items: center; /* 同一行对齐 */
+  margin-bottom: 8px;
+}
+
+.msr-actor-name {
+  font-size: 1.1rem; /* 字体大一些 */
+  font-weight: 600;
+  margin-right: 12px; /* 名字和按钮间距 */
+}
+
+.msr-inline-form {
+  display: inline-block;
+  margin: 0;
+}
+
+.msr-inline-form .msr-btn-secondary {
+  padding: 0.25rem 0.5rem; /* 小一些 */
+  font-size: 0.75rem;
+}
+
+.msr-actor-form {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.msr-actor-form .msr-input {
+  flex: 1;
+  min-width: 150px;
+}

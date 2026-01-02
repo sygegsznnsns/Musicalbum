@@ -123,6 +123,7 @@ function msr_render_recommend_page() {
     <!-- ===================== -->
     <!-- 喜欢的演员管理 -->
     <!-- ===================== -->
+    <div class="msr-actor-container">
     <h3 class="msr-section-title">你关注的演员</h3>
 
     <?php if ( empty( $favorite_actors ) ) : ?>
@@ -145,6 +146,7 @@ function msr_render_recommend_page() {
         <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
         <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
     </form>
+    </div>
 
     <!-- ===================== -->
     <!-- 演员相关推荐 -->
