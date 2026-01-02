@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
             detailBox.dataset.clicked = 'true';
 
             if (!musicalData[name]) {
-                detailBox.innerHTML = '<p>点击了，但未找到该音乐剧的详细信息。</p>';
+                detailBox.innerHTML = '<p>该音乐剧的详细信息待完善。</p>';
                 return;
             }
 
