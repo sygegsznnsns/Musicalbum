@@ -10,8 +10,18 @@
      * 初始化
      */
     $(document).ready(function() {
-        initShareForm();
-        initResourceUpload();
+        // 安全检查：确保配置对象存在
+        if (typeof MusicalbumCommunity === 'undefined') {
+            console.warn('Musicalbum Community: Configuration object not found. Some features may be disabled.');
+            return;
+        }
+
+        try {
+            initShareForm();
+            initResourceUpload();
+        } catch (e) {
+            console.error('Musicalbum Community: Initialization failed', e);
+        }
     });
     
     /**
