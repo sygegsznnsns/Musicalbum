@@ -28,80 +28,18 @@ function musicalbum_get_user_viewing_history_titles($user_id) {
 }
 
 /**
- * 基于其他用户的观演记录推荐剧目（协同过滤）
+ * 基于其他用户的观演记录推荐剧目
  */
-function musicalbum_recommend_by_crowd( $user_id, $limit = 10 ) {
-
-    // 1. 当前用户已看过的音乐剧
-    $viewed_titles = musicalbum_get_user_viewing_history_titles( $user_id );
-    if ( empty( $viewed_titles ) ) {
-        return [];
+function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
+    $viewed_titles = musicalbum_get_user_viewing_history_titles($user_id);
+    if (empty($viewed_titles)) {
+        return array();
     }
-
-    // 2. 查询其他用户的观演记录
-    $args = [
-        'post_type'      => 'viewing_record',
-        'post_status'    => 'publish',
-        'posts_per_page' => -1,
-        'author__not_in' => [ $user_id ],
-    ];
-
-    $query   = new WP_Query( $args );
-    $counter = [];
-
-    if ( $query->have_posts() ) {
-        while ( $query->have_posts() ) {
-            $query->the_post();
-
-            // ✅ 正确做法：从 meta 里取音乐剧名
-            $musical_title = get_post_meta( get_the_ID(), 'musical_title', true );
-
-            if ( empty( $musical_title ) ) {
-                continue;
-            }
-
-            // 如果你已经看过，跳过
-            if ( in_array( $musical_title, $viewed_titles, true ) ) {
-                continue;
-            }
-
-            if ( ! isset( $counter[ $musical_title ] ) ) {
-                $counter[ $musical_title ] = 0;
-            }
-
-            $counter[ $musical_title ]++;
-        }
-        wp_reset_postdata();
-    }
-
-    // 3. 按“被多少人看过”排序
-    arsort( $counter );
-
-    // 4. 生成推荐结果
-    $results = [];
-    foreach ( $counter as $title => $count ) {
-        $results[] = [
-            'musical' => $title,
-            'reason'  => '有 ' . $count . ' 位与你兴趣相似的用户观看过',
-        ];
-
-        if ( count( $results ) >= $limit ) {
-            break;
-        }
-    }
-
-    return $results;
-}
-
-
-/**
- * 近期热门观演剧目（基于观演记录数量）
- */
-function musicalbum_recommend_trending($limit = 10) {
     $args = array(
         'post_type' => 'viewing_record',
         'post_status' => 'publish',
         'posts_per_page' => -1,
+        'author__not_in' => array($user_id),
     );
     $query = new WP_Query($args);
     $counter = array();
@@ -109,6 +47,9 @@ function musicalbum_recommend_trending($limit = 10) {
         while ($query->have_posts()) {
             $query->the_post();
             $title = get_the_title();
+            if (in_array($title, $viewed_titles, true)) {
+                continue;
+            }
             if (!isset($counter[$title])) {
                 $counter[$title] = 0;
             }
@@ -121,7 +62,7 @@ function musicalbum_recommend_trending($limit = 10) {
     foreach ($counter as $title => $count) {
         $results[] = array(
             'musical' => $title,
-            'reason' => '近期被记录 ' . $count . ' 次观演',
+            'reason' => '有 ' . $count . ' 位用户也观看过该剧目',
         );
         if (count($results) >= $limit) {
             break;
@@ -129,6 +70,59 @@ function musicalbum_recommend_trending($limit = 10) {
     }
     return $results;
 }
+
+/**
+ * 近期热门观演剧目（基于观演记录数量）
+ */
+function musicalbum_recommend_trending( $limit = 10 ) {
+
+    $args = [
+        'post_type'      => 'viewing_record',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+    ];
+
+    $query   = new WP_Query( $args );
+    $counter = [];
+
+    if ( $query->have_posts() ) {
+        while ( $query->have_posts() ) {
+            $query->the_post();
+
+            // 从 meta 中获取音乐剧名称
+            $musical_title = get_post_meta( get_the_ID(), 'musical_title', true );
+
+            if ( empty( $musical_title ) ) {
+                continue;
+            }
+
+            if ( ! isset( $counter[ $musical_title ] ) ) {
+                $counter[ $musical_title ] = 0;
+            }
+
+            $counter[ $musical_title ]++;
+        }
+        wp_reset_postdata();
+    }
+
+    // 按观演次数排序
+    arsort( $counter );
+
+    $results = [];
+    foreach ( $counter as $title => $count ) {
+        $results[] = [
+            'musical' => $title,
+            'reason'  => '近期被记录 ' . $count . ' 次观演',
+        ];
+
+        if ( count( $results ) >= $limit ) {
+            break;
+        }
+    }
+
+    return $results;
+}
+
 
 /**
  * 获取用户不感兴趣列表
