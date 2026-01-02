@@ -300,20 +300,31 @@
 /* 弹窗整体背景 */
 .msr-modal {
   display: none;
-  position: fixed;
+  position: fixed; /* 固定在屏幕 */
   z-index: 9999;
   left: 0;
   top: 0;
-  width: 100vw; /* 使用视口宽度 */
-  height: 100vh; /* 使用视口高度 */
+  width: 100vw; /* 覆盖视口宽度 */
+  height: 100vh; /* 覆盖视口高度 */
   background-color: rgba(0, 0, 0, 0.6); /* 半透明黑色 */
-  overflow: auto;
+  overflow: hidden; /* 阻止滚动显示白边 */
+  margin: 0; /* 防止任何 margin 影响 */
+  padding: 0; /* 防止任何 padding 影响 */
+}
+
+/* 防止 body 或 html margin/padding 影响 */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* 弹窗内容 */
 .msr-modal-content {
   background-color: #fff;
-  margin: 10% auto; /* 纵向距离顶部10%，水平居中 */
+  margin: 10% auto; /* 顶部 10%，水平居中 */
   padding: 20px;
   border-radius: 10px;
   max-width: 600px;
