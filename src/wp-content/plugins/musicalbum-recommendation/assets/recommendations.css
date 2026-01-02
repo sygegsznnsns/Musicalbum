@@ -25,3 +25,138 @@
 .msr-item form {
   margin-top: 8px;
 }
+/* =========================
+   MSR 通用卡片
+   ========================= */
+.msr-card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+/* 推荐页中详情卡片可以更明显 */
+.msr-detail-box {
+  margin-top: 16px;
+}
+
+/* =========================
+   卡片 / 区块标题
+   ========================= */
+.msr-card-title {
+  margin: 0 0 12px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* 页面级标题 */
+.msr-page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+/* 分区标题 */
+.msr-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 32px 0 16px;
+  color: #1f2937;
+}
+
+/* =========================
+   主按钮
+   ========================= */
+.msr-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.msr-btn-primary {
+  background: #ff8383;
+  color: #fff;
+  font-weight: 500;
+}
+
+.msr-btn-primary:hover {
+  background: #ff6b6b;
+}
+
+/* 次按钮（如取消关注、不感兴趣） */
+.msr-btn-secondary {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.msr-btn-secondary:hover {
+  background: #f9fafb;
+}
+
+/* =========================
+   分页按钮（当前未用，但风格统一）
+   ========================= */
+.msr-btn-page {
+  min-width: 40px;
+  padding: 0.5rem 0.75rem;
+}
+
+.msr-btn-page-active {
+  background: #ff8383;
+  color: #fff;
+  border-color: #ff8383;
+  font-weight: 600;
+}
+
+.msr-btn-page-active:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+/* =========================
+   推荐网格与卡片
+   ========================= */
+.msr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.msr-item {
+  box-sizing: border-box;
+}
+
+/* =========================
+   其他基础 UI
+   ========================= */
+.msr-empty-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.msr-divider {
+  margin: 40px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.msr-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.msr-input:focus {
+  outline: none;
+  border-color: #ff8383;
+  box-shadow: 0 0 0 1px rgba(255, 131, 131, 0.4);
+}
