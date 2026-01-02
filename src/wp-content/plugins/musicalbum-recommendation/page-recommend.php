@@ -259,12 +259,18 @@ function msr_render_recommend_page() {
 
         <hr class="msr-divider">
 
-        <h3 class="msr-section-title">音乐剧详情</h3>
-        <div id="msr-musical-detail" class="msr-card msr-detail-box">
-            <p class="msr-empty-text">点击上方音乐剧名称查看详情。</p>
-        </div>
-
     </div><!-- /.msr-recommend-container -->
+
+    <!-- 音乐剧详情弹窗 -->
+    <div id="msr-modal" class="msr-modal">
+        <div class="msr-modal-content">
+            <span class="msr-modal-close">&times;</span>
+            <div id="msr-modal-body">
+                <!-- 弹窗内容由 JS 填充 -->
+            </div>
+        </div>
+    </div>
+
 
 </div><!-- /.msr-page -->
 
@@ -272,33 +278,44 @@ function msr_render_recommend_page() {
 document.addEventListener('DOMContentLoaded', function () {
 
     const musicalData = <?php echo json_encode($musical_csv_data, JSON_UNESCAPED_UNICODE); ?>;
-    const detailBox = document.getElementById('msr-musical-detail');
-
-    // 初始状态：未点击
-    detailBox.dataset.clicked = 'false';
+    const modal = document.getElementById('msr-modal');
+    const modalBody = document.getElementById('msr-modal-body');
+    const modalClose = document.querySelector('.msr-modal-close');
 
     document.querySelectorAll('.msr-musical-link').forEach(function (link) {
         link.addEventListener('click', function () {
             const name = this.dataset.musical.trim();
-            detailBox.dataset.clicked = 'true';
 
             if (!musicalData[name]) {
-                detailBox.innerHTML = '<p>该音乐剧的详细信息待完善。</p>';
-                return;
+                modalBody.innerHTML = '<p>该音乐剧的详细信息待完善。</p>';
+            } else {
+                const m = musicalData[name];
+                modalBody.innerHTML = `
+                    <h4>${name}</h4>
+                    <p><strong>原创性：</strong> ${m.originality}</p>
+                    <p><strong>进度：</strong> ${m.status}</p>
+                    <p><strong>首演日期：</strong> ${m.premiere}</p>
+                    <p><strong>其他信息：</strong> ${m.other_info}</p>
+                    <p><strong>制作公司：</strong> ${m.company}</p>
+                    <pre style="white-space:pre-wrap;"><strong>主创信息：</strong>\n${m.creators}</pre>
+                `;
             }
 
-            const m = musicalData[name];
-
-            detailBox.innerHTML = `
-                <h4>${name}</h4>
-                <p><strong>原创性：</strong> ${m.originality}</p>
-                <p><strong>进度：</strong> ${m.status}</p>
-                <p><strong>首演日期：</strong> ${m.premiere}</p>
-                <p><strong>其他信息：</strong> ${m.other_info}</p>
-                <p><strong>制作公司：</strong> ${m.company}</p>
-                <pre style="white-space:pre-wrap;"><strong>主创信息：</strong>\n${m.creators}</pre>
-            `;
+            // 显示弹窗
+            modal.style.display = 'block';
         });
+    });
+
+    // 点击关闭按钮
+    modalClose.addEventListener('click', function () {
+        modal.style.display = 'none';
+    });
+
+    // 点击弹窗外部关闭
+    window.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
     });
 
 });
