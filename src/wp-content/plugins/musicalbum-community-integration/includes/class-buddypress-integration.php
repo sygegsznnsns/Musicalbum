@@ -29,6 +29,57 @@ class Musicalbum_BuddyPress_Integration {
         
         // 创建观演交流群组
         add_action('bp_loaded', array(__CLASS__, 'create_viewing_group'));
+        
+        // 监听观演记录创建，自动发布动态
+        add_action('viewing_record_created', array(__CLASS__, 'on_viewing_record_created'), 10, 2);
+    }
+    
+    /**
+     * 响应观演记录创建事件，自动发布 BuddyPress 动态
+     */
+    public static function on_viewing_record_created($post_id, $params) {
+        if (!function_exists('bp_activity_add')) {
+            return;
+        }
+        
+        $user_id = get_post_field('post_author', $post_id);
+        $user_link = bp_core_get_user_domain($user_id);
+        $user_name = bp_core_get_user_displayname($user_id);
+        
+        $viewing_title = get_the_title($post_id);
+        $viewing_link = get_permalink($post_id);
+        
+        // 构建动态内容
+        $action = sprintf(
+            '<a href="%s">%s</a> 新增了一条观演记录：<a href="%s">%s</a>',
+            $user_link,
+            $user_name,
+            $viewing_link,
+            $viewing_title
+        );
+        
+        $content = '';
+        if (!empty($params['notes'])) {
+            $content = wp_trim_words($params['notes'], 20, '...');
+        } elseif (!empty($params['category'])) {
+            $content = '类别：' . $params['category'];
+        }
+        
+        // 如果有评分（虽然params里可能没有评分字段，这里假设可能有）
+        if (!empty($params['rating'])) {
+            $content .= '<br/>评分：' . $params['rating'] . '分';
+        }
+        
+        bp_activity_add(array(
+            'action' => $action,
+            'content' => $content,
+            'component' => 'musicalbum',
+            'type' => 'viewing_created', // 需要注册这个类型
+            'user_id' => $user_id,
+            'item_id' => $post_id,
+            'primary_link' => $viewing_link,
+            'hide_sitewide' => false
+        ));
     }
     
     /**
@@ -153,9 +204,19 @@ class Musicalbum_BuddyPress_Integration {
             'viewing_shared',
             '分享了观演记录',
             array(__CLASS__, 'format_viewing_activity'),
-            '观演记录',
+            '观演记录分享',
             array('activity', 'member'),
             10
+        );
+
+        bp_activity_set_action(
+            'musicalbum',
+            'viewing_created',
+            '新增了观演记录',
+            array(__CLASS__, 'format_viewing_activity'), // 复用格式化函数
+            '观演记录新增',
+            array('activity', 'member'),
+            11
         );
     }
     
@@ -172,6 +233,11 @@ class Musicalbum_BuddyPress_Integration {
         
         $viewing_link = get_permalink($viewing_id);
         $viewing_title = get_the_title($viewing_id);
+        
+        // 如果动作字符串中已经包含了链接（说明是完整构建的），则直接返回，避免重复追加
+        if (strpos($action, $viewing_link) !== false) {
+            return $action;
+        }
         
         $action = sprintf(
             '%s <a href="%s">%s</a>',

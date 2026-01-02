@@ -2618,6 +2618,9 @@ final class Viewing_Records {
             update_field('ticket_image', intval($params['ticket_image_id']), $post_id);
         }
 
+        // 触发记录创建钩子，供社区模块同步动态
+        do_action('viewing_record_created', $post_id, $params);
+
         return rest_ensure_response(array(
             'id' => $post_id,
             'message' => '记录创建成功'
