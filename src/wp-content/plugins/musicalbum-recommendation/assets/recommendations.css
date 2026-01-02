@@ -180,20 +180,22 @@
 }
 
 .msr-actor-item {
-  display: flex;
-  align-items: center; /* 同一行对齐 */
-  margin-bottom: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left; /* 避免居中 */
+}
+
+.msr-inline-form {
+  display: inline-block; /* 保证按钮和演员名同一行 */
+  margin-left: 8px; /* 与名字间距 */
+  vertical-align: middle;
 }
 
 .msr-actor-name {
   font-size: 1.1rem; /* 字体大一些 */
   font-weight: 600;
   margin-right: 12px; /* 名字和按钮间距 */
-}
-
-.msr-inline-form {
-  display: inline-block;
-  margin: 0;
 }
 
 .msr-inline-form .msr-btn-secondary {
@@ -218,21 +220,24 @@
    ========================= */
 .msr-page {
   display: flex;
-  gap: 32px; /* 左右间距 */
+  gap: 32px;
   align-items: flex-start;
-  justify-content: center; /* 整体居中 */
-  flex-wrap: wrap; /* 小屏幕自动换行 */
+  justify-content: flex-start; /* 改为 flex-start，不居中 */
+  max-width: 1200px; /* 限制页面最大宽度 */
+  margin: 0 auto; /* 页面居中，但内部 flex 左对齐 */
+  flex-wrap: wrap;
 }
 
 /* 左侧：演员管理 */
 .msr-actor-container {
-  flex: 0 0 250px; /* 固定宽度，可调整 */
+  flex: 0 0 250px; /* 固定宽度 */
+  text-align: left; /* 保证内部文本左对齐 */
 }
 
 /* 右侧：推荐模块，占剩余空间 */
 .msr-recommend-container {
-  flex: 1 1 600px; /* 自动扩展，占剩余空间 */
-  max-width: 900px; /* 防止太宽 */
+  flex: 1 1 auto;
+  max-width: 900px;
 }
 
 /* 小屏幕下自动堆叠 */
