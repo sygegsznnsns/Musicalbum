@@ -18,6 +18,8 @@ var MusicalbumMap = {
             
             // 可选：同时也填入导航终点
             jQuery('#nav-end').val(poi.name);
+            jQuery('#nav-end').data('lat', poi.lat);
+            jQuery('#nav-end').data('lng', poi.lng);
         }
     },
     
@@ -89,14 +91,25 @@ var MusicalbumMap = {
     
     // 开始导航（调用高德/百度地图网页版）
     startNavigation: function() {
-        var end = jQuery('#nav-end').val();
-        if (!end) {
+        var endName = jQuery('#nav-end').val();
+        if (!endName) {
             alert('请输入终点（剧院名称）');
             return;
         }
         
-        // 跳转到高德地图 Web 导航
-        var url = 'https://uri.amap.com/navigation?to=,,' + encodeURIComponent(end) + '&mode=car&policy=1&src=musicalbum';
+        var lat = jQuery('#nav-end').data('lat');
+        var lng = jQuery('#nav-end').data('lng');
+        
+        // 构建高德地图 URI
+        // 格式：to=lng,lat,name
+        var toParam = '';
+        if (lat && lng) {
+            toParam = lng + ',' + lat + ',' + endName;
+        } else {
+            toParam = ',,' + endName;
+        }
+        
+        var url = 'https://uri.amap.com/navigation?to=' + encodeURIComponent(toParam) + '&mode=car&policy=1&src=musicalbum';
         window.open(url, '_blank');
     },
 
@@ -413,5 +426,8 @@ var MusicalbumMap = {
 };
 
 jQuery(document).ready(function($) {
-    // 初始化逻辑
+    // 监听导航终点输入框，如果是用户手动输入，则清除绑定的经纬度，避免导航到错误的旧坐标
+    $('#nav-end').on('input', function() {
+        $(this).removeData('lat').removeData('lng');
+    });
 });
