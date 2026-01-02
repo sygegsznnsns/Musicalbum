@@ -254,3 +254,8 @@
     max-width: 100%;
   }
 }
+.msr-section-wrapper {
+  display: flex;
+  flex-direction: column; /* 垂直排列 */
+  gap: 20px; /* 间距 */
+}

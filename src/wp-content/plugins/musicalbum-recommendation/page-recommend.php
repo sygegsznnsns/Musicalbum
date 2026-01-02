@@ -122,6 +122,7 @@ function msr_render_recommend_page() {
 <div class="msr-page"><!-- 页面最外层容器 -->
 
     <!-- 左侧：演员管理 -->
+    <div class="msr-section-wrapper">
     <div class="msr-actor-container">
         <h3 class="msr-section-title">你关注的演员</h3>
 
@@ -145,14 +146,14 @@ function msr_render_recommend_page() {
             <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
             <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
         </form>
+    </div><!-- /.msr-actor-container -->
 
-
-    <!-- AI 推荐 -->
+    <!-- 右侧：AI 推荐 -->
     <div class="msr-ai-container">
         <h3 class="msr-section-title">AI 为你推荐</h3>
 
         <?php if ( empty( $ai_recommend ) ) : ?>
-            <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
+        <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
         <?php else : ?>
             <ul class="msr-ai-list">
                 <?php foreach ( $ai_recommend as $item ) : ?>
@@ -163,9 +164,8 @@ function msr_render_recommend_page() {
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
-    </div>
-    
-    </div><!-- /.msr-actor-container -->
+    </div><!-- /.msr-ai-container -->
+    </div><!-- /.msr-section-wrapper -->
 
     <!-- 右侧：推荐模块 -->
     <div class="msr-recommend-container">
