@@ -299,26 +299,26 @@
    ========================= */
 /* 弹窗整体背景 */
 .msr-modal {
-  display: none; /* 默认隐藏 */
+  display: none;
   position: fixed;
   z-index: 9999;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw; /* 使用视口宽度 */
+  height: 100vh; /* 使用视口高度 */
+  background-color: rgba(0, 0, 0, 0.6); /* 半透明黑色 */
   overflow: auto;
-  background-color: rgba(0, 0, 0, 0.6); /* 背景半透明黑色 */
 }
 
 /* 弹窗内容 */
 .msr-modal-content {
-  background-color: #fff; /* 弹窗主体保持白色 */
-  margin: 10% auto;
+  background-color: #fff;
+  margin: 10% auto; /* 纵向距离顶部10%，水平居中 */
   padding: 20px;
   border-radius: 10px;
   max-width: 600px;
-  box-shadow: 0 5px 15px rgba(255, 131, 131, 0.4); /* 阴影用主题色 */
-  border-top: 5px solid #ff8383; /* 弹窗顶部条用主题色强调 */
+  box-shadow: 0 5px 15px rgba(255, 131, 131, 0.4);
+  border-top: 5px solid #ff8383;
   position: relative;
 }
 
