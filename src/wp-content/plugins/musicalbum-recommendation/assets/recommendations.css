@@ -99,6 +99,7 @@
 
 .msr-btn-secondary:hover {
   background: #f9fafb;
+  color: #000; /* 字体变黑 */
 }
 
 /* =========================
@@ -230,7 +231,7 @@
 
 /* 左侧：演员管理 */
 .msr-actor-container {
-  flex: 0 0 250px; /* 固定宽度 */
+  flex: 0 0 200px; /* 固定宽度 */
   text-align: left; /* 保证内部文本左对齐 */
 }
 

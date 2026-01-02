@@ -74,38 +74,58 @@ function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
 /**
  * 近期热门观演剧目（基于观演记录数量）
  */
-function musicalbum_recommend_trending($limit = 10) {
+function musicalbum_recommend_trending( $limit = 10 ) {
+
     $args = array(
-        'post_type' => 'viewing_record',
-        'post_status' => 'publish',
+        'post_type'      => 'viewing_record',
+        'post_status'    => 'publish',
         'posts_per_page' => -1,
+        'fields'         => 'ids',
     );
-    $query = new WP_Query($args);
+
+    $query   = new WP_Query( $args );
     $counter = array();
-    if ($query->have_posts()) {
-        while ($query->have_posts()) {
-            $query->the_post();
-            $title = get_the_title();
-            if (!isset($counter[$title])) {
-                $counter[$title] = 0;
+
+    if ( ! empty( $query->posts ) ) {
+        foreach ( $query->posts as $post_id ) {
+
+            // ✅ 与系统其余部分保持一致
+            $title = get_the_title( $post_id );
+
+            if ( empty( $title ) ) {
+                continue;
             }
-            $counter[$title]++;
+
+            if ( ! isset( $counter[ $title ] ) ) {
+                $counter[ $title ] = 0;
+            }
+
+            $counter[ $title ]++;
         }
-        wp_reset_postdata();
     }
-    arsort($counter);
+
+    if ( empty( $counter ) ) {
+        return array();
+    }
+
+    // 按出现次数排序
+    arsort( $counter );
+
     $results = array();
-    foreach ($counter as $title => $count) {
+    foreach ( $counter as $title => $count ) {
         $results[] = array(
             'musical' => $title,
-            'reason' => '近期被记录 ' . $count . ' 次观演',
+            'reason'  => '近期被记录 ' . $count . ' 次观演',
         );
-        if (count($results) >= $limit) {
+
+        if ( count( $results ) >= $limit ) {
             break;
         }
     }
+
     return $results;
 }
+
 
 /**
  * 获取用户不感兴趣列表
