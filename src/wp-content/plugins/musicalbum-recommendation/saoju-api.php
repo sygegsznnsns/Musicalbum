@@ -239,3 +239,45 @@ function msr_get_musicals_by_actor_name( $actor_name ) {
     return $results;
 }
 
+/**
+ * 调用 DeepSeek API，返回原始文本结果
+ */
+function musicalbum_call_deepseek_api( $prompt ) {
+
+    $api_key = get_option( 'musicalbum_deepseek_api_key' );
+
+    if ( empty( $api_key ) ) {
+        return '';
+    }
+
+    $endpoint = 'https://api.deepseek.com/v1/chat/completions';
+
+    $body = array(
+        'model' => 'deepseek-chat',
+        'messages' => array(
+            array(
+                'role' => 'user',
+                'content' => $prompt,
+            ),
+        ),
+        'temperature' => 0.7,
+    );
+
+    $response = wp_remote_post( $endpoint, array(
+        'headers' => array(
+            'Content-Type'  => 'application/json',
+            'Authorization' => 'Bearer ' . $api_key,
+        ),
+        'body'    => json_encode( $body ),
+        'timeout' => 30,
+    ) );
+
+    if ( is_wp_error( $response ) ) {
+        return '';
+    }
+
+    $data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+    return trim( $data['choices'][0]['message']['content'] ?? '' );
+}
+

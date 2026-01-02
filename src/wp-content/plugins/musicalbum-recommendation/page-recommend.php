@@ -113,7 +113,10 @@ function msr_render_recommend_page() {
     
     // 3. 基于关注演员的推荐
     $actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
-    
+
+    // 4. AI 推荐
+    $ai_recommend = musicalbum_get_ai_recommendations( get_current_user_id() );
+
     ob_start();
 ?>
 <div class="msr-page"><!-- 页面最外层容器 -->
@@ -143,6 +146,25 @@ function msr_render_recommend_page() {
             <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
         </form>
     </div>
+
+    <!-- AI 推荐 -->
+    <div class="msr-ai-container">
+        <h3 class="msr-section-title">AI 为你推荐</h3>
+
+        <?php if ( empty( $ai_recommend ) ) : ?>
+            <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
+        <?php else : ?>
+            <ul class="msr-ai-list">
+                <?php foreach ( $ai_recommend as $item ) : ?>
+                    <li class="msr-ai-item">
+                        <strong class="msr-ai-title"><?php echo esc_html( $item['title'] ); ?></strong>
+                        <p class="msr-ai-desc"><?php echo esc_html( $item['desc'] ); ?></p>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
+
 
     <!-- 右侧：推荐模块 -->
     <div class="msr-recommend-container">

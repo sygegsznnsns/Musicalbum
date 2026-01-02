@@ -290,3 +290,103 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
     return $results;
 
 }
+
+/**
+ * 基于用户观演记录，获取 AI 推荐音乐剧（固定返回 2 条）
+ *
+ * 返回格式：
+ * [
+ *   [
+ *     'title' => '音乐剧A',
+ *     'desc'  => '简介内容'
+ *   ],
+ *   [
+ *     'title' => '音乐剧B',
+ *     'desc'  => '简介内容'
+ *   ]
+ * ]
+ */
+/**
+ * 基于用户观演记录，获取 AI 推荐音乐剧（带缓存）
+ */
+function musicalbum_get_ai_recommendations( $user_id ) {
+
+    if ( ! $user_id ) {
+        return array();
+    }
+
+    /**
+     * Step 0：缓存（用户维度）
+     */
+    $cache_key = 'msr_ai_recommend_' . intval( $user_id );
+    $cached = get_transient( $cache_key );
+
+    if ( false !== $cached ) {
+        return $cached;
+    }
+
+    /**
+     * Step 1：获取用户观演记录
+     */
+    $viewed_titles = musicalbum_get_user_viewing_history_titles( $user_id );
+
+    if ( empty( $viewed_titles ) ) {
+        set_transient( $cache_key, array(), 6 * HOUR_IN_SECONDS );
+        return array();
+    }
+
+    /**
+     * Step 2：构造 Prompt
+     */
+    $prompt  = "用户看过的音乐剧如下：\n";
+    foreach ( $viewed_titles as $title ) {
+        $prompt .= "- {$title}\n";
+    }
+
+    $prompt .= "\n请推荐 2 部风格或主题相近的音乐剧。\n";
+    $prompt .= "要求：\n";
+    $prompt .= "1. 每部包含 title 和 desc\n";
+    $prompt .= "2. desc 不超过 50 字\n";
+    $prompt .= "3. 只返回 JSON 数组，不要解释\n";
+    $prompt .= "[{\"title\":\"音乐剧A\",\"desc\":\"简介\"},{\"title\":\"音乐剧B\",\"desc\":\"简介\"}]";
+
+    /**
+     * Step 3：调用 DeepSeek
+     */
+    $raw = musicalbum_call_deepseek_api( $prompt );
+
+    if ( empty( $raw ) ) {
+        set_transient( $cache_key, array(), 3 * HOUR_IN_SECONDS );
+        return array();
+    }
+
+    /**
+     * Step 4：解析结果
+     */
+    $data = json_decode( $raw, true );
+
+    if ( ! is_array( $data ) ) {
+        set_transient( $cache_key, array(), 3 * HOUR_IN_SECONDS );
+        return array();
+    }
+
+    $results = array();
+
+    foreach ( array_slice( $data, 0, 2 ) as $item ) {
+        if ( empty( $item['title'] ) || empty( $item['desc'] ) ) {
+            continue;
+        }
+
+        $results[] = array(
+            'title' => sanitize_text_field( $item['title'] ),
+            'desc'  => sanitize_textarea_field( $item['desc'] ),
+        );
+    }
+
+    /**
+     * Step 5：写缓存
+     */
+    set_transient( $cache_key, $results, 6 * HOUR_IN_SECONDS );
+
+    return $results;
+}

@@ -47,3 +47,53 @@ function msr_enqueue_styles() {
         '1.0.0'
     );
 }
+
+/**
+ * 注册设置项：DeepSeek API Key
+ */
+add_action( 'admin_init', function () {
+    register_setting(
+        'musicalbum_ai_settings',
+        'musicalbum_deepseek_api_key'
+    );
+} );
+add_action( 'admin_menu', function () {
+    add_options_page(
+        'Musicalbum AI 设置',
+        'Musicalbum AI',
+        'manage_options',
+        'musicalbum-ai-settings',
+        'musicalbum_ai_settings_page'
+    );
+} );
+function musicalbum_ai_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1>Musicalbum · AI 设置</h1>
+
+        <form method="post" action="options.php">
+            <?php settings_fields( 'musicalbum_ai_settings' ); ?>
+
+            <table class="form-table">
+                <tr>
+                    <th scope="row">DeepSeek API Key</th>
+                    <td>
+                        <input
+                            type="text"
+                            name="musicalbum_deepseek_api_key"
+                            value="<?php echo esc_attr( get_option( 'musicalbum_deepseek_api_key' ) ); ?>"
+                            class="regular-text"
+                        />
+                        <p class="description">
+                            用于 AI 音乐剧推荐（DeepSeek）
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <?php submit_button(); ?>
+        </form>
+    </div>
+    <?php
+}
+
