@@ -54,7 +54,6 @@ function msr_load_musical_csv_data() {
 }
 
 
-
 /**
  * 页面渲染函数
  */
@@ -117,130 +116,139 @@ function msr_render_recommend_page() {
     
     ob_start();
 ?>
-    
-    <h2>为你推荐的音乐剧</h2>
-    
+    <div class="msr-page"><!-- 页面最外层容器 -->
+
+    <h2 class="msr-page-title">为你推荐的音乐剧</h2>
+
     <!-- ===================== -->
     <!-- 喜欢的演员管理 -->
     <!-- ===================== -->
-    <h3>你关注的演员</h3>
-    
+    <h3 class="msr-section-title">你关注的演员</h3>
+
     <?php if ( empty( $favorite_actors ) ) : ?>
-        <p>你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
+        <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
     <?php else : ?>
-        <ul>
+        <ul class="msr-actor-list">
             <?php foreach ( $favorite_actors as $actor ) : ?>
-                <li>
-                    <?php echo esc_html( $actor ); ?>
-                    <form method="post" style="display:inline;">
+                <li class="msr-actor-item">
+                    <span class="msr-actor-name"><?php echo esc_html( $actor ); ?></span>
+                    <form method="post" class="msr-inline-form">
                         <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
-                        <button type="submit">取消关注</button>
+                        <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
                     </form>
                 </li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
-    
-    <form method="post" style="margin-bottom:24px;">
-        <input type="text" name="new_actor" placeholder="输入演员姓名">
-        <button type="submit">关注演员</button>
-    </form>
-    
-    <!-- ===================== -->
-    <!-- 演员相关推荐（始终显示） -->
-    <!-- ===================== -->
-    <h3>关注演员的相关剧目</h3>
-    
-    <?php if ( empty( $favorite_actors ) ) : ?>
-        <p>你尚未关注演员，暂无基于演员的推荐。</p>
-    <?php elseif ( empty( $actor_recommend ) ) : ?>
-        <p>暂未找到与你关注演员相关的音乐剧，可尝试关注更多演员。</p>
-    <?php else : ?>
-<?php foreach ( $actor_recommend as $actor_name => $musicals ) : ?>
-    
-    <h4 style="margin-top:24px;">
-        <?php echo esc_html( $actor_name ); ?> 参演的音乐剧
-    </h4>
 
-    <div class="msr-grid">
-        <?php foreach ( $musicals as $item ) : ?>
-            <div class="msr-item">
-                <h5>
-    <a href="javascript:void(0);" 
-       class="msr-musical-link" 
-       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
-        <?php echo esc_html( $item['musical'] ); ?>
-    </a>
-</h5>
-                <p><?php echo esc_html( $item['reason'] ); ?></p>
+    <form method="post" class="msr-actor-form">
+        <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
+        <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
+    </form>
+
+    <!-- ===================== -->
+    <!-- 演员相关推荐 -->
+    <!-- ===================== -->
+    <h3 class="msr-section-title">关注演员的相关剧目</h3>
+
+    <?php if ( empty( $favorite_actors ) ) : ?>
+        <p class="msr-empty-text">你尚未关注演员，暂无基于演员的推荐。</p>
+    <?php elseif ( empty( $actor_recommend ) ) : ?>
+        <p class="msr-empty-text">暂未找到与你关注演员相关的音乐剧，可尝试关注更多演员。</p>
+    <?php else : ?>
+
+        <?php foreach ( $actor_recommend as $actor_name => $musicals ) : ?>
+            <h4 class="msr-subtitle"><?php echo esc_html( $actor_name ); ?> 参演的音乐剧</h4>
+
+            <div class="msr-grid">
+                <?php foreach ( $musicals as $item ) : ?>
+                    <div class="msr-card msr-item">
+                        <h5 class="msr-card-title">
+                            <a href="javascript:void(0);"
+                               class="msr-musical-link"
+                               data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                                <?php echo esc_html( $item['musical'] ); ?>
+                            </a>
+                        </h5>
+                        <p class="msr-card-text"><?php echo esc_html( $item['reason'] ); ?></p>
+                    </div>
+                <?php endforeach; ?>
             </div>
         <?php endforeach; ?>
-    </div>
-
-<?php endforeach; ?>
 
     <?php endif; ?>
-    
-    
+
     <!-- ===================== -->
     <!-- 协同过滤推荐 -->
     <!-- ===================== -->
     <?php if ( ! empty( $personal ) ) : ?>
-        <h3>你的同好都在看：</h3>
+        <h3 class="msr-section-title">你的同好都在看：</h3>
+
         <div class="msr-grid">
             <?php foreach ( $personal as $item ) : ?>
-                <div class="msr-item">
-                    <h4>
-    <a href="javascript:void(0);" 
-       class="msr-musical-link" 
-       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
-        <?php echo esc_html( $item['musical'] ); ?>
-    </a>
-</h4>
+                <div class="msr-card msr-item">
+                    <h4 class="msr-card-title">
+                        <a href="javascript:void(0);"
+                           class="msr-musical-link"
+                           data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                            <?php echo esc_html( $item['musical'] ); ?>
+                        </a>
+                    </h4>
 
-                    <p><?php echo esc_html( $item['reason'] ); ?></p>
+                    <p class="msr-card-text"><?php echo esc_html( $item['reason'] ); ?></p>
+
                     <form method="post">
                         <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
-                        <button type="submit" name="musicalbum_not_interested">不感兴趣</button>
+                        <button type="submit" name="musicalbum_not_interested"
+                                class="msr-btn msr-btn-secondary">
+                            不感兴趣
+                        </button>
                     </form>
                 </div>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    
+
     <!-- ===================== -->
     <!-- 热门推荐 -->
     <!-- ===================== -->
     <?php if ( ! empty( $trending ) ) : ?>
-        <h3>近期热门观演</h3>
+        <h3 class="msr-section-title">近期热门观演</h3>
+
         <div class="msr-grid">
             <?php foreach ( $trending as $item ) : ?>
-                <div class="msr-item">
-                    <h4>
-    <a href="javascript:void(0);" 
-       class="msr-musical-link" 
-       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
-        <?php echo esc_html( $item['musical'] ); ?>
-    </a>
-</h4>
+                <div class="msr-card msr-item">
+                    <h4 class="msr-card-title">
+                        <a href="javascript:void(0);"
+                           class="msr-musical-link"
+                           data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                            <?php echo esc_html( $item['musical'] ); ?>
+                        </a>
+                    </h4>
 
-                    <p><?php echo esc_html( $item['reason'] ); ?></p>
+                    <p class="msr-card-text"><?php echo esc_html( $item['reason'] ); ?></p>
+
                     <form method="post">
                         <input type="hidden" name="musical_title" value="<?php echo esc_attr( $item['musical'] ); ?>">
-                        <button type="submit" name="musicalbum_not_interested">不感兴趣</button>
+                        <button type="submit" name="musicalbum_not_interested"
+                                class="msr-btn msr-btn-secondary">
+                            不感兴趣
+                        </button>
                     </form>
                 </div>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <hr>
+    <hr class="msr-divider">
 
-<h3>音乐剧详情</h3>
-<div id="msr-musical-detail">
-    <p>点击上方音乐剧名称查看详情。</p>
-</div>
+    <h3 class="msr-section-title">音乐剧详情</h3>
 
+    <div id="msr-musical-detail" class="msr-card msr-detail-box">
+        <p class="msr-empty-text">点击上方音乐剧名称查看详情。</p>
+    </div>
+
+</div><!-- /.msr-page -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
