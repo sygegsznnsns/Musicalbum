@@ -88,7 +88,6 @@ function msr_render_recommend_page() {
             $favorite_actors[] = $new_actor;
             update_user_meta( $user_id, 'musicalbum_favorite_actors', $favorite_actors );
             delete_transient( 'msr_actor_recommend_' . $user_id );
-
         }
     }
     
@@ -105,78 +104,64 @@ function msr_render_recommend_page() {
      * 获取推荐结果
      * =========
      */
-    // 1. 基于其他用户的观演记录
     $personal = musicalbum_recommend_by_crowd( $user_id, 10 );
-    
-    // 2. 热门观演
     $trending = musicalbum_recommend_trending( 10 );
-    
-    // 3. 基于关注演员的推荐
     $actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
-
-    // 4. AI 推荐
     $ai_recommend = musicalbum_get_ai_recommendations( get_current_user_id() );
 
     ob_start();
 ?>
-<div class="msr-page"><!-- 页面最外层容器 -->
+<div class="msr-page">
 
     <!-- 左侧：演员管理 -->
     <div class="msr-section-wrapper">
-    <div class="msr-actor-container">
-        <h3 class="msr-section-title">你关注的演员</h3>
+        <div class="msr-actor-container">
+            <h3 class="msr-section-title">你关注的演员</h3>
+            <?php if ( empty( $favorite_actors ) ) : ?>
+                <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
+            <?php else : ?>
+                <ul class="msr-actor-list">
+                    <?php foreach ( $favorite_actors as $actor ) : ?>
+                        <li class="msr-actor-item">
+                            <span class="msr-actor-name"><?php echo esc_html( $actor ); ?></span>
+                            <form method="post" class="msr-inline-form">
+                                <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
+                                <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
+                            </form>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+            <form method="post" class="msr-actor-form">
+                <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
+                <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
+            </form>
+        </div>
 
-        <?php if ( empty( $favorite_actors ) ) : ?>
-            <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
-        <?php else : ?>
-            <ul class="msr-actor-list">
-                <?php foreach ( $favorite_actors as $actor ) : ?>
-                    <li class="msr-actor-item">
-                        <span class="msr-actor-name"><?php echo esc_html( $actor ); ?></span>
-                        <form method="post" class="msr-inline-form">
-                            <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
-                            <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
-                        </form>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+        <!-- 右侧：AI 推荐 -->
+        <div class="msr-ai-container">
+            <h3 class="msr-section-title">AI 为你推荐</h3>
+            <?php if ( empty( $ai_recommend ) ) : ?>
+                <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
+            <?php else : ?>
+                <ul class="msr-ai-list">
+                    <?php foreach ( $ai_recommend as $item ) : ?>
+                        <li class="msr-ai-item">
+                            <strong class="msr-ai-title"><?php echo esc_html( $item['title'] ); ?></strong>
+                            <p class="msr-ai-desc"><?php echo esc_html( $item['desc'] ); ?></p>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    </div>
 
-        <form method="post" class="msr-actor-form">
-            <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
-            <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
-        </form>
-    </div><!-- /.msr-actor-container -->
-
-    <!-- 右侧：AI 推荐 -->
-    <div class="msr-ai-container">
-        <h3 class="msr-section-title">AI 为你推荐</h3>
-
-        <?php if ( empty( $ai_recommend ) ) : ?>
-        <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
-        <?php else : ?>
-            <ul class="msr-ai-list">
-                <?php foreach ( $ai_recommend as $item ) : ?>
-                    <li class="msr-ai-item">
-                        <strong class="msr-ai-title"><?php echo esc_html( $item['title'] ); ?></strong>
-                        <p class="msr-ai-desc"><?php echo esc_html( $item['desc'] ); ?></p>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-    </div><!-- /.msr-ai-container -->
-    </div><!-- /.msr-section-wrapper -->
-
-    <!-- 右侧：推荐模块 -->
+    <!-- 推荐模块 -->
     <div class="msr-recommend-container">
-
         <h2 class="msr-page-title">为你推荐的音乐剧</h2>
 
-        <!-- ===================== -->
         <!-- 演员相关推荐 -->
-        <!-- ===================== -->
         <h3 class="msr-section-title">关注演员的相关剧目</h3>
-
         <?php if ( empty( $favorite_actors ) ) : ?>
             <p class="msr-empty-text">你尚未关注演员，暂无基于演员的推荐。</p>
         <?php elseif ( empty( $actor_recommend ) ) : ?>
@@ -201,9 +186,7 @@ function msr_render_recommend_page() {
             <?php endforeach; ?>
         <?php endif; ?>
 
-        <!-- ===================== -->
         <!-- 协同过滤推荐 -->
-        <!-- ===================== -->
         <?php if ( ! empty( $personal ) ) : ?>
             <h3 class="msr-section-title">你的同好都在看：</h3>
             <div class="msr-grid">
@@ -229,9 +212,7 @@ function msr_render_recommend_page() {
             </div>
         <?php endif; ?>
 
-        <!-- ===================== -->
         <!-- 热门推荐 -->
-        <!-- ===================== -->
         <?php if ( ! empty( $trending ) ) : ?>
             <h3 class="msr-section-title">近期热门观演</h3>
             <div class="msr-grid">
@@ -257,38 +238,31 @@ function msr_render_recommend_page() {
             </div>
         <?php endif; ?>
 
-        <hr class="msr-divider">
-
-    </div><!-- /.msr-recommend-container -->
-
-    <!-- 音乐剧详情弹窗 -->
-    <div id="msr-modal" class="msr-modal">
-        <div class="msr-modal-content">
-            <span class="msr-modal-close">&times;</span>
-            <div id="msr-modal-body">
-                <!-- 弹窗内容由 JS 填充 -->
-            </div>
-        </div>
     </div>
 
+</div>
 
-</div><!-- /.msr-page -->
+<!-- 音乐剧详情弹窗 -->
+<div id="msr-modal" class="msr-modal">
+    <div class="msr-modal-content">
+        <span class="msr-modal-close">&times;</span>
+        <div id="msr-modal-body"></div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
     const musicalData = <?php echo json_encode($musical_csv_data, JSON_UNESCAPED_UNICODE); ?>;
     const modal = document.getElementById('msr-modal');
     const modalBody = document.getElementById('msr-modal-body');
     const modalClose = document.querySelector('.msr-modal-close');
 
-    document.querySelectorAll('.msr-musical-link').forEach(function (link) {
-        link.addEventListener('click', function () {
+    document.querySelectorAll('.msr-musical-link').forEach(function(link){
+        link.addEventListener('click', function(){
             const name = this.dataset.musical.trim();
-
-            if (!musicalData[name]) {
+            if(!musicalData[name]){
                 modalBody.innerHTML = '<p>该音乐剧的详细信息待完善。</p>';
-            } else {
+            }else{
                 const m = musicalData[name];
                 modalBody.innerHTML = `
                     <h4>${name}</h4>
@@ -300,31 +274,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     <pre style="white-space:pre-wrap;"><strong>主创信息：</strong>\n${m.creators}</pre>
                 `;
             }
-
-            // 显示弹窗
             modal.style.display = 'block';
         });
     });
 
-    // 点击关闭按钮
-    modalClose.addEventListener('click', function () {
-        modal.style.display = 'none';
-    });
-
-    // 点击弹窗外部关闭
-    window.addEventListener('click', function (event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
+    modalClose.addEventListener('click', function(){ modal.style.display = 'none'; });
+    window.addEventListener('click', function(e){ if(e.target === modal){ modal.style.display = 'none'; } });
 });
 </script>
-
 
 <?php
     return ob_get_clean();
 }
+
 
 /**
  * 注册简码（保持你的原始简码名）
