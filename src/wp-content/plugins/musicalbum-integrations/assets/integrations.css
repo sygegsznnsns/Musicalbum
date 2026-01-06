@@ -165,8 +165,8 @@
 .musicalbum-charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
 }
 
 /* 自定义图表区域 */
@@ -533,7 +533,7 @@
 /* ==================== 观演记录管理模块样式 ==================== */
 
 .musicalbum-manager-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 2rem auto;
   padding: 1.5rem;
 }
@@ -1598,13 +1598,13 @@
 .musicalbum-dashboard-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 @media (min-width: 769px) {
   .musicalbum-dashboard-cards {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -1800,8 +1800,8 @@
 .musicalbum-overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 @media (min-width: 769px) {
