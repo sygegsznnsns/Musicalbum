@@ -7,8 +7,16 @@ var MusicalbumMap = {
             if (this.selectedMarker && this.selectedMarker !== marker) {
                 // 还原逻辑：如果有保存原始图标则恢复，否则使用默认
                 var originalIcon = this.selectedMarker.originalIcon || '';
+                
                 if (this.selectedMarker.setIcon) {
                     this.selectedMarker.setIcon(originalIcon);
+                } 
+                // OpenLayers 兼容处理
+                else if (this.selectedMarker.feature && this.selectedMarker.feature.setStyle && typeof ol !== 'undefined') {
+                    // 恢复默认样式（通常为空或 null 会使用默认，或者需要重新创建 Style）
+                    // 简单起见，这里假设没有 originalIcon 就是默认样式
+                    // 如果 originalIcon 为空，设为 null 恢复默认
+                    this.selectedMarker.feature.setStyle(null); 
                 }
             }
             
@@ -19,32 +27,53 @@ var MusicalbumMap = {
             }
             
             // 设置新图标（例如黄色或高亮图标）
-            // 默认标记通常是红色，所以选中状态改为黄色以示区别
             var highlightedIcon = 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'; 
+            
             if (marker.setIcon) {
                 marker.setIcon(highlightedIcon);
+            } 
+            // OpenLayers 兼容处理
+            else if (marker.feature && marker.feature.setStyle && typeof ol !== 'undefined') {
+                var iconStyle = new ol.style.Style({
+                    image: new ol.style.Icon({
+                        src: highlightedIcon,
+                        scale: 1.0,
+                        anchor: [0.5, 1] // 底部中心对齐
+                    })
+                });
+                marker.feature.setStyle(iconStyle);
             }
         }
 
-        // 弹窗或信息窗口
-        // 这里简单起见，直接自动填入“周边服务”搜索框，并切换标签
-        var confirmMsg = "您选择了：" + poi.name + "\n要查看该剧院周边的服务吗？";
-        if (confirm(confirmMsg)) {
-            // 切换到服务标签
-            this.switchTab('services');
+        // 逻辑判断：如果是服务设施（markerType === 'service'），不弹窗询问周边
+        if (marker && marker.markerType === 'service') {
+            // 可以在这里直接填入导航终点，或者什么都不做（用户已经看到弹窗了）
+            // 简单提示
+            console.log('Selected service:', poi.name);
             
-            // 填入剧院名称作为提示，或者在逻辑上关联
-            // 更好的做法是把地图中心设为该剧院，并清空服务搜索框等待用户输入关键词
-            this.centerMap(poi.lat, poi.lng);
-            
-            // 提示用户
-            jQuery('#service-search-keyword').attr('placeholder', '搜索 ' + poi.name + ' 附近的...');
-            jQuery('#service-search-keyword').focus();
-            
-            // 可选：同时也填入导航终点
+            // 自动设为导航终点（优化体验）
             jQuery('#nav-end').val(poi.name);
             jQuery('#nav-end').data('lat', poi.lat);
             jQuery('#nav-end').data('lng', poi.lng);
+            
+        } else {
+            // 剧院逻辑：询问是否查看周边服务
+            var confirmMsg = "您选择了：" + poi.name + "\n要查看该剧院周边的服务吗？";
+            if (confirm(confirmMsg)) {
+                // 切换到服务标签
+                this.switchTab('services');
+                
+                this.centerMap(poi.lat, poi.lng);
+                
+                // 提示用户
+                jQuery('#service-search-keyword').attr('placeholder', '搜索 ' + poi.name + ' 附近的...');
+                jQuery('#service-search-keyword').focus();
+                
+                // 可选：同时也填入导航终点
+                jQuery('#nav-end').val(poi.name);
+                jQuery('#nav-end').data('lat', poi.lat);
+                jQuery('#nav-end').data('lng', poi.lng);
+            }
         }
     },
     
@@ -220,8 +249,8 @@ var MusicalbumMap = {
                     html += '</ul>';
                     jQuery(resultsContainerId).html(html);
                     
-                    // 标记地图
-                    MusicalbumMap.addTempMarkers(res.data);
+                    // 标记地图 (传入类型：如果keyword有值，说明是搜服务)
+                    MusicalbumMap.addTempMarkers(res.data, keyword ? 'service' : 'theater');
                 } else {
                     jQuery(resultsContainerId).html('<p style="padding:10px; color:#f60;">附近 5公里 内未找到相关结果。</p>');
                     // 清除标记，以免误导
@@ -371,7 +400,7 @@ var MusicalbumMap = {
     },
 
     // 添加临时标记（需适配 WP Go Maps API）
-    addTempMarkers: function(pois) {
+    addTempMarkers: function(pois, type) {
         // 先清除旧的临时标记
         this.clearTempMarkers();
 
@@ -417,6 +446,7 @@ var MusicalbumMap = {
             }
             
             marker.isTemp = true; // 标记为临时
+            marker.markerType = type || 'theater'; // 存储类型：theater 或 service
 
             if (map.addMarker) {
                 map.addMarker(marker);
