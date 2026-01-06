@@ -3,9 +3,14 @@
    ========================= */
 
 .msr-page {
-  max-width: 700px; /* 大约3个卡片的宽度 */
+  max-width: 800px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .msr-grid {
@@ -37,11 +42,18 @@
 .msr-card {
   background-color: #fff;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.msr-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 /* 推荐页中详情卡片可以更明显 */
@@ -158,12 +170,70 @@
 .msr-empty-text {
   color: #6b7280;
   font-size: 0.875rem;
+  margin: 10px 0;
 }
 
 .msr-divider {
   margin: 40px 0;
   border: none;
   border-top: 1px solid #e5e7eb;
+}
+
+/* 演员关注区域样式 */
+.msr-actor-container {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+.msr-actor-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.msr-actor-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.msr-actor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.msr-actor-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.msr-actor-add {
+  margin-top: 20px;
+}
+
+.msr-actor-form {
+  display: flex;
+  gap: 10px;
+}
+
+.msr-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.msr-input:focus {
+  outline: none;
+  border-color: #ff8383;
+  box-shadow: 0 0 0 2px rgba(255, 131, 131, 0.2);
 }
 
 .msr-input {
@@ -321,82 +391,12 @@
   min-width: 150px;
 }
 
-/* =========================
-   推荐页整体布局
-   ========================= */
-/* 页面整体布局 */
-.msr-page {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
-  justify-content: flex-start;
-  max-width: 1200px;
-  margin: 0 auto;
-  flex-wrap: wrap;
-}
-
-/* 左侧整体列，占1/6宽度 */
-.msr-left-column {
-  display: flex;
-  flex-direction: column; /* 左侧模块上下堆叠 */
-  gap: 20px;
-  flex: 0 0 16.6667%; /* 1/6 */
-  max-width: 16.6667%;
-}
-
-/* 左侧内部模块占满父容器宽度 */
+/* 确保所有容器模块都居中显示 */
 .msr-actor-container,
-.msr-ai-container {
-  width: 100%;
-}
-
-/* 右侧推荐模块，占剩余空间 */
+.msr-ai-container,
 .msr-recommend-container {
-  flex: 1 1 auto;
-  max-width: 83.3333%;
-}
-
-/* 左侧模块基础样式 */
-.msr-actor-container,
-.msr-ai-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  margin-bottom: 32px;
-}
-
-/* 移动端自适应堆叠 */
-@media (max-width: 768px) {
-  .msr-page {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .msr-left-column,
-  .msr-recommend-container {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-}
-
-/* 小屏幕下自动堆叠 */
-@media (max-width: 768px) {
-  .msr-page {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .msr-actor-container,
-  .msr-recommend-container {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-}
-.msr-section-wrapper {
-  display: flex;
-  flex-direction: column; /* 垂直排列 */
-  gap: 20px; /* 间距 */
+  width: 100%;
+  margin-bottom: 30px;
 }
 
 /* =========================
