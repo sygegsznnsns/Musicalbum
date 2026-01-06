@@ -140,6 +140,41 @@ class Musicalbum_BBPress_Integration {
         $limit = intval($atts['limit']);
         $link_to_root = filter_var($atts['link_to_root'], FILTER_VALIDATE_BOOLEAN);
         
+        // 如果开启了 link_to_root 模式，且没有指定具体的 forum_id，则显示论坛根目录（所有论坛列表）
+        // 实际上 shortcode_forum 中默认 forum_id 为 0
+        if ($link_to_root && $forum_id === 0) {
+            ob_start();
+            ?>
+            <div class="musicalbum-forum-shortcode">
+                <h3>论坛版块</h3>
+                <?php
+                // 获取所有论坛版块
+                $forums = bbp_get_forums(array('post_status' => 'publish'));
+                if (bbp_has_forums(array('post_status' => 'publish'))) : ?>
+                    <ul class="musicalbum-forum-list">
+                        <?php while (bbp_forums()) : bbp_the_forum(); ?>
+                            <li>
+                                <a href="<?php bbp_forum_permalink(); ?>" class="bbp-forum-title">
+                                    <?php bbp_forum_title(); ?>
+                                </a>
+                                <div class="forum-meta">
+                                    <?php bbp_forum_topic_count(); ?> 话题, 
+                                    <?php bbp_forum_reply_count(); ?> 回复
+                                </div>
+                            </li>
+                        <?php endwhile; ?>
+                    </ul>
+                <?php else : ?>
+                    <p>暂无论坛版块。</p>
+                <?php endif; ?>
+                
+                <p><a href="<?php echo esc_url(bbp_get_forums_url()); ?>" class="button">进入论坛首页</a></p>
+            </div>
+            <?php
+            return ob_get_clean();
+        }
+
+        // 下面是原有的显示单个论坛话题的逻辑
         if (!$forum_id) {
             // 如果没有指定论坛ID，使用观演记录论坛
             $forum_id = get_option('musicalbum_viewing_forum_id', 0);

@@ -19,10 +19,40 @@
         try {
             initShareForm();
             initResourceUpload();
+            initForumToggle();
         } catch (e) {
             console.error('Musicalbum Community: Initialization failed', e);
         }
     });
+    
+    /**
+     * 初始化论坛话题/回复表单折叠
+     */
+    function initForumToggle() {
+        // 针对 bbPress 的新建话题表单 (#new-post) 和回复表单 (#new-reply-1 等)
+        // 通常表单容器ID是 #new-post (用于新建话题) 或 .bbp-reply-form (用于回复)
+        
+        var $newTopicForm = $('#new-post');
+        if ($newTopicForm.length > 0) {
+            // 默认隐藏表单
+            $newTopicForm.hide();
+            
+            // 创建切换按钮
+            var $toggleBtn = $('<button class="button musicalbum-btn" style="margin-bottom:20px;">+ 新建话题</button>');
+            
+            // 插入按钮到表单前面
+            $newTopicForm.before($toggleBtn);
+            
+            // 绑定点击事件
+            $toggleBtn.on('click', function(e) {
+                e.preventDefault();
+                $newTopicForm.slideToggle();
+                $(this).text(function(i, text) {
+                    return text === "+ 新建话题" ? "× 收起表单" : "+ 新建话题";
+                });
+            });
+        }
+    }
     
     /**
      * 初始化分享表单
