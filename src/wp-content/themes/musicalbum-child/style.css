@@ -6,3 +6,77 @@ Text Domain: musicalbum-child
 */
 
 /* 在此编写你的子主题样式，覆盖或扩展父主题 */
+
+/* Musicalbum Community Center Styles */
+.community-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.community-section {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 1.5rem;
+    transition: transform 0.2s;
+    border: 1px solid #eee;
+}
+
+.community-section:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+}
+
+.community-section h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+/* Specific Section Styles */
+.forum-section h2::before { content: "💬 "; }
+.activity-section h2::before { content: "🔔 "; }
+.resource-section h2::before { content: "📂 "; }
+.knowledge-section h2::before { content: "📚 "; }
+
+/* Shortcode Content Styles Override */
+.musicalbum-forum-shortcode ul,
+.musicalbum-user-activity-shortcode ul,
+.musicalbum-resource-library ul,
+.musicalbum-knowledge-base ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.musicalbum-forum-shortcode li,
+.musicalbum-user-activity-shortcode li {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.musicalbum-forum-shortcode li:last-child,
+.musicalbum-user-activity-shortcode li:last-child {
+    border-bottom: none;
+}
+
+.button {
+    display: inline-block;
+    padding: 0.5rem 1.5rem;
+    background: #3498db;
+    color: #fff;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 1rem;
+}
+
+.button:hover {
+    background: #2980b9;
+    color: #fff;
+}

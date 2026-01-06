@@ -287,6 +287,7 @@ final class Musicalbum_Community_Integration {
             'forum_id' => 0,
             'category' => '',
             'limit' => 10,
+            'link_to_root' => false,
         ), $atts);
         
         if (!$this->bbpress_active) {

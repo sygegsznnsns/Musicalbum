@@ -138,6 +138,7 @@ class Musicalbum_BBPress_Integration {
         $forum_id = intval($atts['forum_id']);
         $category = sanitize_text_field($atts['category']);
         $limit = intval($atts['limit']);
+        $link_to_root = filter_var($atts['link_to_root'], FILTER_VALIDATE_BOOLEAN);
         
         if (!$forum_id) {
             // 如果没有指定论坛ID，使用观演记录论坛
@@ -227,8 +228,11 @@ class Musicalbum_BBPress_Integration {
             <?php else : ?>
                 <p>暂无主题。成为第一个发帖的人吧！</p>
             <?php endif; ?>
-            <?php if (function_exists('bbp_get_forum_permalink')) : ?>
-                <p><a href="<?php echo esc_url(bbp_get_forum_permalink($forum_id)); ?>" class="button">进入论坛</a></p>
+            <?php if (function_exists('bbp_get_forum_permalink')) : 
+                $forum_link = $link_to_root ? bbp_get_forums_url() : bbp_get_forum_permalink($forum_id);
+                $link_text = $link_to_root ? '进入论坛首页' : '进入版块';
+            ?>
+                <p><a href="<?php echo esc_url($forum_link); ?>" class="button"><?php echo esc_html($link_text); ?></a></p>
             <?php endif; ?>
         </div>
         <?php
