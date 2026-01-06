@@ -77,8 +77,9 @@ class Musicalbum_Resource_Sharing {
      * 处理文件上传
      */
     public static function handle_upload() {
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'musicalbum_upload')) {
-            wp_send_json_error(array('message' => '安全验证失败'));
+        // 使用与前端一致的 nonce action ('wp_rest')
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_rest')) {
+            wp_send_json_error(array('message' => '安全验证失败：Nonce 不匹配'));
         }
         
         if (!is_user_logged_in()) {
