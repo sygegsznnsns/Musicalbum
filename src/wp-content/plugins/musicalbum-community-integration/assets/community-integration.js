@@ -35,7 +35,7 @@
             var $btn = $(this);
             var objectId = $btn.data('id');
             var objectType = $btn.data('type'); // 'topic' or 'reply'
-            var typeName = objectType === 'reply' ? '回复' : '话题';
+            var typeName = objectType === 'reply' ? '本楼回复' : '主题内容';
             
             if (!confirm('确定要将此' + typeName + '收录到知识库吗？')) {
                 return;
