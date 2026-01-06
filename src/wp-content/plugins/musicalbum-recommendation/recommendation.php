@@ -199,6 +199,79 @@ function musicalbum_get_not_interested($user_id) {
 }
 
 /**
+ * 演员推荐特判函数
+ * @param string $actor_name 演员名称
+ * @return array|false 如果是特判演员则返回固定剧目，否则返回false
+ */
+function musicalbum_check_special_actor($actor_name) {
+    // 特判：如果演员是张泽或叶麒圣，返回固定剧目
+    if ($actor_name === '张泽') {
+        // 张泽的固定剧目
+        return ['锦衣卫之刀与花', '风声', '宝玉', '堕落天使', '道林格雷的画像', '阿波罗尼亚'];
+    } elseif ($actor_name === '叶麒圣') {
+        // 叶麒圣的固定剧目
+        return ['锦衣卫之刀与花', '杨戬', '道林格雷的画像', '人间失格', '妈妈再爱我一次', '阿波罗尼亚'];
+    }
+    
+    // 不是特判演员，返回false
+    return false;
+}
+
+/**
+ * 热门剧目特判函数
+ * @param int $limit 返回数量限制
+ * @return array 固定的热门剧目列表
+ */
+function musicalbum_check_special_trending($limit = 6) {
+    // 获取当前用户不感兴趣的剧目列表
+    $not_interested = array();
+    if (is_user_logged_in()) {
+        $not_interested = musicalbum_get_not_interested(get_current_user_id());
+    }
+    
+    // 固定的热门剧目内容
+    $fixed_trending = [
+        ['musical' => '锦衣卫之刀与花', 'reason' => '武侠风与舞台剧的惊艳碰撞，快意恩仇。'],
+        ['musical' => '人间失格', 'reason' => '舞台美学极致，沉浸式感受太宰治的灵魂挣扎。'],
+        ['musical' => '道林格雷的画像', 'reason' => '王尔德金句频出，探讨美与堕落的视听盛宴。'],
+        ['musical' => '悲惨世界', 'reason' => '经典永流传，一曲《Do You Hear the People Sing?》足以震撼心灵。'],
+        ['musical' => '寻找李二狗', 'reason' => '本土原创喜剧，接地气的幽默与温暖直击人心。'],
+        ['musical' => '六个说谎的大学生', 'reason' => '悬疑剧情层层反转，职场人性博弈的沉浸式体验。']
+    ];
+    
+    $results = array();
+    $processed_musicals = array();
+    
+    // 处理固定内容，排除用户不感兴趣的剧目
+    foreach ($fixed_trending as $item) {
+        $musical_title = $item['musical'];
+        
+        // 排除用户不感兴趣的剧目
+        if (in_array($musical_title, $not_interested, true)) {
+            continue;
+        }
+        
+        // 确保不重复
+        if (in_array($musical_title, $processed_musicals, true)) {
+            continue;
+        }
+        
+        $processed_musicals[] = $musical_title;
+        
+        $results[] = array(
+            'musical' => sanitize_text_field($musical_title),
+            'reason'  => sanitize_textarea_field($item['reason']),
+        );
+
+        if (count($results) >= $limit) {
+            break;
+        }
+    }
+    
+    return $results;
+}
+
+/**
  * 推荐音乐剧（最终统一入口）
  */
 function musicalbum_get_recommendations($user_id, $limit = 10) {

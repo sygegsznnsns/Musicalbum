@@ -130,8 +130,79 @@ function msr_render_recommend_page() {
      * =========
      */
     $personal = musicalbum_recommend_by_crowd( $user_id, 10 );
-    $trending = musicalbum_recommend_trending( 6 );
-    $actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
+    
+    // 先调用热门剧目特判函数
+    $trending = musicalbum_check_special_trending( 6 );
+    // 如果特判结果不足，再调用AI函数
+    if ( count( $trending ) < 6 ) {
+        $ai_trending = musicalbum_recommend_trending( 6 );
+        // 合并结果，确保不重复
+        $trending_titles = array_column( $trending, 'musical' );
+        foreach ( $ai_trending as $item ) {
+            if ( ! in_array( $item['musical'], $trending_titles, true ) ) {
+                $trending[] = $item;
+                $trending_titles[] = $item['musical'];
+                if ( count( $trending ) >= 6 ) {
+                    break;
+                }
+            }
+        }
+    }
+    
+    // 先调用演员特判函数
+    $actor_recommend = array();
+    $special_actors = array();
+    $favorite_actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
+    if ( ! is_array( $favorite_actors ) ) {
+        $favorite_actors = array();
+    }
+    
+    // 处理特判演员
+    foreach ( $favorite_actors as $actor_name ) {
+        $special_result = musicalbum_check_special_actor( $actor_name );
+        if ( $special_result ) {
+            $special_actors[] = $actor_name;
+            $actor_recommend[ $actor_name ] = array();
+            // 获取用户不感兴趣的剧目列表
+            $not_interested = musicalbum_get_not_interested( $user_id );
+            // 处理推荐结果，确保不超过限制
+            foreach ( $special_result as $musical_title ) {
+                // 跳过空的音乐剧名称
+                if ( empty( $musical_title ) ) {
+                    continue;
+                }
+                
+                // 排除用户不感兴趣的剧目
+                if ( in_array( $musical_title, $not_interested, true ) ) {
+                    continue;
+                }
+
+                $actor_recommend[ $actor_name ][] = [
+                    'musical_id' => 0, // 使用固定数据时无法获取准确的musical_id
+                    'musical'    => sanitize_text_field( $musical_title ),
+                    'reason'     => '该音乐剧包含你关注的演员：' . $actor_name,
+                ];
+
+                if ( count( $actor_recommend[ $actor_name ] ) >= 6 ) {
+                    break;
+                }
+            }
+        }
+    }
+    
+    // 处理非特判演员，调用原有AI函数
+    $non_special_actors = array_diff( $favorite_actors, $special_actors );
+    if ( ! empty( $non_special_actors ) ) {
+        // 调用原有函数获取非特判演员的推荐
+        $ai_actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
+        // 合并结果
+        foreach ( $ai_actor_recommend as $actor_name => $musicals ) {
+            if ( ! isset( $actor_recommend[ $actor_name ] ) ) {
+                $actor_recommend[ $actor_name ] = $musicals;
+            }
+        }
+    }
+    
     $ai_recommend = musicalbum_get_ai_recommendations( get_current_user_id() );
 
     ob_start();
