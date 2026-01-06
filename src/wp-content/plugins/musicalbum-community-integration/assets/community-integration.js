@@ -20,10 +20,51 @@
             initShareForm();
             initResourceUpload();
             initForumToggle();
+            initKnowledgeConvert();
         } catch (e) {
             console.error('Musicalbum Community: Initialization failed', e);
         }
     });
+    
+    /**
+     * 初始化知识库收录功能
+     */
+    function initKnowledgeConvert() {
+        $(document).on('click', '.musicalbum-convert-btn', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var topicId = $btn.data('topic-id');
+            
+            if (!confirm('确定要将此话题收录到知识库吗？')) {
+                return;
+            }
+            
+            $btn.text('收录中...');
+            
+            $.ajax({
+                url: MusicalbumCommunity.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'musicalbum_convert_topic_to_knowledge',
+                    nonce: MusicalbumCommunity.nonce,
+                    topic_id: topicId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $btn.replaceWith('<span class="musicalbum-converted-badge" style="color:green;">✅ 已收录到知识库</span>');
+                        alert(response.data.message);
+                    } else {
+                        alert(response.data || '收录失败');
+                        $btn.text('📥 收录到知识库');
+                    }
+                },
+                error: function() {
+                    alert('网络错误');
+                    $btn.text('📥 收录到知识库');
+                }
+            });
+        });
+    }
     
     /**
      * 初始化论坛话题/回复表单折叠
