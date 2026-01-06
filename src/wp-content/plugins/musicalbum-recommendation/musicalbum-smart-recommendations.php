@@ -30,22 +30,35 @@ require_once plugin_dir_path( __FILE__ ) . 'page-recommend.php';
 add_shortcode( 'musical_recommend', 'msr_render_recommend_page' );
 
 /**
- * 加载推荐插件的前端样式
+ * 加载推荐插件的前端样式和脚本
  */
-add_action( 'wp_enqueue_scripts', 'msr_enqueue_styles' );
-function msr_enqueue_styles() {
+add_action( 'wp_enqueue_scripts', 'msr_enqueue_scripts' );
+function msr_enqueue_scripts() {
 
     // 后台页面不用管
     if ( is_admin() ) {
         return;
     }
 
+    // 加载样式
     wp_enqueue_style(
         'msr-style',
         plugin_dir_url( __FILE__ ) . 'assets/recommendations.css',
         [],
         '1.0.0'
     );
+    
+    // 加载JavaScript
+    wp_enqueue_script(
+        'msr-recommendations',
+        plugin_dir_url( __FILE__ ) . 'assets/recommendations.js',
+        ['jquery'],
+        '1.0.0',
+        true
+    );
+    
+    // 传递AJAX URL到前端
+    wp_localize_script('msr-recommendations', 'ajaxurl', admin_url('admin-ajax.php'));
 }
 
 /**

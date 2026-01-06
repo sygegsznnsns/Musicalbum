@@ -32,6 +32,7 @@ function musicalbum_get_user_viewing_history_titles($user_id) {
  */
 function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
     $viewed_titles = musicalbum_get_user_viewing_history_titles($user_id);
+    $not_interested = musicalbum_get_not_interested($user_id);
     if (empty($viewed_titles)) {
         return array();
     }
@@ -47,7 +48,7 @@ function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
         while ($query->have_posts()) {
             $query->the_post();
             $title = get_the_title();
-            if (in_array($title, $viewed_titles, true)) {
+            if (in_array($title, $viewed_titles, true) || in_array($title, $not_interested, true)) {
                 continue;
             }
             if (!isset($counter[$title])) {
@@ -75,6 +76,11 @@ function musicalbum_recommend_by_crowd($user_id, $limit = 10) {
  * 近期热门观演剧目（基于观演记录数量）
  */
 function musicalbum_recommend_trending( $limit = 10 ) {
+    // 获取当前用户不感兴趣的剧目列表
+    $not_interested = array();
+    if ( is_user_logged_in() ) {
+        $not_interested = musicalbum_get_not_interested( get_current_user_id() );
+    }
 
     $args = array(
         'post_type'      => 'viewing_record',
@@ -93,6 +99,11 @@ function musicalbum_recommend_trending( $limit = 10 ) {
             $title = get_the_title( $post_id );
 
             if ( empty( $title ) ) {
+                continue;
+            }
+
+            // 排除用户不感兴趣的剧目
+            if ( in_array( $title, $not_interested, true ) ) {
                 continue;
             }
 
@@ -182,6 +193,9 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
     if ( empty( $favorite_actors ) || ! is_array( $favorite_actors ) ) {
         return [];
     }
+    
+    // 获取用户不感兴趣的剧目列表
+    $not_interested = musicalbum_get_not_interested( $user_id );
 
     /**
      * =========
@@ -273,10 +287,17 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
             if ( ! isset( $musical_index[ $musical_id ] ) ) {
                 continue;
             }
+            
+            $musical_title = $musical_index[ $musical_id ];
+            
+            // 排除用户不感兴趣的剧目
+            if ( in_array( $musical_title, $not_interested, true ) ) {
+                continue;
+            }
 
             $results[ $actor_name ][] = [
                 'musical_id' => $musical_id,
-                'musical'    => $musical_index[ $musical_id ],
+                'musical'    => $musical_title,
                 'reason'     => '该音乐剧包含你关注的演员：' . $actor_name,
             ];
 
@@ -288,7 +309,6 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
 
     set_transient( $cache_key, $results, DAY_IN_SECONDS );
     return $results;
-
 }
 
 /**

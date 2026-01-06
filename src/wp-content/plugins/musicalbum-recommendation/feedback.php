@@ -39,15 +39,15 @@ add_action('wp_ajax_musicalbum_not_interested', function () {
     }
 
     $user_id = get_current_user_id();
-    $musical_id = intval($_POST['musical_id']);
+    $musical_title = sanitize_text_field($_POST['musical_title']);
 
     $list = get_user_meta($user_id, 'musicalbum_not_interested', true);
     if (!is_array($list)) {
         $list = array();
     }
 
-    if (!in_array($musical_id, $list)) {
-        $list[] = $musical_id;
+    if (!in_array($musical_title, $list)) {
+        $list[] = $musical_title;
         update_user_meta($user_id, 'musicalbum_not_interested', $list);
     }
 
