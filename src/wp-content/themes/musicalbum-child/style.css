@@ -167,7 +167,7 @@ Text Domain: musicalbum-child
 /* Main Container */
 #bbpress-forums {
     font-family: inherit;
-    font-size: 18px; /* Increased font size */
+    font-size: 20px; /* Increased font size even more */
     color: #333;
     background: #fff;
     padding: 20px;
@@ -181,7 +181,7 @@ Text Domain: musicalbum-child
     color: #fff;
     padding: 15px !important;
     border-radius: 6px 6px 0 0;
-    font-size: 1.1em; /* Header font size */
+    font-size: 1.2em; /* Header font size */
 }
 
 /* List Items */
@@ -200,7 +200,7 @@ li.bbp-header {
 /* Forum/Topic Titles */
 .bbp-forum-title,
 .bbp-topic-permalink {
-    font-size: 1.2em; /* Topic/Forum title size */
+    font-size: 1.4em; /* Topic/Forum title size */
     font-weight: 600;
     color: #333;
     transition: color 0.2s;
@@ -208,7 +208,7 @@ li.bbp-header {
 
 /* Topic Content */
 .bbp-reply-content {
-    font-size: 1.1em; /* Reply content size */
+    font-size: 1.25em; /* Reply content size */
     line-height: 1.6;
 }
 
@@ -220,7 +220,7 @@ li.bbp-header {
 /* Metadata (Freshness, Counts) */
 .bbp-forum-freshness,
 .bbp-topic-freshness {
-    font-size: 0.9em; /* Meta size */
+    font-size: 1em; /* Meta size */
     color: #777;
 }
 
