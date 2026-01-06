@@ -173,122 +173,90 @@ function musicalbum_get_recommendations($user_id, $limit = 10) {
 }
 
 /**
- * 基于用户关注演员，通过 saoju API 推荐相关音乐剧
- * 数据链路：演员 → 卡司 → 角色 → 音乐剧
+ * 基于用户关注演员，通过 DeepSeek AI 推荐相关音乐剧
+ * 数据链路：演员 → AI推荐 → 音乐剧
  *
  * @param int $user_id
- * @param int $per_actor_limit 每个演员最多推荐数量
+ * @param int $per_actor_limit 每个演员最多推荐几部，默认3部
  * @return array
  */
 function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3 ) {
 
+    if ( ! $user_id ) {
+        return array();
+    }
+
+    /**
+     * Step 0：缓存（用户维度）
+     */
     $cache_key = 'msr_actor_recommend_' . $user_id;
     $cached = get_transient( $cache_key );
 
-    if ( $cached !== false && is_array( $cached ) ) {
+    if ( false !== $cached ) {
         return $cached;
     }
 
+    /**
+     * Step 1：获取用户关注的演员
+     */
     $favorite_actors = get_user_meta( $user_id, 'musicalbum_favorite_actors', true );
     if ( empty( $favorite_actors ) || ! is_array( $favorite_actors ) ) {
-        return [];
+        set_transient( $cache_key, array(), 6 * HOUR_IN_SECONDS );
+        return array();
     }
-    
+
     // 获取用户不感兴趣的剧目列表
     $not_interested = musicalbum_get_not_interested( $user_id );
 
     /**
      * =========
-     * Step 0：请求全部 API（每个只请求一次）
-     * =========
-     */
-    $artist_data       = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/artist/' ) );
-    $musicalcast_data  = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/musicalcast/' ) );
-    $role_data         = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/role/' ) );
-    $musical_data      = wp_remote_retrieve_body( wp_remote_get( 'https://y.saoju.net/yyj/api/musical/' ) );
-
-    $artists      = json_decode( $artist_data, true );
-    $musicalcasts = json_decode( $musicalcast_data, true );
-    $roles        = json_decode( $role_data, true );
-    $musicals     = json_decode( $musical_data, true );
-
-    if ( ! is_array( $artists ) || ! is_array( $musicalcasts ) || ! is_array( $roles ) || ! is_array( $musicals ) ) {
-        return [];
-    }
-
-    /**
-     * =========
-     * Step 1：建立索引表（提升查找效率）
-     * =========
-     */
-
-    // artist_name => artist_id
-    $artist_index = [];
-    foreach ( $artists as $item ) {
-        $artist_index[ $item['fields']['name'] ] = $item['pk'];
-    }
-
-    // role_id => musical_id
-    $role_to_musical = [];
-    foreach ( $roles as $item ) {
-        $role_to_musical[ $item['pk'] ] = $item['fields']['musical'];
-    }
-
-    // musical_id => musical_name
-    $musical_index = [];
-    foreach ( $musicals as $item ) {
-        $musical_index[ $item['pk'] ] = $item['fields']['name'];
-    }
-
-    /**
-     * =========
-     * Step 2：按演员生成推荐结果
+     * Step 2：使用DeepSeek API 根据演员生成推荐列表
      * =========
      */
     $results = [];
 
     foreach ( $favorite_actors as $actor_name ) {
+        // 构造Prompt，处理演员可能不存在的情况
+        $prompt  = "请列出音乐剧演员 '$actor_name' 参演过的音乐剧，返回格式必须严格按照以下JSON格式：
+";
+        $prompt .= '{"musicals":["音乐剧名称1","音乐剧名称2","音乐剧名称3",...]}' . "
+";
+        $prompt .= "要求：
+";
+        $prompt .= "1. 只返回JSON格式，不要添加任何其他解释或说明
+";
+        $prompt .= "2. 如果 '$actor_name' 不存在或不是音乐剧演员，请返回 {\"musicals\":[]}
+";
+        $prompt .= "3. 最多返回6个音乐剧，按照时间从近到远排序
+";
+        $prompt .= "4. 确保音乐剧名称准确无误
+";
+        $prompt .= "5. 不要包含非音乐剧作品
+";
 
-        if ( ! isset( $artist_index[ $actor_name ] ) ) {
+        // 调用DeepSeek API
+        $raw_response = musicalbum_call_deepseek_api( $prompt );
+
+        if ( empty( $raw_response ) ) {
             continue;
         }
 
-        $actor_id = $artist_index[ $actor_name ];
+        // 解析AI返回的结果
+        $ai_results = json_decode( $raw_response, true );
 
-        // 找到该演员参与的角色 ID
-        $role_ids = [];
-        foreach ( $musicalcasts as $cast ) {
-            if ( intval( $cast['fields']['artist'] ) === intval( $actor_id ) ) {
-                $role_ids[] = $cast['fields']['role'];
-            }
-        }
-
-        if ( empty( $role_ids ) ) {
-            continue;
-        }
-
-        // 通过角色找到音乐剧 ID
-        $musical_ids = [];
-        foreach ( $role_ids as $role_id ) {
-            if ( isset( $role_to_musical[ $role_id ] ) ) {
-                $musical_ids[] = $role_to_musical[ $role_id ];
-            }
-        }
-
-        $musical_ids = array_unique( $musical_ids );
-        if ( empty( $musical_ids ) ) {
+        // 严格检查AI返回格式
+        if ( ! is_array( $ai_results ) || ! isset( $ai_results['musicals'] ) || ! is_array( $ai_results['musicals'] ) ) {
             continue;
         }
 
         $results[ $actor_name ] = [];
 
-        foreach ( $musical_ids as $musical_id ) {
-
-            if ( ! isset( $musical_index[ $musical_id ] ) ) {
+        // 处理推荐结果，确保不超过限制
+        foreach ( $ai_results['musicals'] as $musical_title ) {
+            // 跳过空的音乐剧名称
+            if ( empty( $musical_title ) ) {
                 continue;
             }
-            
-            $musical_title = $musical_index[ $musical_id ];
             
             // 排除用户不感兴趣的剧目
             if ( in_array( $musical_title, $not_interested, true ) ) {
@@ -296,8 +264,8 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
             }
 
             $results[ $actor_name ][] = [
-                'musical_id' => $musical_id,
-                'musical'    => $musical_title,
+                'musical_id' => 0, // 使用DeepSeek API时无法获取准确的musical_id
+                'musical'    => sanitize_text_field( $musical_title ),
                 'reason'     => '该音乐剧包含你关注的演员：' . $actor_name,
             ];
 
@@ -308,6 +276,7 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
     }
 
     set_transient( $cache_key, $results, DAY_IN_SECONDS );
+
     return $results;
 }
 
