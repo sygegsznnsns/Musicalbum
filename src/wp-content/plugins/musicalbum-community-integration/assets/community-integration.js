@@ -32,26 +32,34 @@
         // 针对 bbPress 的新建话题表单 (#new-post) 和回复表单 (#new-reply-1 等)
         // 通常表单容器ID是 #new-post (用于新建话题) 或 .bbp-reply-form (用于回复)
         
-        var $newTopicForm = $('#new-post');
-        if ($newTopicForm.length > 0) {
+        // 处理所有符合条件的表单
+        var $forms = $('#new-post, .bbp-reply-form form, .bbp-topic-form form');
+        
+        $forms.each(function() {
+            var $form = $(this);
+            var formId = $form.attr('id') || 'bbp-form-' + Math.floor(Math.random() * 1000);
+            var isReply = $form.closest('.bbp-reply-form').length > 0;
+            var btnText = isReply ? "+ 回复帖子" : "+ 新建话题";
+            var btnTextActive = isReply ? "× 收起回复" : "× 收起表单";
+            
             // 默认隐藏表单
-            $newTopicForm.hide();
+            $form.hide();
             
             // 创建切换按钮
-            var $toggleBtn = $('<button class="button musicalbum-btn" style="margin-bottom:20px;">+ 新建话题</button>');
+            var $toggleBtn = $('<button class="button musicalbum-btn" style="margin-bottom:20px; display:block;">' + btnText + '</button>');
             
             // 插入按钮到表单前面
-            $newTopicForm.before($toggleBtn);
+            $form.before($toggleBtn);
             
             // 绑定点击事件
             $toggleBtn.on('click', function(e) {
                 e.preventDefault();
-                $newTopicForm.slideToggle();
+                $form.slideToggle();
                 $(this).text(function(i, text) {
-                    return text === "+ 新建话题" ? "× 收起表单" : "+ 新建话题";
+                    return text === btnText ? btnTextActive : btnText;
                 });
             });
-        }
+        });
     }
     
     /**
