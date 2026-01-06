@@ -455,6 +455,116 @@ function musicalbum_get_ai_recommendations( $user_id ) {
 }
 
 /**
+ * 生成新的AI推荐（不依赖缓存）
+ */
+function generate_new_ai_recommendations( $user_id, $current_recommendations = array() ) {
+    /**
+     * Step 1：获取用户观演记录
+     */
+    $viewed_titles = musicalbum_get_user_viewing_history_titles( $user_id );
+
+    if ( empty( $viewed_titles ) ) {
+        return array();
+    }
+
+    /**
+     * Step 2：构造 Prompt
+     */
+    $prompt  = "用户看过的音乐剧如下：\n";
+    foreach ( $viewed_titles as $title ) {
+        $prompt .= "- {$title}\n";
+    }
+
+    // 如果有当前推荐，添加排除要求
+    if ( ! empty( $current_recommendations ) ) {
+        $current_titles = array_column( $current_recommendations, 'title' );
+        $prompt .= "\n请不要推荐以下音乐剧：\n";
+        foreach ( $current_titles as $title ) {
+            $prompt .= "- {$title}\n";
+        }
+    }
+
+    $prompt .= "\n请推荐 3 部风格或主题相近的音乐剧。如果看过的音乐剧为空，就返回随机的 3 部音乐剧。\n";
+    $prompt .= "要求：\n";
+    $prompt .= "1. 每部包含 title 和 desc\n";
+    $prompt .= "2. desc 不超过 50 字\n";
+    $prompt .= "3. 只返回 JSON 数组，不要解释\n";
+    $prompt .= "[{\"title\":\"音乐剧A\",\"desc\":\"简介\"},{\"title\":\"音乐剧B\",\"desc\":\"简介\"},{\"title\":\"音乐剧C\",\"desc\":\"简介\"}]";
+
+    /**
+     * Step 3：调用 DeepSeek
+     */
+    $raw = musicalbum_call_deepseek_api( $prompt );
+
+    if ( empty( $raw ) ) {
+        return array();
+    }
+
+    /**
+     * Step 4：解析结果
+     */
+    $data = json_decode( $raw, true );
+
+    if ( ! is_array( $data ) ) {
+        return array();
+    }
+
+    $results = array();
+    $count = 0;
+    $index = 0;
+    $total_items = count($data);
+    
+    // Process items until we have 3 valid results or no more items
+    while ($count < 3 && $index < $total_items) {
+        $item = $data[$index];
+        $index++;
+        
+        if (empty($item['title']) || empty($item['desc'])) {
+            continue;
+        }
+        
+        $results[] = array(
+            'title' => sanitize_text_field($item['title']),
+            'desc'  => sanitize_textarea_field($item['desc']),
+        );
+        $count++;
+    }
+
+    // 如果API返回的结果不足3个，从CSV文件中补充
+    if (count($results) < 3) {
+        // 加载CSV数据
+        include_once plugin_dir_path(__FILE__) . 'page-recommend.php';
+        $musical_csv_data = msr_load_musical_csv_data();
+        
+        // 获取已有的推荐标题
+        $existing_titles = array_column($results, 'title');
+        if (!empty($current_recommendations)) {
+            $existing_titles = array_merge($existing_titles, array_column($current_recommendations, 'title'));
+        }
+        
+        // 从CSV数据中随机选择补充的音乐剧
+        $additional_musicals = array_filter($musical_csv_data, function($musical) use ($existing_titles) {
+            // 确保音乐剧有标题，且不在已有的推荐列表中
+            return !empty($musical['name']) && !in_array($musical['name'], $existing_titles);
+        });
+        
+        // 打乱顺序
+        shuffle($additional_musicals);
+        
+        // 补充推荐直到有3个
+        $additional_needed = 3 - count($results);
+        foreach (array_slice($additional_musicals, 0, $additional_needed) as $musical) {
+            $results[] = array(
+                'title' => sanitize_text_field($musical['name']),
+                'desc'  => sanitize_textarea_field('一部精彩的音乐剧'),
+            );
+        }
+    }
+
+    return $results;
+}
+
+/**
  * AJAX处理函数：获取新的AI推荐（与当前推荐不同）
  */
 function musicalbum_ajax_refresh_ai_recommendations() {
@@ -476,7 +586,8 @@ function musicalbum_ajax_refresh_ai_recommendations() {
         $cache_key = 'msr_ai_recommend_' . intval( $user_id );
         delete_transient( $cache_key );
         
-        $new_recommendations = musicalbum_get_ai_recommendations( $user_id );
+        // 在函数内部直接生成新的推荐，不依赖缓存
+        $new_recommendations = generate_new_ai_recommendations( $user_id, $current_recommendations );
         
         // 检查是否与当前推荐有重复
         $has_duplicates = false;
@@ -492,11 +603,6 @@ function musicalbum_ajax_refresh_ai_recommendations() {
         }
         
         $attempt++;
-        
-        // 稍微修改prompt以获取不同结果
-        add_filter( 'musicalbum_ai_prompt_suffix', function( $suffix ) {
-            return '?rand=' . rand( 1, 1000 ) . $suffix;
-        } );
     }
     
     if ( empty( $new_recommendations ) ) {

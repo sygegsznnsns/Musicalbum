@@ -284,9 +284,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalBody = document.getElementById('msr-modal-body');
     const modalClose = document.querySelector('.msr-modal-close');
 
-    document.querySelectorAll('.msr-musical-link').forEach(function(link){
-        link.addEventListener('click', function(){
-            const name = this.dataset.musical.trim();
+    // 使用事件委托绑定点击事件，确保AJAX刷新后新添加的元素也能正常工作
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('msr-musical-link') || e.target.closest('.msr-musical-link')) {
+            const link = e.target.classList.contains('msr-musical-link') ? e.target : e.target.closest('.msr-musical-link');
+            const name = link.dataset.musical.trim();
             if(!musicalData[name]){
                 modalBody.innerHTML = '<p>该音乐剧的详细信息待完善。</p>';
             }else{
@@ -302,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
             }
             modal.classList.add('show');
-        });
+        }
     });
 
     modalClose.addEventListener('click', function(){ modal.classList.remove('show'); });
