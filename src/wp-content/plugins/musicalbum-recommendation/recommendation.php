@@ -367,7 +367,7 @@ function musicalbum_get_ai_recommendations( $user_id ) {
         $prompt .= "- {$title}\n";
     }
 
-    $prompt .= "\n请推荐 4 部风格或主题相近的音乐剧。\n";
+    $prompt .= "\n请推荐 3 部风格或主题相近的音乐剧。如果看过的音乐剧为空，就返回随机的 3 部音乐剧。\n";
     $prompt .= "要求：\n";
     $prompt .= "1. 每部包含 title 和 desc\n";
     $prompt .= "2. desc 不超过 50 字\n";

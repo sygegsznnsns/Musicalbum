@@ -2,9 +2,15 @@
    基础推荐页布局
    ========================= */
 
+.msr-page {
+  max-width: 700px; /* 大约3个卡片的宽度 */
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
 .msr-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -127,12 +133,23 @@
    ========================= */
 .msr-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
 .msr-item {
   box-sizing: border-box;
+}
+
+/* 确保卡片在不同屏幕尺寸下保持良好显示 */
+@media (max-width: 600px) {
+  .msr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .msr-page {
+    max-width: 100%;
+  }
 }
 
 /* =========================
