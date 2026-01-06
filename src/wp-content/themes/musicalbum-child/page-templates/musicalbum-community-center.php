@@ -12,7 +12,7 @@ get_header();
       
       <!-- 论坛区域 -->
       <section class="community-section forum-section">
-        <h2>观演交流论坛</h2>
+        <h2>交流论坛</h2>
         <?php 
         if (shortcode_exists('musicalbum_forum')) {
             // 使用 link_to_root="true" 让链接指向论坛首页
@@ -37,7 +37,7 @@ get_header();
         ?>
       </section>
       */ ?>
-      
+
       <!-- 资源库区域 -->
       <section class="community-section resource-section">
         <h2>共享资源</h2>

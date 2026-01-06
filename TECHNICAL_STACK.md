@@ -70,7 +70,7 @@
 ## 5. 部署 (Deployment)
 
 *   **Web 服务器**
-    *   **Nginx** 或 **Apache**：处理 HTTP 请求，配置 Rewrite Rules 支持 WordPress 固定链接结构。
+    *   **Nginx**：作为高性能反向代理服务器，处理 HTTP 请求，配置 Rewrite Rules 支持 WordPress 固定链接结构。
 
 *   **运行环境**
     *   **OS**：Linux (Ubuntu/CentOS) 或 Windows Server。

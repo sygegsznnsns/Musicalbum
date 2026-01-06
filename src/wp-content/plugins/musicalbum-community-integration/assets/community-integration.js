@@ -33,9 +33,11 @@
         $(document).on('click', '.musicalbum-convert-btn', function(e) {
             e.preventDefault();
             var $btn = $(this);
-            var topicId = $btn.data('topic-id');
+            var objectId = $btn.data('id');
+            var objectType = $btn.data('type'); // 'topic' or 'reply'
+            var typeName = objectType === 'reply' ? '回复' : '话题';
             
-            if (!confirm('确定要将此话题收录到知识库吗？')) {
+            if (!confirm('确定要将此' + typeName + '收录到知识库吗？')) {
                 return;
             }
             
@@ -47,11 +49,12 @@
                 data: {
                     action: 'musicalbum_convert_topic_to_knowledge',
                     nonce: MusicalbumCommunity.nonce,
-                    topic_id: topicId
+                    object_id: objectId,
+                    object_type: objectType
                 },
                 success: function(response) {
                     if (response.success) {
-                        $btn.replaceWith('<span class="musicalbum-converted-badge" style="color:green;">✅ 已收录到知识库</span>');
+                        $btn.replaceWith('<span class="musicalbum-converted-badge" style="color:green;">✅ 已收录</span>');
                         alert(response.data.message);
                     } else {
                         alert(response.data || '收录失败');
