@@ -298,6 +298,16 @@ class Musicalbum_Resource_Sharing {
     public static function render_resource_item($resource) {
         $resource_url = get_post_meta($resource->ID, '_resource_url', true);
         $resource_type = get_post_meta($resource->ID, '_resource_type', true);
+        $file_type = strtolower(pathinfo($resource_url, PATHINFO_EXTENSION));
+        
+        // 判断是否为可直接预览的内容（图片、视频、音频）
+        $is_previewable = in_array($resource_type, array('image', 'video', 'audio')) || in_array($file_type, array('jpg', 'jpeg', 'png', 'gif', 'mp4', 'mp3', 'wav'));
+        
+        // 构建点击链接：如果可预览，则指向详情页；否则根据需求决定是否指向详情页（用户说“点进标题后直接加载在页面内”，意味着还是要进详情页）
+        // 其实无论是否预览，进详情页都是最合理的，因为详情页已经实现了预览功能。
+        // 但用户说“我不要预览/下载按钮”，指的是列表页上的按钮吗？
+        // 用户说“点进标题后直接加载在页面内”，这正是详情页的功能。
+        // 关键是列表页不应该显眼地放“下载”按钮，而是引导点击标题。
         
         ob_start();
         ?>
@@ -310,9 +320,7 @@ class Musicalbum_Resource_Sharing {
                 <span class="resource-type"><?php echo esc_html($resource_type); ?></span>
                 <span class="resource-date"><?php echo esc_html(get_the_date('', $resource->ID)); ?></span>
             </div>
-            <?php if ($resource_url) : ?>
-                <a href="<?php echo esc_url($resource_url); ?>" class="resource-download" target="_blank">下载</a>
-            <?php endif; ?>
+            <!-- 移除列表页的下载按钮，引导用户点击标题进入详情页预览 -->
         </div>
         <?php
         return ob_get_clean();
