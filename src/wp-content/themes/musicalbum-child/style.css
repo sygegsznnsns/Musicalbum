@@ -8,13 +8,14 @@ Text Domain: musicalbum-child
 /* 在此编写你的子主题样式，覆盖或扩展父主题 */
 
 /* Musicalbum Community Center Styles */
-:root {
-    /* Fallback colors if Astra vars are missing */
-    --ast-global-color-0: #3498db; /* Primary */
-    --ast-global-color-1: #2c3e50; /* Secondary */
-    --ast-global-color-2: #333333; /* Text */
-    --ast-global-color-3: #f9f9f9; /* Background */
-    --ast-global-color-4: #ffffff; /* White */
+/* 
+   注意：移除 :root 变量重定义，以免覆盖 Astra 全局设置。
+   使用 var(--ast-global-color-X, fallback) 来调用主题色。
+*/
+
+/* 修复社区中心页面导航栏文字不可见的问题 */
+.page-template-musicalbum-community-center .site-header {
+    background-color: var(--ast-global-color-0, #ff6464) !important;
 }
 
 .community-container {
@@ -41,8 +42,8 @@ Text Domain: musicalbum-child
 }
 
 .community-section h2 {
-    color: var(--ast-global-color-1, #2c3e50);
-    border-bottom: 2px solid var(--ast-global-color-0, #3498db);
+    color: var(--ast-global-color-1, #333);
+    border-bottom: 2px solid var(--ast-global-color-0, #ff6464);
     padding-bottom: 0.5rem;
     margin-bottom: 1.5rem;
     font-size: 1.5rem;
@@ -79,7 +80,7 @@ Text Domain: musicalbum-child
 .button, .musicalbum-btn {
     display: inline-block;
     padding: 0.6rem 1.5rem;
-    background: var(--ast-global-color-0, #3498db);
+    background: var(--ast-global-color-0, #ff6464);
     color: #fff;
     border-radius: 4px;
     text-decoration: none;
@@ -91,7 +92,7 @@ Text Domain: musicalbum-child
 }
 
 .button:hover, .musicalbum-btn:hover {
-    background: var(--ast-global-color-1, #2c3e50);
+    background: var(--ast-global-color-1, #d9534f); /* Darker red fallback */
     color: #fff;
 }
 
@@ -107,11 +108,11 @@ Text Domain: musicalbum-child
 }
 
 #musicalbum-resource-upload-form {
-    background: #f8f9fa;
+    background: #fff5f5; /* Light red tint bg */
     padding: 1.5rem;
     border-radius: 8px;
     margin-top: 1rem;
-    border: 1px solid #e9ecef;
+    border: 1px solid #ffecec;
 }
 
 .form-group {
@@ -147,13 +148,14 @@ Text Domain: musicalbum-child
 .contribution-box {
     margin-top: 1rem;
     padding: 1rem;
-    background: #f0f8ff;
+    background: #fff5f5;
     border-radius: 8px;
     font-size: 0.9rem;
     color: #555;
     text-align: center;
+    border: 1px dashed #ffcccc;
 }
 .contribution-box a {
-    color: var(--ast-global-color-0, #3498db);
+    color: var(--ast-global-color-0, #ff6464);
     font-weight: bold;
 }
