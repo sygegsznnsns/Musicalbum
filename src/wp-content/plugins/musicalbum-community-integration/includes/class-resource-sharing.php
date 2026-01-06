@@ -181,6 +181,50 @@ class Musicalbum_Resource_Sharing {
         ?>
         <div class="musicalbum-resource-library">
             <h3>资源库</h3>
+            
+            <?php if (is_user_logged_in()) : ?>
+                <div class="resource-upload-container">
+                    <div class="resource-upload-toggle">
+                        <button type="button" class="musicalbum-btn" onclick="jQuery('#musicalbum-resource-upload-form').slideToggle()">上传新资源</button>
+                    </div>
+                    
+                    <form id="musicalbum-resource-upload-form" class="musicalbum-form" style="display:none;" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="resource-title">标题 *</label>
+                            <input type="text" id="resource-title" name="title" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resource-desc">描述</label>
+                            <textarea id="resource-desc" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resource-file">文件 *</label>
+                            <input type="file" id="resource-file" name="file" required>
+                            <p class="description">支持格式：PDF, Doc, Zip, 图片等</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resource-type">类型</label>
+                            <select id="resource-type" name="type">
+                                <option value="document">文档</option>
+                                <option value="image">图片</option>
+                                <option value="video">视频</option>
+                                <option value="audio">音频</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="musicalbum-btn">确认上传</button>
+                        </div>
+                        
+                        <div class="upload-message"></div>
+                    </form>
+                </div>
+            <?php endif; ?>
+            
             <?php if ($resources) : ?>
                 <div class="resource-grid">
                     <?php foreach ($resources as $resource) : ?>

@@ -107,6 +107,13 @@ class Musicalbum_Knowledge_Base {
         ?>
         <div class="musicalbum-knowledge-base">
             <h3>知识库</h3>
+            
+            <?php if (is_user_logged_in()) : ?>
+                <div class="contribution-box">
+                    💡 想要贡献您的音乐剧知识？<a href="<?php echo esc_url(site_url('/forums/')); ?>">前往论坛</a> 发布草稿，管理员审核后将收录至此。
+                </div>
+            <?php endif; ?>
+            
             <?php if ($knowledge_posts) : ?>
                 <ul class="knowledge-list">
                     <?php foreach ($knowledge_posts as $post) : ?>

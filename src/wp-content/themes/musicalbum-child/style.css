@@ -6,3 +6,154 @@ Text Domain: musicalbum-child
 */
 
 /* 在此编写你的子主题样式，覆盖或扩展父主题 */
+
+/* Musicalbum Community Center Styles */
+:root {
+    /* Fallback colors if Astra vars are missing */
+    --ast-global-color-0: #3498db; /* Primary */
+    --ast-global-color-1: #2c3e50; /* Secondary */
+    --ast-global-color-2: #333333; /* Text */
+    --ast-global-color-3: #f9f9f9; /* Background */
+    --ast-global-color-4: #ffffff; /* White */
+}
+
+.community-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.community-section {
+    background: var(--ast-global-color-4, #fff);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.community-section:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.community-section h2 {
+    color: var(--ast-global-color-1, #2c3e50);
+    border-bottom: 2px solid var(--ast-global-color-0, #3498db);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Specific Section Styles */
+.forum-section h2::before { content: "💬 "; }
+.activity-section h2::before { content: "🔔 "; }
+.resource-section h2::before { content: "📂 "; }
+.knowledge-section h2::before { content: "📚 "; }
+
+/* Shortcode Content Styles Override */
+.musicalbum-forum-shortcode ul,
+.musicalbum-user-activity-shortcode ul,
+.musicalbum-resource-library ul,
+.musicalbum-knowledge-base ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.musicalbum-forum-shortcode li,
+.musicalbum-user-activity-shortcode li {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.musicalbum-forum-shortcode li:last-child,
+.musicalbum-user-activity-shortcode li:last-child {
+    border-bottom: none;
+}
+
+.button, .musicalbum-btn {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: var(--ast-global-color-0, #3498db);
+    color: #fff;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 1rem;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.button:hover, .musicalbum-btn:hover {
+    background: var(--ast-global-color-1, #2c3e50);
+    color: #fff;
+}
+
+/* Resource Upload Form Styles */
+.resource-upload-container {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.resource-upload-toggle {
+    margin-bottom: 1rem;
+}
+
+#musicalbum-resource-upload-form {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.upload-message {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: none;
+}
+.upload-message.success { background: #d4edda; color: #155724; }
+.upload-message.error { background: #f8d7da; color: #721c24; }
+.upload-message.info { background: #e2e3e5; color: #383d41; }
+
+/* Contribution Box */
+.contribution-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f0f8ff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #555;
+    text-align: center;
+}
+.contribution-box a {
+    color: var(--ast-global-color-0, #3498db);
+    font-weight: bold;
+}
