@@ -2,15 +2,42 @@
    基础推荐页布局
    ========================= */
 
+/* 页面背景美化 */
+body {
+  background: linear-gradient(135deg, #fef9f9 0%, #fff5f5 100%);
+  background-attachment: fixed;
+}
+
 .msr-page {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 30px;
   background-color: #fff;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(255, 131, 131, 0.1);
+  border-radius: 15px;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 页面装饰元素 - 顶部波浪 */
+.msr-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, #ff8383 0%, #ff6b6b 100%);
+  border-radius: 15px 15px 0 0;
+  z-index: 0;
+}
+
+/* 内容容器 */
+.msr-content-container {
+  position: relative;
+  z-index: 1;
 }
 
 .msr-grid {
@@ -21,10 +48,55 @@
 }
 
 .msr-item {
-  border: 1px solid #ddd;
-  padding: 12px;
   background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(255, 131, 131, 0.08);
+  border: 1px solid #f0f0f0;
   box-sizing: border-box;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.msr-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 131, 131, 0.15);
+  border-color: #ff8383;
+}
+
+/* 卡片装饰元素 */
+.msr-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #ff8383 0%, #ff6b6b 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.msr-item:hover::before {
+  opacity: 1;
+}
+
+/* 卡片标题增强 */
+.msr-item h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f5f5f5;
+}
+
+.msr-item h5 {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+  font-weight: 500;
 }
 
 .msr-item h4,
@@ -43,7 +115,54 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f8f8f8;
+}
+
+/* 页面标题增强 */
+.msr-page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #2d3748;
+  text-align: center;
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.msr-page-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #ff8383 0%, #ff6b6b 100%);
+  border-radius: 2px;
+}
+
+/* 分区标题增强 */
+.msr-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 40px 0 25px;
+  color: #2d3748;
+  position: relative;
+  padding-left: 20px;
+}
+
+.msr-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 30px;
+  background: linear-gradient(to bottom, #ff8383 0%, #ff6b6b 100%);
+  border-radius: 2px;
 }
 
 .msr-refresh-btn {
@@ -122,33 +241,77 @@
    ========================= */
 .msr-btn {
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.875rem;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.msr-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: all 0.5s ease;
+}
+
+.msr-btn:hover::before {
+  left: 100%;
 }
 
 .msr-btn-primary {
-  background: #ff8383;
+  background: linear-gradient(135deg, #ff8383 0%, #ff6b6b 100%);
   color: #fff;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(255, 131, 131, 0.3);
 }
 
 .msr-btn-primary:hover {
-  background: #ff6b6b;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 131, 131, 0.4);
 }
 
 /* 次按钮（如取消关注、不感兴趣） */
 .msr-btn-secondary {
-  background: transparent;
+  background: #fff;
   color: #6b7280;
   border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .msr-btn-secondary:hover {
   background: #f9fafb;
-  color: #000; /* 字体变黑 */
+  color: #333;
+  border-color: #ff8383;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 刷新按钮增强 */
+.msr-refresh-btn {
+  background-color: transparent;
+  color: #ff8383;
+  border: 1px solid #ff8383;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.msr-refresh-btn:hover {
+  background-color: #ff8383;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 131, 131, 0.3);
 }
 
 /* =========================
@@ -196,8 +359,158 @@
 }
 
 /* =========================
+   表单元素美化
+   ========================= */
+.msr-input {
+  padding: 10px 15px;
+  border: 2px solid #f0f0f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  width: 250px;
+  margin-right: 10px;
+}
+
+.msr-input:focus {
+  outline: none;
+  border-color: #ff8383;
+  box-shadow: 0 0 0 3px rgba(255, 131, 131, 0.1);
+  background-color: #fff5f5;
+}
+
+/* 表单提交按钮与输入框的间距 */
+.msr-actor-form {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* =========================
+   标签样式美化
+   ========================= */
+.msr-musical-tag {
+  display: inline-block;
+  margin: 5px 8px 5px 0;
+}
+
+.msr-musical-tag a {
+  display: inline-block;
+  padding: 8px 15px;
+  background: linear-gradient(135deg, #fff5f5 0%, #fef9f9 100%);
+  color: #ff8383;
+  text-decoration: none;
+  border-radius: 20px;
+  font-size: 14px;
+  border: 1px solid #ffdbdb;
+  transition: all 0.3s ease;
+}
+
+.msr-musical-tag a:hover {
+  background: linear-gradient(135deg, #ff8383 0%, #ff6b6b 100%);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(255, 131, 131, 0.3);
+}
+
+/* =========================
+   空状态文本美化
+   ========================= */
+.msr-empty-text {
+  color: #999;
+  font-style: italic;
+  background: #fafafa;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px dashed #e0e0e0;
+  margin: 15px 0;
+}
+
+/* =========================
+   演员容器美化
+   ========================= */
+.msr-actor-container {
+  margin-bottom: 40px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(255, 131, 131, 0.05);
+}
+
+.msr-actor-section {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f8f8f8;
+}
+
+.msr-actor-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.msr-actor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.msr-actor-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.msr-actor-musicals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* =========================
    其他基础 UI
    ========================= */
+
+/* 卡片阴影增强 */
+.msr-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(255, 131, 131, 0.08);
+  border: 1px solid #f0f0f0;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.msr-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 131, 131, 0.15);
+  border-color: #ff8383;
+}
+
+.msr-card-title {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.msr-card-title a {
+  color: #333;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.msr-card-title a:hover {
+  color: #ff8383;
+  text-decoration: underline;
+  text-decoration-color: #ff8383;
+}
 .msr-empty-text {
   color: #6b7280;
   font-size: 0.875rem;
