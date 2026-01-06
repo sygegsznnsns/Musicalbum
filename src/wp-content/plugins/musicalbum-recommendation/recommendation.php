@@ -90,34 +90,7 @@ function musicalbum_not_interested_ajax_handler() {
 }
 add_action( 'wp_ajax_musicalbum_not_interested', 'musicalbum_not_interested_ajax_handler' );
 
-// 注册获取音乐剧详细信息的AJAX处理函数
-function musicalbum_get_musical_details_ajax_handler() {
-    if ( isset( $_POST['musical_title'] ) ) {
-        $musical_title = sanitize_text_field( $_POST['musical_title'] );
-        
-        // 这里可以实现获取音乐剧详细信息的逻辑
-        // 目前返回模拟数据
-        $details = array(
-            'title' => $musical_title,
-            'description' => '这是音乐剧"' . $musical_title . '"的详细信息。',
-            'performances' => '近期演出信息：北京保利剧院 - 2023年12月15日至20日',
-            'cast' => '主要演员：张三、李四、王五'
-        );
-        
-        // 构建HTML内容
-        $html = '<h4>' . esc_html( $details['title'] ) . '</h4>';
-        $html .= '<p><strong>简介：</strong>' . esc_html( $details['description'] ) . '</p>';
-        $html .= '<p><strong>演出信息：</strong>' . esc_html( $details['performances'] ) . '</p>';
-        $html .= '<p><strong>主要演员：</strong>' . esc_html( $details['cast'] ) . '</p>';
-        
-        // 返回成功响应
-        wp_send_json_success( $html );
-    }
-    
-    // 返回失败响应
-    wp_send_json_error( array( 'message' => '无效请求' ) );
-}
-add_action( 'wp_ajax_musicalbum_get_musical_details', 'musicalbum_get_musical_details_ajax_handler' );
+
 
 /**
  * 将音乐剧添加到用户不感兴趣列表
