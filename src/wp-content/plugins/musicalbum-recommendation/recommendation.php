@@ -117,21 +117,22 @@ function musicalbum_recommend_trending( $limit = 10 ) {
         $not_interested = musicalbum_get_not_interested( get_current_user_id() );
     }
 
+    // 获取所有用户的观演记录
     $args = array(
         'post_type'      => 'viewing_record',
         'post_status'    => 'publish',
         'posts_per_page' => -1,
-        'fields'         => 'ids',
+        // 不限制作者，获取所有用户的记录
     );
 
-    $query   = new WP_Query( $args );
+    $query = new WP_Query( $args );
     $counter = array();
 
-    if ( ! empty( $query->posts ) ) {
-        foreach ( $query->posts as $post_id ) {
-
-            // ✅ 与系统其余部分保持一致
-            $title = get_the_title( $post_id );
+    if ( $query->have_posts() ) {
+        // 使用正确的循环方式
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            $title = get_the_title();
 
             if ( empty( $title ) ) {
                 continue;
@@ -148,6 +149,8 @@ function musicalbum_recommend_trending( $limit = 10 ) {
 
             $counter[ $title ]++;
         }
+        // 重置查询
+        wp_reset_postdata();
     }
 
     if ( empty( $counter ) ) {
@@ -161,7 +164,7 @@ function musicalbum_recommend_trending( $limit = 10 ) {
     foreach ( $counter as $title => $count ) {
         $results[] = array(
             'musical' => $title,
-            'reason'  => '近期被记录 ' . $count . ' 次观演',
+            'reason'  => '近期热门剧目，共 ' . $count . ' 人次观看',
         );
 
         if ( count( $results ) >= $limit ) {
