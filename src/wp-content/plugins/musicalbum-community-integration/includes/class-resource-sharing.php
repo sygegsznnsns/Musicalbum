@@ -23,6 +23,58 @@ class Musicalbum_Resource_Sharing {
         
         // 集成到 BuddyPress 活动流
         add_action('bp_activity_posted_update', array(__CLASS__, 'sync_to_activity'), 10, 3);
+        
+        // 在资源详情页自动插入预览内容
+        add_filter('the_content', array(__CLASS__, 'prepend_resource_preview'));
+    }
+    
+    /**
+     * 在资源详情页自动插入预览内容
+     */
+    public static function prepend_resource_preview($content) {
+        // 只在主循环中的单一资源页面处理
+        if (!is_singular(self::RESOURCE_CPT) || !in_the_loop() || !is_main_query()) {
+            return $content;
+        }
+        
+        $post_id = get_the_ID();
+        $file_url = get_post_meta($post_id, '_resource_url', true);
+        $file_type = get_post_meta($post_id, '_resource_type', true);
+        
+        if (!$file_url) {
+            return $content;
+        }
+        
+        $preview_html = '<div class="musicalbum-resource-preview" style="margin-bottom: 2rem;">';
+        
+        switch ($file_type) {
+            case 'image':
+                $preview_html .= sprintf('<img src="%s" alt="%s" style="max-width:100%%;height:auto;border-radius:8px;">', esc_url($file_url), esc_attr(get_the_title()));
+                break;
+                
+            case 'video':
+                $preview_html .= sprintf('<video controls style="width:100%%;border-radius:8px;"><source src="%s">您的浏览器不支持视频标签。</video>', esc_url($file_url));
+                break;
+                
+            case 'audio':
+                $preview_html .= sprintf('<audio controls style="width:100%%;"><source src="%s">您的浏览器不支持音频标签。</audio>', esc_url($file_url));
+                break;
+                
+            case 'document':
+            default:
+                // 对于文档，尝试使用 PDF 嵌入（如果是 PDF）或 Google Docs 预览
+                $ext = strtolower(pathinfo($file_url, PATHINFO_EXTENSION));
+                if ($ext === 'pdf') {
+                    $preview_html .= sprintf('<iframe src="%s" width="100%%" height="600px" style="border:none;"></iframe>', esc_url($file_url));
+                } else {
+                    $preview_html .= sprintf('<a href="%s" class="button musicalbum-btn" target="_blank">预览/下载文件</a>', esc_url($file_url));
+                }
+                break;
+        }
+        
+        $preview_html .= '</div>';
+        
+        return $preview_html . $content;
     }
     
     /**
@@ -77,8 +129,9 @@ class Musicalbum_Resource_Sharing {
      * 处理文件上传
      */
     public static function handle_upload() {
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'musicalbum_upload')) {
-            wp_send_json_error(array('message' => '安全验证失败'));
+        // 使用与前端一致的 nonce action ('wp_rest')
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_rest')) {
+            wp_send_json_error(array('message' => '安全验证失败：Nonce 不匹配'));
         }
         
         if (!is_user_logged_in()) {
