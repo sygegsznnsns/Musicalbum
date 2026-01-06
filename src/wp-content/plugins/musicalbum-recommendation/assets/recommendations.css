@@ -364,40 +364,8 @@
 }
 
 /* =========================
-   音乐剧详情模态框
+   音乐剧详情模态框 - 已合并到下方的弹窗样式部分
    ========================= */
-.msr-modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.msr-modal-content {
-  background-color: #fff;
-  margin: 5% auto;
-  padding: 20px;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-}
-
-.msr-modal-close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
   transition: color 0.2s;
 }
 
@@ -437,7 +405,7 @@
 .msr-modal {
   display: none; /* 默认隐藏 */
   position: fixed;
-  z-index: 9999;
+  z-index: 999999; /* 极高的层级，确保覆盖所有内容 */
   left: 0;
   top: 0;
   width: 100vw; /* 覆盖整个视口宽度 */
@@ -446,6 +414,9 @@
   background-color: rgba(0, 0, 0, 0.8); /* 更深的半透明黑色背景 */
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 /* 弹窗显示时的样式 */
