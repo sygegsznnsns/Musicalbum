@@ -30,6 +30,12 @@ require_once plugin_dir_path( __FILE__ ) . 'page-recommend.php';
 add_shortcode( 'musical_recommend', 'msr_render_recommend_page' );
 
 /**
+ * 注册AJAX处理函数
+ */
+add_action( 'wp_ajax_musicalbum_refresh_ai_recommendations', 'musicalbum_ajax_refresh_ai_recommendations' );
+add_action( 'wp_ajax_nopriv_musicalbum_refresh_ai_recommendations', 'musicalbum_ajax_refresh_ai_recommendations' );
+
+/**
  * 加载推荐插件的前端样式和脚本
  */
 add_action( 'wp_enqueue_scripts', 'msr_enqueue_scripts' );

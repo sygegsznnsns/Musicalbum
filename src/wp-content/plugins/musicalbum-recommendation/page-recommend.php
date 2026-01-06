@@ -185,11 +185,14 @@ function msr_render_recommend_page() {
     
     <!-- AI 推荐模块 -->
     <div class="msr-ai-container">
-        <h3 class="msr-section-title">AI 智能推荐</h3>
+        <div class="msr-section-header">
+            <h3 class="msr-section-title">AI 智能推荐</h3>
+            <button type="button" class="msr-refresh-btn" id="msr-ai-refresh">换一换</button>
+        </div>
         <?php if ( empty( $ai_recommend ) ) : ?>
             <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
         <?php else : ?>
-            <div class="msr-grid">
+            <div class="msr-grid" id="msr-ai-recommendations">
                 <?php foreach ( $ai_recommend as $item ) : ?>
                     <div class="msr-card">
                         <h5 class="msr-card-title">

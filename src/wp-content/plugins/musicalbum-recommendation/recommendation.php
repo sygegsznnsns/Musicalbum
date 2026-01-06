@@ -372,7 +372,7 @@ function musicalbum_get_ai_recommendations( $user_id ) {
     $prompt .= "1. 每部包含 title 和 desc\n";
     $prompt .= "2. desc 不超过 50 字\n";
     $prompt .= "3. 只返回 JSON 数组，不要解释\n";
-    $prompt .= "[{\"title\":\"音乐剧A\",\"desc\":\"简介\"},{\"title\":\"音乐剧B\",\"desc\":\"简介\"},{\"title\":\"音乐剧C\",\"desc\":\"简介\"},{\"title\":\"音乐剧D\",\"desc\":\"简介\"}]";
+    $prompt .= "[{\"title\":\"音乐剧A\",\"desc\":\"简介\"},{\"title\":\"音乐剧B\",\"desc\":\"简介\"},{\"title\":\"音乐剧C\",\"desc\":\"简介\"}]";
 
     /**
      * Step 3：调用 DeepSeek
@@ -396,7 +396,7 @@ function musicalbum_get_ai_recommendations( $user_id ) {
 
     $results = array();
 
-    foreach ( array_slice( $data, 0, 2 ) as $item ) {
+    foreach ( array_slice( $data, 0, 3 ) as $item ) {
         if ( empty( $item['title'] ) || empty( $item['desc'] ) ) {
             continue;
         }
@@ -413,4 +413,57 @@ function musicalbum_get_ai_recommendations( $user_id ) {
     set_transient( $cache_key, $results, 6 * HOUR_IN_SECONDS );
 
     return $results;
+}
+
+/**
+ * AJAX处理函数：获取新的AI推荐（与当前推荐不同）
+ */
+function musicalbum_ajax_refresh_ai_recommendations() {
+    if ( ! is_user_logged_in() ) {
+        wp_send_json_error( array( 'message' => '请先登录' ) );
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $current_recommendations = isset( $_POST['current_recommendations'] ) ? $_POST['current_recommendations'] : array();
+    
+    // 尝试最多3次获取不同的推荐
+    $max_attempts = 3;
+    $attempt = 0;
+    $new_recommendations = array();
+    
+    while ( $attempt < $max_attempts ) {
+        // 临时禁用缓存获取新推荐
+        $cache_key = 'msr_ai_recommend_' . intval( $user_id );
+        delete_transient( $cache_key );
+        
+        $new_recommendations = musicalbum_get_ai_recommendations( $user_id );
+        
+        // 检查是否与当前推荐有重复
+        $has_duplicates = false;
+        if ( ! empty( $current_recommendations ) && ! empty( $new_recommendations ) ) {
+            $current_titles = array_column( $current_recommendations, 'title' );
+            $new_titles = array_column( $new_recommendations, 'title' );
+            $intersection = array_intersect( $current_titles, $new_titles );
+            $has_duplicates = ! empty( $intersection );
+        }
+        
+        if ( ! $has_duplicates && count( $new_recommendations ) >= 3 ) {
+            break;
+        }
+        
+        $attempt++;
+        
+        // 稍微修改prompt以获取不同结果
+        add_filter( 'musicalbum_ai_prompt_suffix', function( $suffix ) {
+            return '?rand=' . rand( 1, 1000 ) . $suffix;
+        } );
+    }
+    
+    if ( empty( $new_recommendations ) ) {
+        wp_send_json_error( array( 'message' => '无法获取新的推荐' ) );
+        return;
+    }
+    
+    wp_send_json_success( array( 'recommendations' => $new_recommendations ) );
 }
