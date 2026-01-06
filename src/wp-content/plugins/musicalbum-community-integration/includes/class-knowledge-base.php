@@ -46,7 +46,7 @@ class Musicalbum_Knowledge_Base {
         if ($is_converted) {
             echo '<span class="bbp-admin-links"> | <span class="musicalbum-converted-badge" style="color:green;">✅ 已收录到知识库</span></span>';
         } else {
-            echo '<span class="bbp-admin-links"> | <a href="#" class="musicalbum-convert-btn" data-type="topic" data-id="' . esc_attr($topic_id) . '" style="color:#ff6464;">📥 收录到知识库</a></span>';
+            echo '<span class="bbp-admin-links"> | <a href="#" class="musicalbum-convert-btn" data-type="topic" data-id="' . esc_attr($topic_id) . '" style="color:#ff6464;">📥 收录主题内容</a></span>';
         }
     }
     
@@ -65,7 +65,7 @@ class Musicalbum_Knowledge_Base {
         if ($is_converted) {
             echo '<span class="bbp-admin-links"> | <span class="musicalbum-converted-badge" style="color:green;">✅ 已收录</span></span>';
         } else {
-            echo '<span class="bbp-admin-links"> | <a href="#" class="musicalbum-convert-btn" data-type="reply" data-id="' . esc_attr($reply_id) . '" style="color:#ff6464;">📥 收录此回复</a></span>';
+            echo '<span class="bbp-admin-links"> | <a href="#" class="musicalbum-convert-btn" data-type="reply" data-id="' . esc_attr($reply_id) . '" style="color:#ff6464;">📥 收录本楼回复</a></span>';
         }
     }
     

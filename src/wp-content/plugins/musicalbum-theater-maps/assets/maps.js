@@ -1,6 +1,31 @@
 var MusicalbumMap = {
     // 处理搜索结果标记点击
-    onMarkerClick: function(poi) {
+    onMarkerClick: function(poi, marker) {
+        // 如果提供了 marker 对象，改变其图标颜色以显示选中状态
+        if (marker) {
+            // 还原之前选中的标记图标（如果有）
+            if (this.selectedMarker && this.selectedMarker !== marker) {
+                // 还原逻辑：如果有保存原始图标则恢复，否则使用默认
+                var originalIcon = this.selectedMarker.originalIcon || '';
+                if (this.selectedMarker.setIcon) {
+                    this.selectedMarker.setIcon(originalIcon);
+                }
+            }
+            
+            // 保存当前选中标记
+            this.selectedMarker = marker;
+            if (!marker.originalIcon) {
+                marker.originalIcon = marker.icon || ''; // 保存原始图标
+            }
+            
+            // 设置新图标（例如黄色或高亮图标）
+            // 默认标记通常是红色，所以选中状态改为黄色以示区别
+            var highlightedIcon = 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'; 
+            if (marker.setIcon) {
+                marker.setIcon(highlightedIcon);
+            }
+        }
+
         // 弹窗或信息窗口
         // 这里简单起见，直接自动填入“周边服务”搜索框，并切换标签
         var confirmMsg = "您选择了：" + poi.name + "\n要查看该剧院周边的服务吗？";
@@ -404,7 +429,7 @@ var MusicalbumMap = {
             // WP Go Maps 的事件绑定方式
             if (marker.on) {
                 marker.on('click', function() {
-                    MusicalbumMap.onMarkerClick(poi);
+                    MusicalbumMap.onMarkerClick(poi, marker);
                 });
             } else {
                 // Fallback for native DOM events or older API
