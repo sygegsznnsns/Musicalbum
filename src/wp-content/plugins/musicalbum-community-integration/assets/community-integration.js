@@ -38,7 +38,19 @@
         $forms.each(function() {
             var $form = $(this);
             var formId = $form.attr('id') || 'bbp-form-' + Math.floor(Math.random() * 1000);
-            var isReply = $form.closest('.bbp-reply-form').length > 0;
+            
+            // 判断是“新建话题”还是“回复”
+            // #new-post 可能是新建话题，也可能是回复（在某些模板中）
+            // 更准确的方法是检查 form 内的 action input
+            var isReply = $form.closest('.bbp-reply-form').length > 0 || $form.find('input[name="bbp_reply_to"]').length > 0;
+            var isTopic = $form.closest('.bbp-topic-form').length > 0 || $form.find('input[name="bbp_topic_id"]').length === 0; // 没有 topic_id 通常意味着是新建 topic
+            
+            // 修正判断逻辑：如果既像 reply 又像 topic，优先认为是 reply (因为 reply 也是一种 post)
+            if ($form.attr('id') === 'new-post' && window.location.href.indexOf('/topic/') !== -1) {
+                isReply = true;
+                isTopic = false;
+            }
+            
             var btnText = isReply ? "+ 回复帖子" : "+ 新建话题";
             var btnTextActive = isReply ? "× 收起回复" : "× 收起表单";
             
@@ -58,6 +70,19 @@
                 $(this).text(function(i, text) {
                     return text === btnText ? btnTextActive : btnText;
                 });
+            });
+
+            // 特殊处理：如果用户点击了楼层中的"回复"链接（嵌套回复）
+            // bbPress 会把表单移动到该楼层下，我们需要确保表单展开
+            $('.bbp-reply-to-link').on('click', function() {
+                if (isReply) {
+                    $form.slideDown();
+                    $toggleBtn.text(btnTextActive);
+                    // 滚动到表单位置
+                    $('html, body').animate({
+                        scrollTop: $form.offset().top - 100
+                    }, 500);
+                }
             });
         });
     }
