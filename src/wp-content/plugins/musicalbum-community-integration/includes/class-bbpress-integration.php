@@ -148,8 +148,7 @@ class Musicalbum_BBPress_Integration {
             <div class="musicalbum-forum-shortcode">
                 <h3>论坛版块</h3>
                 <?php
-                // 获取所有论坛版块
-                $forums = bbp_get_forums(array('post_status' => 'publish'));
+                // 获取所有论坛版块 (bbp_has_forums 会自动设置全局查询)
                 if (bbp_has_forums(array('post_status' => 'publish'))) : ?>
                     <ul class="musicalbum-forum-list">
                         <?php while (bbp_forums()) : bbp_the_forum(); ?>
