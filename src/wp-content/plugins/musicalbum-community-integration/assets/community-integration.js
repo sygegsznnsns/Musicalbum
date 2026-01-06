@@ -20,10 +20,54 @@
             initShareForm();
             initResourceUpload();
             initForumToggle();
+            initKnowledgeConvert();
         } catch (e) {
             console.error('Musicalbum Community: Initialization failed', e);
         }
     });
+    
+    /**
+     * 初始化知识库收录功能
+     */
+    function initKnowledgeConvert() {
+        $(document).on('click', '.musicalbum-convert-btn', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var objectId = $btn.data('id');
+            var objectType = $btn.data('type'); // 'topic' or 'reply'
+            var typeName = objectType === 'reply' ? '回复' : '话题';
+            
+            if (!confirm('确定要将此' + typeName + '收录到知识库吗？')) {
+                return;
+            }
+            
+            $btn.text('收录中...');
+            
+            $.ajax({
+                url: MusicalbumCommunity.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'musicalbum_convert_topic_to_knowledge',
+                    nonce: MusicalbumCommunity.nonce,
+                    object_id: objectId,
+                    object_type: objectType
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $btn.replaceWith('<span class="musicalbum-converted-badge" style="color:green;">✅ 已收录</span>');
+                        alert(response.data.message);
+                    } else {
+                        alert(response.data || '收录失败');
+                        $btn.text('📥 收录到知识库');
+                    }
+                },
+                error: function() {
+                    alert('网络错误');
+                    $btn.text('📥 收录到知识库');
+                }
+            });
+        });
+    }
     
     /**
      * 初始化论坛话题/回复表单折叠
@@ -32,26 +76,59 @@
         // 针对 bbPress 的新建话题表单 (#new-post) 和回复表单 (#new-reply-1 等)
         // 通常表单容器ID是 #new-post (用于新建话题) 或 .bbp-reply-form (用于回复)
         
-        var $newTopicForm = $('#new-post');
-        if ($newTopicForm.length > 0) {
+        // 处理所有符合条件的表单
+        var $forms = $('#new-post, .bbp-reply-form form, .bbp-topic-form form');
+        
+        $forms.each(function() {
+            var $form = $(this);
+            var formId = $form.attr('id') || 'bbp-form-' + Math.floor(Math.random() * 1000);
+            
+            // 判断是“新建话题”还是“回复”
+            // #new-post 可能是新建话题，也可能是回复（在某些模板中）
+            // 更准确的方法是检查 form 内的 action input
+            var isReply = $form.closest('.bbp-reply-form').length > 0 || $form.find('input[name="bbp_reply_to"]').length > 0;
+            var isTopic = $form.closest('.bbp-topic-form').length > 0 || $form.find('input[name="bbp_topic_id"]').length === 0; // 没有 topic_id 通常意味着是新建 topic
+            
+            // 修正判断逻辑：如果既像 reply 又像 topic，优先认为是 reply (因为 reply 也是一种 post)
+            if ($form.attr('id') === 'new-post' && window.location.href.indexOf('/topic/') !== -1) {
+                isReply = true;
+                isTopic = false;
+            }
+            
+            var btnText = isReply ? "+ 回复帖子" : "+ 新建话题";
+            var btnTextActive = isReply ? "× 收起回复" : "× 收起表单";
+            
             // 默认隐藏表单
-            $newTopicForm.hide();
+            $form.hide();
             
             // 创建切换按钮
-            var $toggleBtn = $('<button class="button musicalbum-btn" style="margin-bottom:20px;">+ 新建话题</button>');
+            var $toggleBtn = $('<button class="button musicalbum-btn" style="margin-bottom:20px; display:block;">' + btnText + '</button>');
             
             // 插入按钮到表单前面
-            $newTopicForm.before($toggleBtn);
+            $form.before($toggleBtn);
             
             // 绑定点击事件
             $toggleBtn.on('click', function(e) {
                 e.preventDefault();
-                $newTopicForm.slideToggle();
+                $form.slideToggle();
                 $(this).text(function(i, text) {
-                    return text === "+ 新建话题" ? "× 收起表单" : "+ 新建话题";
+                    return text === btnText ? btnTextActive : btnText;
                 });
             });
-        }
+
+            // 特殊处理：如果用户点击了楼层中的"回复"链接（嵌套回复）
+            // bbPress 会把表单移动到该楼层下，我们需要确保表单展开
+            $('.bbp-reply-to-link').on('click', function() {
+                if (isReply) {
+                    $form.slideDown();
+                    $toggleBtn.text(btnTextActive);
+                    // 滚动到表单位置
+                    $('html, body').animate({
+                        scrollTop: $form.offset().top - 100
+                    }, 500);
+                }
+            });
+        });
     }
     
     /**
