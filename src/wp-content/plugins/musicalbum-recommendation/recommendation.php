@@ -367,12 +367,12 @@ function musicalbum_get_ai_recommendations( $user_id ) {
         $prompt .= "- {$title}\n";
     }
 
-    $prompt .= "\n请推荐 2 部风格或主题相近的音乐剧。\n";
+    $prompt .= "\n请推荐 4 部风格或主题相近的音乐剧。\n";
     $prompt .= "要求：\n";
     $prompt .= "1. 每部包含 title 和 desc\n";
     $prompt .= "2. desc 不超过 50 字\n";
     $prompt .= "3. 只返回 JSON 数组，不要解释\n";
-    $prompt .= "[{\"title\":\"音乐剧A\",\"desc\":\"简介\"},{\"title\":\"音乐剧B\",\"desc\":\"简介\"}]";
+    $prompt .= "[{\"title\":\"音乐剧A\",\"desc\":\"简介\"},{\"title\":\"音乐剧B\",\"desc\":\"简介\"},{\"title\":\"音乐剧C\",\"desc\":\"简介\"},{\"title\":\"音乐剧D\",\"desc\":\"简介\"}]";
 
     /**
      * Step 3：调用 DeepSeek

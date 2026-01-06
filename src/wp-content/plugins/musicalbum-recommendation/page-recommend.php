@@ -25,28 +25,53 @@ function msr_load_musical_csv_data() {
         return [];
     }
 
+    // 打开文件并设置UTF-8编码
     $handle = fopen($file, 'r');
     if (!$handle) {
         return [];
     }
-
-    $header = fgetcsv($handle); // 读取表头
+    
+    // 设置文件指针到开始位置
+    fseek($handle, 0);
+    
+    // 读取第一行，检查是否有BOM头
+    $first_line = fgets($handle);
+    if (strpos($first_line, "\xEF\xBB\xBF") === 0) {
+        // 移除BOM头
+        $first_line = substr($first_line, 3);
+    }
+    
+    // 将文件指针重置到开始位置
+    fseek($handle, 0);
+    
+    // 读取表头
+    $header = fgetcsv($handle);
+    if (!$header) {
+        fclose($handle);
+        return [];
+    }
+    
+    // 解析CSV数据
     $data = [];
-
     while (($row = fgetcsv($handle)) !== false) {
-        if (empty($row[0])) continue;
-
+        if (empty($row[0])) {
+            continue;
+        }
+        
+        // 确保所有列都有值
+        $row = array_pad($row, 7, '');
+        
         // 按 CSV 列名对应 PHP key
         $data[trim($row[0])] = [
-            'originality' => $row[1] ?? '',
-            'status'      => $row[2] ?? '',
-            'premiere'    => $row[3] ?? '',
-            'other_info'  => $row[4] ?? '',
-            'company'     => $row[5] ?? '',
-            'creators'    => $row[6] ?? '',
+            'originality' => $row[1],
+            'status'      => $row[2],
+            'premiere'    => $row[3],
+            'other_info'  => $row[4],
+            'company'     => $row[5],
+            'creators'    => $row[6],
         ];
     }
-
+    
     fclose($handle);
     $cache = $data;
 
@@ -136,7 +161,7 @@ function msr_render_recommend_page() {
                                 <div class="msr-musical-tag">
                                     <a href="javascript:void(0);" 
                                        class="msr-musical-link"
-                                       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                                       data-musical="<?php echo esc_attr( trim( $item['musical'] ) ); ?>">
                                         <?php echo esc_html( $item['musical'] ); ?>
                                     </a>
                                 </div>
@@ -170,7 +195,7 @@ function msr_render_recommend_page() {
                         <h5 class="msr-card-title">
                             <a href="javascript:void(0);" 
                                class="msr-musical-link"
-                               data-musical="<?php echo esc_attr( $item['title'] ); ?>">
+                               data-musical="<?php echo esc_attr( trim( $item['title'] ) ); ?>">
                                 <?php echo esc_html( $item['title'] ); ?>
                             </a>
                         </h5>
@@ -220,7 +245,7 @@ function msr_render_recommend_page() {
                         <h4 class="msr-card-title">
                             <a href="javascript:void(0);"
                                class="msr-musical-link"
-                               data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                               data-musical="<?php echo esc_attr( trim( $item['musical'] ) ); ?>">
                                 <?php echo esc_html( $item['musical'] ); ?>
                             </a>
                         </h4>
@@ -246,7 +271,7 @@ function msr_render_recommend_page() {
                         <h4 class="msr-card-title">
                             <a href="javascript:void(0);"
                                class="msr-musical-link"
-                               data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                               data-musical="<?php echo esc_attr( trim( $item['musical'] ) ); ?>">
                                 <?php echo esc_html( $item['musical'] ); ?>
                             </a>
                         </h4>
