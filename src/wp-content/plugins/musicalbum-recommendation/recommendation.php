@@ -316,7 +316,7 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
 }
 
 /**
- * 基于用户观演记录，获取 AI 推荐音乐剧（固定返回 2 条）
+ * 基于用户观演记录，获取 AI 推荐音乐剧（固定返回 3 条）
  *
  * 返回格式：
  * [
@@ -327,11 +327,12 @@ function musicalbum_recommend_by_favorite_actors( $user_id, $per_actor_limit = 3
  *   [
  *     'title' => '音乐剧B',
  *     'desc'  => '简介内容'
+ *   ],
+ *   [
+ *     'title' => '音乐剧C',
+ *     'desc'  => '简介内容'
  *   ]
  * ]
- */
-/**
- * 基于用户观演记录，获取 AI 推荐音乐剧（带缓存）
  */
 function musicalbum_get_ai_recommendations( $user_id ) {
 
@@ -343,6 +344,8 @@ function musicalbum_get_ai_recommendations( $user_id ) {
      * Step 0：缓存（用户维度）
      */
     $cache_key = 'msr_ai_recommend_' . intval( $user_id );
+    // 为了确保修改立即生效，先清除旧缓存
+    delete_transient( $cache_key );
     $cached = get_transient( $cache_key );
 
     if ( false !== $cached ) {
@@ -395,16 +398,52 @@ function musicalbum_get_ai_recommendations( $user_id ) {
     }
 
     $results = array();
-
-    foreach ( array_slice( $data, 0, 3 ) as $item ) {
-        if ( empty( $item['title'] ) || empty( $item['desc'] ) ) {
+    $count = 0;
+    $index = 0;
+    $total_items = count($data);
+    
+    // Process items until we have 3 valid results or no more items
+    while ($count < 3 && $index < $total_items) {
+        $item = $data[$index];
+        $index++;
+        
+        if (empty($item['title']) || empty($item['desc'])) {
             continue;
         }
-
+        
         $results[] = array(
-            'title' => sanitize_text_field( $item['title'] ),
-            'desc'  => sanitize_textarea_field( $item['desc'] ),
+            'title' => sanitize_text_field($item['title']),
+            'desc'  => sanitize_textarea_field($item['desc']),
         );
+        $count++;
+    }
+
+    // 如果API返回的结果不足3个，从CSV文件中补充
+    if (count($results) < 3) {
+        // 加载CSV数据
+        include_once plugin_dir_path(__FILE__) . 'page-recommend.php';
+        $musical_csv_data = msr_load_musical_csv_data();
+        
+        // 获取已有的推荐标题
+        $existing_titles = array_column($results, 'title');
+        
+        // 从CSV数据中随机选择补充的音乐剧
+        $additional_musicals = array_filter($musical_csv_data, function($musical) use ($existing_titles) {
+            // 确保音乐剧有标题，且不在已有的推荐列表中
+            return !empty($musical['name']) && !in_array($musical['name'], $existing_titles);
+        });
+        
+        // 打乱顺序
+        shuffle($additional_musicals);
+        
+        // 补充推荐直到有3个
+        $additional_needed = 3 - count($results);
+        foreach (array_slice($additional_musicals, 0, $additional_needed) as $musical) {
+            $results[] = array(
+                'title' => sanitize_text_field($musical['name']),
+                'desc'  => sanitize_textarea_field('一部精彩的音乐剧'),
+            );
+        }
     }
 
     /**

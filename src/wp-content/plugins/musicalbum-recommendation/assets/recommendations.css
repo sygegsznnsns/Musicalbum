@@ -440,22 +440,33 @@
   z-index: 9999;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.6); /* 背景半透明黑色 */
+  width: 100vw; /* 覆盖整个视口宽度 */
+  height: 100vh; /* 覆盖整个视口高度 */
+  overflow: hidden; /* 不显示滚动条 */
+  background-color: rgba(0, 0, 0, 0.8); /* 更深的半透明黑色背景 */
+  justify-content: center;
+  align-items: center;
+}
+
+/* 弹窗显示时的样式 */
+.msr-modal.show {
+  display: flex; /* 使用flex布局实现居中 */
 }
 
 /* 弹窗内容 */
 .msr-modal-content {
   background-color: #fff; /* 弹窗主体保持白色 */
-  margin: 10% auto;
-  padding: 20px;
+  padding: 25px;
   border-radius: 10px;
   max-width: 600px;
-  box-shadow: 0 5px 15px rgba(255, 131, 131, 0.4); /* 阴影用主题色 */
+  width: 90%; /* 确保在小屏幕上有合适的宽度 */
+  max-height: 80vh; /* 最大高度不超过视口的80% */
+  overflow-y: auto; /* 内容过多时显示垂直滚动条 */
+  box-shadow: 0 5px 30px rgba(255, 131, 131, 0.6); /* 更强的阴影效果 */
   border-top: 5px solid #ff8383; /* 弹窗顶部条用主题色强调 */
   position: relative;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
 }
 
 /* 弹窗标题强调颜色 */

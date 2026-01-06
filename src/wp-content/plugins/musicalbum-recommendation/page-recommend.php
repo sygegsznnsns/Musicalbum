@@ -301,12 +301,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     <pre style="white-space:pre-wrap;"><strong>主创信息：</strong>\n${m.creators}</pre>
                 `;
             }
-            modal.style.display = 'block';
+            modal.classList.add('show');
         });
     });
 
-    modalClose.addEventListener('click', function(){ modal.style.display = 'none'; });
-    window.addEventListener('click', function(e){ if(e.target === modal){ modal.style.display = 'none'; } });
+    modalClose.addEventListener('click', function(){ modal.classList.remove('show'); });
+    window.addEventListener('click', function(e){ if(e.target === modal){ modal.classList.remove('show'); } });
 });
 </script>
 
