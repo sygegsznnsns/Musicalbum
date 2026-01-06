@@ -113,51 +113,74 @@ function msr_render_recommend_page() {
 ?>
 <div class="msr-page">
 
-    <!-- 左侧 1/6 -->
-    <div class="msr-left-column">
-        <!-- 关注演员模块 -->
-        <div class="msr-actor-container">
-            <h3 class="msr-section-title">你关注的演员</h3>
-            <?php if ( empty( $favorite_actors ) ) : ?>
-                <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
-            <?php else : ?>
-                <ul class="msr-actor-list">
-                    <?php foreach ( $favorite_actors as $actor ) : ?>
-                        <li class="msr-actor-item">
-                            <span class="msr-actor-name"><?php echo esc_html( $actor ); ?></span>
-                            <form method="post" class="msr-inline-form">
-                                <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
-                                <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
-                            </form>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
+    <!-- 关注演员模块 -->
+    <div class="msr-actor-container">
+        <h3 class="msr-section-title">你关注的演员</h3>
+        <?php if ( empty( $favorite_actors ) ) : ?>
+            <p class="msr-empty-text">你还没有关注任何演员，关注演员后将为你推荐相关剧目。</p>
+        <?php else : ?>
+            <?php foreach ( $favorite_actors as $actor ) : ?>
+                <div class="msr-actor-section">
+                    <div class="msr-actor-header">
+                        <h4 class="msr-actor-name"><?php echo esc_html( $actor ); ?></h4>
+                        <form method="post" class="msr-inline-form">
+                            <input type="hidden" name="remove_actor" value="<?php echo esc_attr( $actor ); ?>">
+                            <button type="submit" class="msr-btn msr-btn-secondary">取消关注</button>
+                        </form>
+                    </div>
+                    
+                    <!-- 演员参演剧目 -->
+                    <?php if ( isset( $actor_recommend[ $actor ] ) && ! empty( $actor_recommend[ $actor ] ) ) : ?>
+                        <div class="msr-actor-musicals">
+                            <?php foreach ( array_slice( $actor_recommend[ $actor ], 0, 6 ) as $item ) : ?>
+                                <div class="msr-musical-tag">
+                                    <a href="javascript:void(0);" 
+                                       class="msr-musical-link"
+                                       data-musical="<?php echo esc_attr( $item['musical'] ); ?>">
+                                        <?php echo esc_html( $item['musical'] ); ?>
+                                    </a>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else : ?>
+                        <p class="msr-empty-text">暂无相关剧目信息</p>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+        
+        <!-- 添加新演员 -->
+        <div class="msr-actor-add">
             <form method="post" class="msr-actor-form">
                 <input type="text" name="new_actor" placeholder="输入演员姓名" class="msr-input">
                 <button type="submit" class="msr-btn msr-btn-primary">关注演员</button>
             </form>
         </div>
-
-        <!-- AI 推荐模块 -->
-        <div class="msr-ai-container">
-            <h3 class="msr-section-title">AI 为你推荐</h3>
-            <?php if ( empty( $ai_recommend ) ) : ?>
-                <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
-            <?php else : ?>
-                <ul class="msr-ai-list">
-                    <?php foreach ( $ai_recommend as $item ) : ?>
-                        <li class="msr-ai-item">
-                            <strong class="msr-ai-title"><?php echo esc_html( $item['title'] ); ?></strong>
-                            <p class="msr-ai-desc"><?php echo esc_html( $item['desc'] ); ?></p>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </div>
+    </div>
+    
+    <!-- AI 推荐模块 -->
+    <div class="msr-ai-container">
+        <h3 class="msr-section-title">AI 智能推荐</h3>
+        <?php if ( empty( $ai_recommend ) ) : ?>
+            <p class="msr-empty-text">观演记录较少，AI 推荐暂不可用。</p>
+        <?php else : ?>
+            <div class="msr-grid">
+                <?php foreach ( $ai_recommend as $item ) : ?>
+                    <div class="msr-card">
+                        <h5 class="msr-card-title">
+                            <a href="javascript:void(0);" 
+                               class="msr-musical-link"
+                               data-musical="<?php echo esc_attr( $item['title'] ); ?>">
+                                <?php echo esc_html( $item['title'] ); ?>
+                            </a>
+                        </h5>
+                        <p class="msr-card-text"><?php echo esc_html( $item['desc'] ); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 
-    <!-- 右侧 5/6 -->
     <!-- 推荐模块 -->
     <div class="msr-recommend-container">
         <h2 class="msr-page-title">为你推荐的音乐剧</h2>

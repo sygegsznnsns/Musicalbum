@@ -168,35 +168,123 @@
 .msr-actor-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 整体靠左 */
-  max-width: 400px; /* 可以控制宽度，不占满主体 */
   margin-bottom: 32px;
-}
-
-.msr-actor-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
   width: 100%;
 }
 
-.msr-actor-item {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-align: left; /* 避免居中 */
+.msr-actor-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.msr-inline-form {
-  display: inline-block; /* 保证按钮和演员名同一行 */
-  margin-left: 8px; /* 与名字间距 */
-  vertical-align: middle;
+.msr-actor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .msr-actor-name {
-  font-size: 1.1rem; /* 字体大一些 */
+  font-size: 1.2rem;
   font-weight: 600;
-  margin-right: 12px; /* 名字和按钮间距 */
+  margin: 0;
+}
+
+.msr-inline-form {
+  display: inline-block;
+}
+
+.msr-actor-musicals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.msr-musical-tag {
+  background: #f3f4f6;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.875rem;
+}
+
+.msr-musical-link {
+  color: #ff8383;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.msr-musical-link:hover {
+  color: #ff6b6b;
+  text-decoration: underline;
+}
+
+.msr-actor-add {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.msr-actor-form {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .msr-actor-form {
+    flex-direction: column;
+  }
+  
+  .msr-actor-form input,
+  .msr-actor-form button {
+    width: 100%;
+  }
+}
+
+/* =========================
+   音乐剧详情模态框
+   ========================= */
+.msr-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.msr-modal-content {
+  background-color: #fff;
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.msr-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.msr-modal-close:hover {
+  color: #000;
 }
 
 .msr-inline-form .msr-btn-secondary {
