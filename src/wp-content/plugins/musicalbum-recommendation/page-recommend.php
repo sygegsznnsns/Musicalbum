@@ -130,7 +130,7 @@ function msr_render_recommend_page() {
      * =========
      */
     $personal = musicalbum_recommend_by_crowd( $user_id, 10 );
-    $trending = musicalbum_recommend_trending( 10 );
+    $trending = musicalbum_recommend_trending( 6 );
     $actor_recommend = musicalbum_recommend_by_favorite_actors( $user_id, 10 );
     $ai_recommend = musicalbum_get_ai_recommendations( get_current_user_id() );
 

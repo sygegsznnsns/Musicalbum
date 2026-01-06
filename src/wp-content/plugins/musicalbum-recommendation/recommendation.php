@@ -108,70 +108,84 @@ function musicalbum_mark_not_interested( $user_id, $musical_title ) {
 }
 
 /**
- * 近期热门观演剧目（基于观演记录数量）
+ * 近期热门观演剧目（基于DeepSeek API获取）
  */
-function musicalbum_recommend_trending( $limit = 10 ) {
+function musicalbum_recommend_trending( $limit = 6 ) {
     // 获取当前用户不感兴趣的剧目列表
     $not_interested = array();
     if ( is_user_logged_in() ) {
         $not_interested = musicalbum_get_not_interested( get_current_user_id() );
     }
 
-    // 获取所有用户的观演记录
-    $args = array(
-        'post_type'      => 'viewing_record',
-        'post_status'    => 'publish',
-        'posts_per_page' => -1,
-        // 不限制作者，获取所有用户的记录
-    );
+    // 构造DeepSeek API请求的Prompt
+    $prompt = "请推荐近期按热度排序的音乐剧热门演出，要求：
+1. 按热度从高到低排序
+2. 返回6条记录
+3. 每条记录包含音乐剧名称和热度理由
+4. 使用JSON格式返回，格式如下：
+[
+    {"title": "音乐剧名称1", "reason": "热度理由1"},
+    {"title": "音乐剧名称2", "reason": "热度理由2"}
+]
+5. 只返回JSON数据，不要添加任何其他解释文字";
 
-    $query = new WP_Query( $args );
-    $counter = array();
-
-    if ( $query->have_posts() ) {
-        // 使用正确的循环方式
-        while ( $query->have_posts() ) {
-            $query->the_post();
-            $title = get_the_title();
-
-            if ( empty( $title ) ) {
-                continue;
-            }
-
-            // 排除用户不感兴趣的剧目
-            if ( in_array( $title, $not_interested, true ) ) {
-                continue;
-            }
-
-            if ( ! isset( $counter[ $title ] ) ) {
-                $counter[ $title ] = 0;
-            }
-
-            $counter[ $title ]++;
-        }
-        // 重置查询
-        wp_reset_postdata();
-    }
-
-    if ( empty( $counter ) ) {
-        return array();
-    }
-
-    // 按出现次数排序
-    arsort( $counter );
-
+    // 调用DeepSeek API
+    $raw_response = musicalbum_call_deepseek_api( $prompt );
+    
     $results = array();
-    foreach ( $counter as $title => $count ) {
-        $results[] = array(
-            'musical' => $title,
-            'reason'  => '近期热门剧目，共 ' . $count . ' 人次观看',
-        );
-
-        if ( count( $results ) >= $limit ) {
-            break;
+    
+    if ( ! empty( $raw_response ) ) {
+        // 解析API返回的JSON数据
+        $api_results = json_decode( $raw_response, true );
+        
+        if ( is_array( $api_results ) && ! empty( $api_results ) ) {
+            foreach ( $api_results as $item ) {
+                if ( empty( $item['title'] ) || empty( $item['reason'] ) ) {
+                    continue;
+                }
+                
+                // 排除用户不感兴趣的剧目
+                if ( in_array( $item['title'], $not_interested, true ) ) {
+                    continue;
+                }
+                
+                $results[] = array(
+                    'musical' => sanitize_text_field( $item['title'] ),
+                    'reason'  => sanitize_textarea_field( $item['reason'] ),
+                );
+                
+                if ( count( $results ) >= $limit ) {
+                    break;
+                }
+            }
         }
     }
-
+    
+    // 如果API返回的结果不足6个，从默认数据源补充
+    if ( count( $results ) < $limit ) {
+        // 加载CSV数据
+        include_once plugin_dir_path(__FILE__) . 'page-recommend.php';
+        $musical_csv_data = msr_load_musical_csv_data();
+        
+        // 获取已有的推荐标题
+        $existing_titles = array_column( $results, 'musical' );
+        
+        // 从CSV数据中选择补充的音乐剧
+        $additional_musicals = array_filter($musical_csv_data, function($musical) use ($existing_titles, $not_interested) {
+            // 确保音乐剧有标题，且不在已有的推荐列表中，也不在不感兴趣列表中
+            return !empty($musical['name']) && !in_array($musical['name'], $existing_titles) && !in_array($musical['name'], $not_interested);
+        });
+        
+        // 补充推荐直到达到限制数量
+        $additional_needed = $limit - count($results);
+        foreach (array_slice($additional_musicals, 0, $additional_needed) as $musical) {
+            $results[] = array(
+                'musical' => sanitize_text_field($musical['name']),
+                'reason'  => '近期热门音乐剧演出',
+            );
+        }
+    }
+    
     return $results;
 }
 
