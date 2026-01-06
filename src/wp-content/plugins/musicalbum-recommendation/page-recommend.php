@@ -206,57 +206,9 @@ function msr_render_recommend_page() {
         <?php endif; ?>
     </div>
 
-    <!-- 推荐模块 -->
+    <!-- 算法推荐模块 -->
     <div class="msr-recommend-container">
-        <h2 class="msr-page-title">为你推荐的音乐剧</h2>
-
-        <!-- 演员相关推荐 -->
-        <h3 class="msr-section-title">关注演员的相关剧目</h3>
-        <?php if ( empty( $favorite_actors ) ) : ?>
-            <p class="msr-empty-text">你尚未关注演员，暂无基于演员的推荐。</p>
-        <?php elseif ( empty( $actor_recommend ) ) : ?>
-            <p class="msr-empty-text">暂未找到与你关注演员相关的音乐剧，可尝试关注更多演员。</p>
-        <?php else : ?>
-            <?php 
-            // 收集已在演员关注列表中显示的剧目
-            $shown_musicals = [];
-            foreach ( $favorite_actors as $actor ) {
-                if ( isset( $actor_recommend[ $actor ] ) && ! empty( $actor_recommend[ $actor ] ) ) {
-                    foreach ( array_slice( $actor_recommend[ $actor ], 0, 6 ) as $item ) {
-                        $shown_musicals[] = $item['musical'];
-                    }
-                }
-            }
-            $shown_musicals = array_unique( $shown_musicals );
-            ?>
-            <?php foreach ( $actor_recommend as $actor_name => $musicals ) : ?>
-                <h4 class="msr-subtitle"><?php echo esc_html( $actor_name ); ?> 参演的音乐剧</h4>
-                <div class="msr-grid">
-                    <?php 
-                    // 过滤掉已显示的剧目
-                    $filtered_musicals = array_filter( $musicals, function( $item ) use ( $shown_musicals ) {
-                        return ! in_array( $item['musical'], $shown_musicals, true );
-                    });
-                    ?>
-                    <?php if ( empty( $filtered_musicals ) ) : ?>
-                        <p class="msr-empty-text">暂无新的相关剧目推荐</p>
-                    <?php else : ?>
-                        <?php foreach ( $filtered_musicals as $item ) : ?>
-                            <div class="msr-card msr-item">
-                                <h5 class="msr-card-title">
-                                    <a href="javascript:void(0);"
-                                       class="msr-musical-link"
-                                       data-musical="<?php echo esc_attr( trim( $item['musical'] ) ); ?>">
-                                        <?php echo esc_html( $item['musical'] ); ?>
-                                    </a>
-                                </h5>
-                                <p class="msr-card-text"><?php echo esc_html( $item['reason'] ); ?></p>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+        <h3 class="msr-section-title">算法推荐</h3>
 
         <!-- 协同过滤推荐 -->
         <?php if ( ! empty( $personal ) ) : ?>
