@@ -118,7 +118,7 @@ function musicalbum_recommend_trending( $limit = 6 ) {
     }
 
     // 构造DeepSeek API请求的Prompt
-    $prompt = "请推荐近期按热度排序的音乐剧热门演出，要求：
+    $prompt = '请推荐近期按热度排序的音乐剧热门演出，要求：
 1. 按热度从高到低排序
 2. 返回6条记录
 3. 每条记录包含音乐剧名称和热度理由
@@ -127,7 +127,7 @@ function musicalbum_recommend_trending( $limit = 6 ) {
     {"title": "音乐剧名称1", "reason": "热度理由1"},
     {"title": "音乐剧名称2", "reason": "热度理由2"}
 ]
-5. 只返回JSON数据，不要添加任何其他解释文字";
+5. 只返回JSON数据，不要添加任何其他解释文字';
 
     // 调用DeepSeek API
     $raw_response = musicalbum_call_deepseek_api( $prompt );
