@@ -36,19 +36,35 @@ class Musicalbum_Community_Customizations {
     public static function auto_activate_user($user_id, $user_login, $user_password, $user_email, $usermeta) {
         // 如果 BuddyPress 的激活系统已启用，我们手动完成激活
         if (function_exists('bp_core_activate_signup')) {
-            // 获取刚刚生成的 activation key
             global $wpdb;
             
-            // 查找 activation key (在 wp_signups 表中)
-            // 实际上 bp_core_signup_user 触发时，用户还未正式插入 wp_users (如果开启了激活流程)
-            // 除非我们在 bp_core_signup_send_activation_key 返回 false 后，BP 会如何处理？
-            
-            // 更简单的方法：直接利用 bp_core_activate_signup
-            // 我们需要 signups 表中的 key
+            // 查找 activation key
             $key = $wpdb->get_var($wpdb->prepare("SELECT activation_key FROM {$wpdb->base_prefix}signups WHERE user_email = %s", $user_email));
             
             if ($key) {
-                bp_core_activate_signup($key);
+                // 执行激活，这会创建 wp_users 记录
+                $user_id = bp_core_activate_signup($key);
+                
+                // 如果激活成功（返回了用户ID），则自动登录并跳转
+                if ($user_id && !is_wp_error($user_id)) {
+                    // 自动登录
+                    $creds = array(
+                        'user_login'    => $user_login,
+                        'user_password' => $user_password,
+                        'remember'      => true
+                    );
+                    
+                    $user = wp_signon($creds, false);
+                    
+                    if (!is_wp_error($user)) {
+                        // 设置当前用户（为了安全起见，虽然重定向会处理）
+                        wp_set_current_user($user->ID);
+                        
+                        // 重定向到首页或个人中心，跳过默认的"请激活"页面
+                        wp_redirect(home_url());
+                        exit;
+                    }
+                }
             }
         }
     }
