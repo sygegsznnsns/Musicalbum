@@ -23,7 +23,8 @@ add_action('wp_enqueue_scripts', function() {
  * 仅允许管理员 (拥有 manage_options 权限) 看到
  */
 add_action('after_setup_theme', function() {
-    if (!current_user_can('manage_options') && !is_admin()) {
+    // 如果未登录，或者没有管理权限，都隐藏工具栏
+    if (!is_user_logged_in() || !current_user_can('manage_options')) {
         show_admin_bar(false);
     }
 });
