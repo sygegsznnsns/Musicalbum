@@ -18,6 +18,16 @@ add_action('wp_enqueue_scripts', function() {
     
 });
 
+/**
+ * 隐藏普通用户的顶部工具栏 (Admin Bar)
+ * 仅允许管理员 (拥有 manage_options 权限) 看到
+ */
+add_action('after_setup_theme', function() {
+    if (!current_user_can('manage_options') && !is_admin()) {
+        show_admin_bar(false);
+    }
+});
+
 
 /**
  * 在此添加子主题的其他钩子与模板辅助函数
