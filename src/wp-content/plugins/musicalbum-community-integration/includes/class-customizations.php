@@ -22,6 +22,35 @@ class Musicalbum_Community_Customizations {
         
         // 添加自定义样式
         add_action('wp_head', array(__CLASS__, 'add_custom_styles'));
+
+        // 自动激活新注册用户（跳过邮件验证/管理员审核）
+        add_filter('bp_core_signup_send_activation_key', '__return_false');
+        add_action('bp_core_signup_user', array(__CLASS__, 'auto_activate_user'), 10, 5);
+    }
+    
+    /**
+     * 自动激活新注册用户
+     * 
+     * 允许用户注册后直接登录，无需管理员审核或邮件激活
+     */
+    public static function auto_activate_user($user_id, $user_login, $user_password, $user_email, $usermeta) {
+        // 如果 BuddyPress 的激活系统已启用，我们手动完成激活
+        if (function_exists('bp_core_activate_signup')) {
+            // 获取刚刚生成的 activation key
+            global $wpdb;
+            
+            // 查找 activation key (在 wp_signups 表中)
+            // 实际上 bp_core_signup_user 触发时，用户还未正式插入 wp_users (如果开启了激活流程)
+            // 除非我们在 bp_core_signup_send_activation_key 返回 false 后，BP 会如何处理？
+            
+            // 更简单的方法：直接利用 bp_core_activate_signup
+            // 我们需要 signups 表中的 key
+            $key = $wpdb->get_var($wpdb->prepare("SELECT activation_key FROM {$wpdb->base_prefix}signups WHERE user_email = %s", $user_email));
+            
+            if ($key) {
+                bp_core_activate_signup($key);
+            }
+        }
     }
     
     /**
